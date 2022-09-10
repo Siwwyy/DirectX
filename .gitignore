@@ -348,3 +348,8 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+
+# OWN PART
+!/DirectX_11_Engine_VS2019/DirectX_11_Engine_VS2019/libs/*
+DirectX-Graphics-Samples/*
