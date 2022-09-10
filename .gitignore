@@ -351,5 +351,5 @@ MigrationBackup/
 
 
 # OWN PART
-!/DirectX_11_Engine_VS2019/DirectX_11_Engine_VS2019/libs/*
+!/**/libs/*
 DirectX-Graphics-Samples/*
