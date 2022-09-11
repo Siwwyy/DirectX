@@ -147,27 +147,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="ErrorLogger.cpp" />
-    <ClCompile Include="Keyboard\KeyboardClass.cpp" />
-    <ClCompile Include="Keyboard\KeyboardEvent.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Mouse\MouseEvent.cpp" />
-    <ClCompile Include="Mouse\MouseClass.cpp" />
-    <ClCompile Include="RenderWindow.cpp" />
-    <ClCompile Include="StringConverter.cpp" />
-    <ClCompile Include="WindowContainer.cpp" />
+    <ClCompile Include="Project\Graphics\AdapterReader.cpp" />
+    <ClCompile Include="Project\Engine.cpp" />
+    <ClCompile Include="Project\ErrorLogger.cpp" />
+    <ClCompile Include="Project\Graphics\Graphics.cpp" />
+    <ClCompile Include="Project\Keyboard\KeyboardClass.cpp" />
+    <ClCompile Include="Project\Keyboard\KeyboardEvent.cpp" />
+    <ClCompile Include="Project\main.cpp" />
+    <ClCompile Include="Project\Mouse\MouseEvent.cpp" />
+    <ClCompile Include="Project\Mouse\MouseClass.cpp" />
+    <ClCompile Include="Project\RenderWindow.cpp" />
+    <ClCompile Include="Project\StringConverter.cpp" />
+    <ClCompile Include="Project\WindowContainer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine.h" />
-    <ClInclude Include="ErrorLogger.h" />
-    <ClInclude Include="Keyboard\KeyboardClass.h" />
-    <ClInclude Include="Keyboard\KeyboardEvent.h" />
-    <ClInclude Include="Mouse\MouseEvent.h" />
-    <ClInclude Include="Mouse\MouseClass.h" />
-    <ClInclude Include="RenderWindow.h" />
-    <ClInclude Include="StringConverter.h" />
-    <ClInclude Include="WindowContainer.h" />
+    <ClInclude Include="Project\Graphics\AdapterReader.h" />
+    <ClInclude Include="Project\Engine.h" />
+    <ClInclude Include="Project\ErrorLogger.h" />
+    <ClInclude Include="Project\Graphics\Graphics.h" />
+    <ClInclude Include="Project\Keyboard\KeyboardClass.h" />
+    <ClInclude Include="Project\Keyboard\KeyboardEvent.h" />
+    <ClInclude Include="Project\Mouse\MouseEvent.h" />
+    <ClInclude Include="Project\Mouse\MouseClass.h" />
+    <ClInclude Include="Project\RenderWindow.h" />
+    <ClInclude Include="Project\StringConverter.h" />
+    <ClInclude Include="Project\WindowContainer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

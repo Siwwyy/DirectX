@@ -25,66 +25,84 @@
     <Filter Include="Source Files\Mouse">
       <UniqueIdentifier>{d0888fa8-1567-4438-868f-c8741b164e4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Graphics">
+      <UniqueIdentifier>{15c7a5de-d6e9-4bc9-b5fd-514670a78271}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Graphics">
+      <UniqueIdentifier>{91acac60-46b3-4016-a758-16f2c2bd2fea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="Project\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="StringConverter.cpp">
+    <ClCompile Include="Project\StringConverter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ErrorLogger.cpp">
+    <ClCompile Include="Project\ErrorLogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderWindow.cpp">
+    <ClCompile Include="Project\RenderWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
+    <ClCompile Include="Project\Engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WindowContainer.cpp">
+    <ClCompile Include="Project\WindowContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Keyboard\KeyboardClass.cpp">
+    <ClCompile Include="Project\Keyboard\KeyboardClass.cpp">
       <Filter>Source Files\Keyboard</Filter>
     </ClCompile>
-    <ClCompile Include="Keyboard\KeyboardEvent.cpp">
+    <ClCompile Include="Project\Keyboard\KeyboardEvent.cpp">
       <Filter>Source Files\Keyboard</Filter>
     </ClCompile>
-    <ClCompile Include="Mouse\MouseClass.cpp">
+    <ClCompile Include="Project\Mouse\MouseClass.cpp">
       <Filter>Source Files\Mouse</Filter>
     </ClCompile>
-    <ClCompile Include="Mouse\MouseEvent.cpp">
+    <ClCompile Include="Project\Mouse\MouseEvent.cpp">
       <Filter>Source Files\Mouse</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\Graphics\Graphics.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\Graphics\AdapterReader.cpp">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="StringConverter.h">
+    <ClInclude Include="Project\StringConverter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ErrorLogger.h">
+    <ClInclude Include="Project\ErrorLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderWindow.h">
+    <ClInclude Include="Project\RenderWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine.h">
+    <ClInclude Include="Project\Engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WindowContainer.h">
+    <ClInclude Include="Project\WindowContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Keyboard\KeyboardClass.h">
+    <ClInclude Include="Project\Keyboard\KeyboardClass.h">
       <Filter>Header Files\Keyboard</Filter>
     </ClInclude>
-    <ClInclude Include="Keyboard\KeyboardEvent.h">
+    <ClInclude Include="Project\Keyboard\KeyboardEvent.h">
       <Filter>Header Files\Keyboard</Filter>
     </ClInclude>
-    <ClInclude Include="Mouse\MouseClass.h">
+    <ClInclude Include="Project\Mouse\MouseClass.h">
       <Filter>Mouse</Filter>
     </ClInclude>
-    <ClInclude Include="Mouse\MouseEvent.h">
+    <ClInclude Include="Project\Mouse\MouseEvent.h">
       <Filter>Mouse</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\Graphics\Graphics.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\Graphics\AdapterReader.h">
+      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

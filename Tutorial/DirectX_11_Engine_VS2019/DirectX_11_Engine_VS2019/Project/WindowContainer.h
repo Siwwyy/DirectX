@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RenderWindow.h"
+#include "Graphics/Graphics.h"
 #include "Keyboard/KeyboardClass.h"
 #include "Mouse/MouseClass.h"
 
@@ -17,7 +18,7 @@ protected:
 	RenderWindow render_window;
 	KeyboardClass keyboard;
 	MouseClass mouse;
-
+	Graphics gfx;
 private:
 
 };
