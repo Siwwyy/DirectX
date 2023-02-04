@@ -353,3 +353,4 @@ MigrationBackup/
 # OWN PART
 !/**/libs/*
 DirectX-Graphics-Samples/*
+build/

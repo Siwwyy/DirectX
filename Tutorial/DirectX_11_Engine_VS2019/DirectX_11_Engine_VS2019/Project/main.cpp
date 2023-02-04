@@ -30,6 +30,7 @@ int APIENTRY wWinMain(
 	while (engine.ProcessMessages())
 	{
 		engine.Update();
+		engine.RenderFrame();
 		//Sleep(50);
 	}
 
