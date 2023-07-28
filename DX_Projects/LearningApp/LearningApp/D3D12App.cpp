@@ -29,12 +29,22 @@ void D3D12App::OnInit()
 	InitializeCommandList();
 	InitializeSwapChain();
 	InitializeFrameResources();
-	InitializeFence(); //TODO create a definition
+	InitializeFence();
 }
 
 void D3D12App::OnRender()
 {
+	// Populate Commands (just record command list and close)
+	PopulateCommandLists();
 
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Present the frame.
+	ThrowIfFailed(swapChain->Present(1, 0));
+
+	WaitForPreviousFrame();
 }
 
 void D3D12App::OnUpdate()
@@ -44,7 +54,11 @@ void D3D12App::OnUpdate()
 
 void D3D12App::OnDestroy()
 {
+	// Ensure that the GPU is no longer referencing resources that are about to be
+	// cleaned up by the destructor.
+	WaitForPreviousFrame();
 
+	CloseHandle(fenceEvent);
 }
 
 void D3D12App::InitializeFactory()
@@ -96,6 +110,7 @@ void D3D12App::InitializeCommandQueue()
 void D3D12App::InitializeCommandAllocator()
 {
 	ThrowIfFailed(device->CreateCommandAllocator(COMMAND_LIST_TYPE, IID_PPV_ARGS(&commandAllocator)));
+	ThrowIfFailed(commandAllocator->Reset());
 }
 
 void D3D12App::InitializeCommandList()
@@ -167,7 +182,15 @@ void D3D12App::InitializeFrameResources()
 
 void D3D12App::InitializeFence()
 {
+	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+	fenceValue = 1;
 
+	// Create an event handle to use for frame synchronization.
+	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (fenceEvent == nullptr)
+	{
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
 }
 
 ComPtr<ID3D12DescriptorHeap> D3D12App::CreateRenderTargetDescriptorHeap(ComPtr<ID3D12Device> device, UINT& descriptorIncrementSize) const
@@ -187,15 +210,70 @@ ComPtr<ID3D12DescriptorHeap> D3D12App::CreateRenderTargetDescriptorHeap(ComPtr<I
 	return descriptorHeap;
 }
 
-ComPtr<ID3D12Resource> D3D12App::CreateRenderTargetResource(ComPtr<ID3D12Device> device, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescriptorHandle) const
+ComPtr<ID3D12Resource> D3D12App::CreateRenderTargetResource(ComPtr<ID3D12Device> device, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescriptorHandle)
 {
 	ComPtr<ID3D12Resource> renderTargetResource;
 	device->CreateRenderTargetView(renderTargetResource.Get(), nullptr, renderTargetDescriptorHandle);
 	return renderTargetResource;
 }
 
+void D3D12App::PopulateCommandLists()
+{
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	ThrowIfFailed(commandAllocator->Reset());
+
+	// However, when ExecuteCommandList() is called on a particular command 
+	// list, that command list can then be reset at any time and must be before 
+	// re-recording.
+	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), nullptr));
+
+	// Set necessary state.
+	//m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+	commandList->RSSetViewports(1, &viewPort);
+	commandList->RSSetScissorRects(1, &scissorRect);
+
+	// Indicate that the back buffer will be used as a render target.
+	const CD3DX12_RESOURCE_BARRIER barrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	commandList->ResourceBarrier(1, &barrierPresentToRTV);
+
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentFrameIdx, rtvDescriptorSize);
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	// Record commands.
+	constexpr float clearColor[] = { 1.0f, 0.2f, 0.4f, 1.0f };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// Indicate that the back buffer will now be used to present.
+	const CD3DX12_RESOURCE_BARRIER barrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	commandList->ResourceBarrier(1, &barrierRTVtoPresent);
+
+	// Close Command list before executing
+	ThrowIfFailed(commandList->Close());
+}
+
+void D3D12App::WaitForPreviousFrame()
+{
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+
+	// Signal and increment the fence value.
+	const UINT64 fenceCurrentValue = fenceValue;
+	ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceCurrentValue));
+	fenceValue++;
+
+	// Wait until the previous frame is finished.
+	if (fence->GetCompletedValue() < fenceCurrentValue)
+	{
+		ThrowIfFailed(fence->SetEventOnCompletion(fenceCurrentValue, fenceEvent));
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
+	currentFrameIdx = swapChain->GetCurrentBackBufferIndex();
+}
+
 ComPtr<IDXGIAdapter1> D3D12App::GetAdapter(IDXGIFactory1* pFactory, bool useWarpAdapter,
-	bool requestHighPerformanceAdapter) const
+                                           bool requestHighPerformanceAdapter) const
 {
 	//If user specifies to use warp adapter, lets return it immediately
 	if (useWarpAdapter)

@@ -46,7 +46,11 @@ private:
 	void InitializeFence();
 
 	ComPtr<ID3D12DescriptorHeap>				CreateRenderTargetDescriptorHeap(ComPtr<ID3D12Device> device, UINT& descriptorIncrementSize) const;
-	ComPtr<ID3D12Resource>						CreateRenderTargetResource(ComPtr<ID3D12Device> device, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescriptorHandle) const;
+	static ComPtr<ID3D12Resource>				CreateRenderTargetResource(ComPtr<ID3D12Device> device, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetDescriptorHandle);
+
+	//Utility functions
+	void PopulateCommandLists();
+	void WaitForPreviousFrame();
 
 	ComPtr<IDXGIAdapter1>						GetAdapter(IDXGIFactory1* pFactory, bool useWarpAdapter = false, bool requestHighPerformanceAdapter = false) const;
 
@@ -56,18 +60,18 @@ private:
 	float												aspectRatio;
 	std::wstring										windowName;
 
-	//D3D12 Window Properties
+	// D3D12 Window Properties
 	CD3DX12_VIEWPORT									viewPort;
 	CD3DX12_RECT										scissorRect;
 
-	//D3D12 Variables
+	// D3D12 Variables
 	ComPtr<IDXGIFactory4>								factory;
 	ComPtr<ID3D12Device>								device;
 	ComPtr<ID3D12CommandQueue>							commandQueue;
 	ComPtr<ID3D12CommandAllocator>						commandAllocator;
 	ComPtr<ID3D12GraphicsCommandList>					commandList;
 
-	//D3D12 SwapChain
+	// D3D12 SwapChain
 	ComPtr<IDXGISwapChain3>								swapChain;
 	UINT												bufferCount;
 	UINT												currentFrameIdx;
@@ -76,5 +80,10 @@ private:
 	ComPtr<ID3D12DescriptorHeap>						rtvHeap;
 	std::vector<ComPtr<ID3D12Resource>>					renderTargets{};
 	UINT												rtvDescriptorSize;
+
+	// D3D12 Fence CPU<->GPU Synchronization point
+	HANDLE												fenceEvent;
+	UINT64												fenceValue;
+	ComPtr<ID3D12Fence>									fence;
 
 };

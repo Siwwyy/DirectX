@@ -71,12 +71,13 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, D3D12App * dx12App)
 
 LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	D3D12App* dx12App = reinterpret_cast<D3D12App*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (message)
     {
     case WM_CREATE:
     {
-        // Save the DXSample* passed in to CreateWindow.
+        // Save the D3D12App* passed in to CreateWindow.
         LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
         SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
     }
@@ -116,7 +117,8 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
     case WM_PAINT:
     {
-
+        dx12App->OnUpdate();
+        dx12App->OnRender();
     }
     return 0;
 
