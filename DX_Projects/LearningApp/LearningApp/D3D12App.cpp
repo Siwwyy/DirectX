@@ -5,6 +5,7 @@
 //CONSTANTS
 _CONSTEVAL D3D12_COMMAND_LIST_TYPE	COMMAND_LIST_TYPE			= D3D12_COMMAND_LIST_TYPE_DIRECT;
 _CONSTEVAL UINT						BUFFER_COUNT				= 2;
+_CONSTEVAL D3D_FEATURE_LEVEL		D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 
 D3D12App::D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName)
 	: windowWidth(windowWidth)
@@ -90,7 +91,7 @@ void D3D12App::InitializeDevice()
 
 	ThrowIfFailed(D3D12CreateDevice(
 		hardwareAdapter.Get(),
-		D3D_FEATURE_LEVEL_11_0,
+		D3D12_FEATURE_LEVEL,
 		IID_PPV_ARGS(&device)
 	));
 }
@@ -137,6 +138,7 @@ void D3D12App::InitializeSwapChain()
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	//swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	swapChainDesc.SampleDesc.Count = 1;
 
 	//auto swapChain1 = &dynamic_cast<IDXGISwapChain1*>(swapChain.Get());
@@ -242,8 +244,16 @@ void D3D12App::PopulateCommandLists()
 	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Record commands.
-	constexpr float clearColor[] = { 1.0f, 0.2f, 0.4f, 1.0f };
-	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	if(currentFrameIdx % 2)
+	{
+		constexpr float clearColor[] = { 1.0f, 0.2f, 0.4f, 1.0f };
+		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	}
+	else
+	{
+		constexpr float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	}
 
 	// Indicate that the back buffer will now be used to present.
 	const CD3DX12_RESOURCE_BARRIER barrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -334,7 +344,7 @@ ComPtr<IDXGIAdapter1> D3D12App::GetAdapter(IDXGIFactory1* pFactory, bool useWarp
 
 			// Check to see whether the adapter supports Direct3D 12, but don't create the
 			// actual device yet.
-			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
+			if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D12_FEATURE_LEVEL, __uuidof(ID3D12Device), nullptr)))
 			{
 				break;
 			}
