@@ -26,7 +26,7 @@ public:
 	UINT										GetWindowWidth() const { return windowWidth; }
 	UINT										GetWindowHeight() const { return windowHeight; }
 	float										GetAspectRatio() const { return aspectRatio; }
-	std::wstring								GetWindowName() const { return windowName; }
+	const std::wstring&							GetWindowName() const { return windowName; }
 
 	// Functions
 	void OnInit();
