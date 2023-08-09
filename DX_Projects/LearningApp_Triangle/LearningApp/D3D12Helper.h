@@ -36,11 +36,7 @@ inline void ThrowIfFailed(HRESULT hr)
     }
 }
 
-constexpr UINT CalculateConstantBufferByteSize(UINT byteSize)
-{
-    // Constant buffer size is required to be aligned.
-    return (byteSize + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
-}
+constexpr UINT CalculateConstantBufferByteSize(UINT byteSize);
 
 // Resets all elements in a ComPtr array.
 template<class T>
