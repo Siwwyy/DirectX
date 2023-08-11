@@ -61,6 +61,10 @@ private:
 	ComPtr<ID3D12Resource>								indexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
 
+	// D3D12 Depth buffer
+	ComPtr<ID3D12Resource>								depthStencilBuffer;
+	ComPtr<ID3D12DescriptorHeap>						depthStencilHeap;
+
 	// D3D12 SwapChain
 	ComPtr<IDXGISwapChain3>								swapChain;
 	UINT												bufferCount;

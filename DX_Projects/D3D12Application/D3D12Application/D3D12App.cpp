@@ -10,10 +10,11 @@
 
 
 //CONSTANTS
-_CONSTEVAL D3D12_COMMAND_LIST_TYPE		COMMAND_LIST_TYPE = D3D12_COMMAND_LIST_TYPE_DIRECT;
-_CONSTEVAL UINT							BACK_BUFFER_COUNT = 2;
-_CONSTEVAL D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
-_CONSTEVAL DXGI_FORMAT					BACK_BUFFER_FORMAT = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+_CONSTEVAL D3D12_COMMAND_LIST_TYPE		COMMAND_LIST_TYPE		= D3D12_COMMAND_LIST_TYPE_DIRECT;
+_CONSTEVAL UINT							BACK_BUFFER_COUNT		= 2;
+_CONSTEVAL D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL		= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
+_CONSTEVAL DXGI_FORMAT					BACK_BUFFER_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+_CONSTEVAL DXGI_FORMAT					DEPTH_STENCIL_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;		//depth stencil format
 
 using namespace Helpers;
 using namespace Math;
@@ -23,7 +24,7 @@ D3D12App::D3D12App(const UINT windowWidth, const UINT windowHeight, const std::w
 	, windowHeight(windowHeight)
 	, aspectRatio(static_cast<float>(windowWidth) / static_cast<float>(windowHeight))
 	, windowName(windowName)
-	, viewPort(0.f, 0.f, static_cast<float>(windowWidth), static_cast<float>(windowHeight))
+	, viewPort(0.f, 0.f, static_cast<float>(windowWidth), static_cast<float>(windowHeight), 0.0f, 1.0f)
 	, scissorRect(0, 0, static_cast<LONG>(windowWidth), static_cast<LONG>(windowHeight))
 	, bufferCount(BACK_BUFFER_COUNT)
 	, currentFrameIdx(0)
@@ -228,8 +229,8 @@ void D3D12App::Initialize()
 	psoDesc.PS = psShaderByteCode;
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState.DepthEnable = FALSE;
-	psoDesc.DepthStencilState.StencilEnable = FALSE;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); // a default depth stencil state
+	psoDesc.DSVFormat = DEPTH_STENCIL_FORMAT;
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
@@ -246,17 +247,40 @@ void D3D12App::Initialize()
 	// to record yet. The main loop expects it to be closed, so close it now.
 	ThrowIfFailed(commandList->Close());
 
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	ThrowIfFailed(commandAllocator->Reset());
+
+	// However, when ExecuteCommandList() is called on a particular command 
+	// list, that command list can then be reset at any time and must be before 
+	// re-recording.
+	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), pipelineState.Get()));
 
 
 	// Vertex Buffer stuffs
 	// Create the vertex buffer.
 	// Define the geometry for a triangle (in this case we will use it for making a rectangle, 4 vertices).
 	const Vertex triangleVertices[] =
+		//{
+		//	{ { -0.5f,  0.5f, 0.0f, }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+		//	{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		//	{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		//	{ { 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+		//};
+		
 	{
-		{ { -0.5f,  0.5f, 0.0f, }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-		{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ { 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+		// first quad (closer to camera, blue)
+		{ {-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f} },
+		{ {0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f} },
+		{ {-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f} },
+		{ {0.5f,  0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f} },
+
+		// second quad (further from camera, green)
+		{ {-0.75f,  0.75f,  0.7f}, {0.0f, 1.0f, 0.0f, 1.0f} },
+		{ {0.0f,  0.0f, 0.7f}, {0.0f, 1.0f, 0.0f, 1.0f} },
+		{ {-0.75f,  0.0f, 0.7f}, {0.0f, 1.0f, 0.0f, 1.0f} },
+		{ {0.0f,  0.75f,  0.7f}, {0.0f, 1.0f, 0.0f, 1.0f} }
 	};
 
 	constexpr UINT triangleBufferSize			= sizeof(triangleVertices);
@@ -287,10 +311,18 @@ void D3D12App::Initialize()
 	vertexBufferView.StrideInBytes			= sizeof(Vertex);
 	vertexBufferView.SizeInBytes			= triangleBufferSize;
 
+	// Transition the vertex buffer to vertex buffer state
+	//const auto vertexBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	//commandList->ResourceBarrier(1, &vertexBufferBarrier);
+
+
 	// Index buffer initialization and creation
 	DWORD indicesList[] = {
+		//0, 1, 2, // first triangle
+		//0, 3, 1 // second triangle
+		// first quad (blue)
 		0, 1, 2, // first triangle
-		0, 3, 1 // second triangle
+		0, 3, 1, // second triangle
 	};
 
 	constexpr UINT indicesListSize			= sizeof(indicesList);
@@ -317,6 +349,62 @@ void D3D12App::Initialize()
 	indexBufferView.Format			= DXGI_FORMAT_R32_UINT;
 	indexBufferView.SizeInBytes		= indicesListSize;
 
+	// Transition the index buffer to index/vertex buffer state
+	//const auto indexBufferBarrier = CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	//commandList->ResourceBarrier(1, &indexBufferBarrier);
+
+
+
+	// Depth buffer
+	// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors	= 1;
+	dsvHeapDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&depthStencilHeap)));
+
+	// Depth Stencil view desc
+	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+	depthStencilViewDesc.Format			= DEPTH_STENCIL_FORMAT;
+	depthStencilViewDesc.ViewDimension	= D3D12_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.Flags			= D3D12_DSV_FLAG_NONE;
+
+	// Depth clear value
+	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+	depthOptimizedClearValue.Format					= DEPTH_STENCIL_FORMAT;
+	depthOptimizedClearValue.DepthStencil.Depth		= 1.0f;
+	depthOptimizedClearValue.DepthStencil.Stencil	= 0;
+
+	// Create Depth Stencil 2D Texture as commited resource
+	const auto defaultHeapDesc		= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	const auto depthStencilDesc		= CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_STENCIL_FORMAT,
+																	windowWidth, 
+																	windowHeight, 
+																	1, 
+																	0, 
+																	1, 
+																	0, 
+																	D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+	ThrowIfFailed(device->CreateCommittedResource(
+		&defaultHeapDesc,
+		D3D12_HEAP_FLAG_NONE,
+		&depthStencilDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&depthStencilBuffer)
+	));
+	depthStencilHeap->SetName(L"Depth/Stencil Resource Heap");
+
+	device->CreateDepthStencilView(depthStencilBuffer.Get(), &depthStencilViewDesc, depthStencilHeap->GetCPUDescriptorHandleForHeapStart());
+
+
+	// Close Command list before executing
+	ThrowIfFailed(commandList->Close());
+
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
 	WaitForPreviousFrame();
 }
 
@@ -342,17 +430,24 @@ void D3D12App::Render()
 	commandList->ResourceBarrier(1, &barrierPresentToRTV);
 
 	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentFrameIdx, rtvDescriptorSize);
-	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE depthStencilHandle(depthStencilHeap->GetCPUDescriptorHandleForHeapStart());
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &depthStencilHandle);
 
 	// Record commands.
 	constexpr float clearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
+	// clear the depth/stencil buffer
+	commandList->ClearDepthStencilView(depthStencilHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
 	// draw rectangle using one triangle with indices
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
 	commandList->IASetIndexBuffer(&indexBufferView);
-	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+	//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+
+	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw first quad
+	commandList->DrawIndexedInstanced(6, 1, 0, 4, 0); // draw second quad
 	////commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
