@@ -5,6 +5,7 @@
 #include <DirectXMath.h>
 #include <dxcapi.h>
 
+#include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
 
 
@@ -15,6 +16,7 @@ _CONSTEVAL D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL = D3D_FEATURE_LEVEL::D3D_FEAT
 _CONSTEVAL DXGI_FORMAT					BACK_BUFFER_FORMAT = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 
 using namespace Helpers;
+using namespace Math;
 
 D3D12App::D3D12App(const UINT windowWidth, const UINT windowHeight, const std::wstring windowName)
 	: windowWidth(windowWidth)
@@ -151,6 +153,7 @@ void D3D12App::Initialize()
 
 	// Initialize Fence
 	ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+	fenceValue = 1;
 
 	// Create an event handle to use for frame synchronization.
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -205,6 +208,7 @@ void D3D12App::Initialize()
 		L"ps_6_0");
 
 
+
 	// Initialize PSO
 	// Define the vertex input layout.
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -213,10 +217,9 @@ void D3D12App::Initialize()
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
+	// Describe and create the graphics pipeline state object (PSO).
 	CD3DX12_SHADER_BYTECODE vsShaderByteCode(compiledVSBlob.Get());
 	CD3DX12_SHADER_BYTECODE psShaderByteCode(compiledPSBlob.Get());
-
-	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
 	psoDesc.pRootSignature = rootSignature.Get();
@@ -242,17 +245,213 @@ void D3D12App::Initialize()
 	// to record yet. The main loop expects it to be closed, so close it now.
 	ThrowIfFailed(commandList->Close());
 
+
+
 	// Vertex Buffer stuffs
+	// Create the vertex buffer.
+	// Define the geometry for a triangle (in this case we will use it for making a rectangle, 4 vertices).
+	const Vertex triangleVertices[] =
+	{
+		{ { -0.5f,  0.5f, 0.0f, }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+		{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		{ { 0.5f,  0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+	};
+
+	constexpr UINT triangleBufferSize			= sizeof(triangleVertices);
+
+	// Note: using upload heaps to transfer static data like vert buffers is not 
+	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
+	// over. Please read up on Default Heap usage. An upload heap is used here for 
+	// code simplicity and because there are very few verts to actually transfer.
+	const auto uploadHeapDesc				= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	const auto vertexBufferDesc				= CD3DX12_RESOURCE_DESC::Buffer(triangleBufferSize);
+	ThrowIfFailed(device->CreateCommittedResource(
+		&uploadHeapDesc,
+		D3D12_HEAP_FLAG_NONE,
+		&vertexBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&vertexBuffer)));
+
+	// Copy the triangle data to the vertex buffer.
+	UINT8* pVertexDataBegin;
+	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	memcpy(pVertexDataBegin, triangleVertices, triangleBufferSize);
+	vertexBuffer->Unmap(0, nullptr);
+
+	// Initialize the vertex buffer view.
+	vertexBufferView.BufferLocation			= vertexBuffer->GetGPUVirtualAddress();
+	vertexBufferView.StrideInBytes			= sizeof(Vertex);
+	vertexBufferView.SizeInBytes			= triangleBufferSize;
+
+	// Index buffer initialization and creation
+	DWORD indicesList[] = {
+		0, 1, 2, // first triangle
+		0, 3, 1 // second triangle
+	};
+
+	constexpr UINT indicesListSize			= sizeof(indicesList);
+	const auto indexBufferDesc				= CD3DX12_RESOURCE_DESC::Buffer(indicesListSize);
+
+	// create upload heap to upload index buffer
+	ThrowIfFailed(device->CreateCommittedResource(
+		&uploadHeapDesc,
+		D3D12_HEAP_FLAG_NONE,
+		&indexBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&indexBuffer)));
+
+	// Copy the index data to the index buffer.
+	UINT8* pVertexDataBegin1;
+	CD3DX12_RANGE readRange1(0, 0);        // We do not intend to read from this resource on the CPU.
+	ThrowIfFailed(indexBuffer->Map(0, &readRange1, reinterpret_cast<void**>(&pVertexDataBegin1)));
+	memcpy(pVertexDataBegin1, indicesList, indicesListSize);
+	indexBuffer->Unmap(0, nullptr);
+
+	// Initialize the index buffer view.
+	indexBufferView.BufferLocation	= indexBuffer->GetGPUVirtualAddress();
+	indexBufferView.Format			= DXGI_FORMAT_R32_UINT;
+	indexBufferView.SizeInBytes		= indicesListSize;
+
+	WaitForPreviousFrame();
 }
 
 void D3D12App::Render()
 {
+	// Command list allocators can only be reset when the associated 
+	// command lists have finished execution on the GPU; apps should use 
+	// fences to determine GPU execution progress.
+	ThrowIfFailed(commandAllocator->Reset());
 
+	// However, when ExecuteCommandList() is called on a particular command 
+	// list, that command list can then be reset at any time and must be before 
+	// re-recording.
+	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), pipelineState.Get()));
+
+	// Set necessary states.
+	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->RSSetViewports(1, &viewPort);
+	commandList->RSSetScissorRects(1, &scissorRect);
+
+	// Indicate that the back buffer will be used as a render target.
+	const CD3DX12_RESOURCE_BARRIER barrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	commandList->ResourceBarrier(1, &barrierPresentToRTV);
+
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentFrameIdx, rtvDescriptorSize);
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	// Record commands.
+	constexpr float clearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// draw rectangle using one triangle with indices
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	commandList->IASetIndexBuffer(&indexBufferView);
+	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+	////commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	//commandList->DrawInstanced(4, 1, 0, 0);
+
+
+
+
+
+	// Indicate that the back buffer will now be used to present.
+	const CD3DX12_RESOURCE_BARRIER barrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	commandList->ResourceBarrier(1, &barrierRTVtoPresent);
+
+	// Close Command list before executing
+	ThrowIfFailed(commandList->Close());
+
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Present the frame.
+	ThrowIfFailed(swapChain->Present(1, 0));
+
+	WaitForPreviousFrame();
 }
 
 void D3D12App::Update()
 {
+	//// Command list allocators can only be reset when the associated 
+	//// command lists have finished execution on the GPU; apps should use 
+	//// fences to determine GPU execution progress.
+	//ThrowIfFailed(commandAllocator->Reset());
 
+	//// However, when ExecuteCommandList() is called on a particular command 
+	//// list, that command list can then be reset at any time and must be before 
+	//// re-recording.
+	//ThrowIfFailed(commandList->Reset(commandAllocator.Get(), pipelineState.Get()));
+
+	//// Update vertices
+	//// Vertex Buffer stuffs
+	//// Create the vertex buffer.
+	//// Define the geometry for a triangle.
+	//if (currentFrameIdx % 2)
+	//{
+	//	const Vertex triangleVertices[] =
+	//	{
+	//		{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+	//		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+	//		{ { 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+	//		{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+	//	};
+
+	//	constexpr UINT vertexBufferSize = sizeof(triangleVertices);
+
+	//	// Copy the triangle data to the vertex buffer.
+	//	UINT8* pVertexDataBegin;
+	//	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	//	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	//	memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+	//	vertexBuffer->Unmap(0, nullptr);
+
+	//	// Initialize the vertex buffer view.
+	//	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+	//	vertexBufferView.StrideInBytes = sizeof(Vertex);
+	//	vertexBufferView.SizeInBytes = vertexBufferSize;
+	//}
+	//else
+	//{
+	//	const Vertex triangleVertices[] =
+	//	{
+	//		{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+	//		{ { 0.5f, 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+	//		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+	//		{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+	//	};
+
+
+	//	constexpr UINT vertexBufferSize = sizeof(triangleVertices);
+
+	//	// Copy the triangle data to the vertex buffer.
+	//	UINT8* pVertexDataBegin;
+	//	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	//	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	//	memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+	//	vertexBuffer->Unmap(0, nullptr);
+
+	//	// Initialize the vertex buffer view.
+	//	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+	//	vertexBufferView.StrideInBytes = sizeof(Vertex);
+	//	vertexBufferView.SizeInBytes = vertexBufferSize;
+	//}
+
+	//// Close Command list before executing
+	//ThrowIfFailed(commandList->Close());
+
+	//// Execute the command list.
+	//ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
+	//commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	//WaitForPreviousFrame();
 }
 
 void D3D12App::Destroy()
@@ -276,5 +475,19 @@ void D3D12App::Destroy()
 
 void D3D12App::WaitForPreviousFrame()
 {
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
 
+	// Signal and increment the fence value.
+	const UINT64 fenceCurrentValue = fenceValue;
+	ThrowIfFailed(commandQueue->Signal(fence.Get(), fenceCurrentValue));
+	fenceValue++;
+
+	// Wait until the previous frame is finished.
+	if (fence->GetCompletedValue() < fenceCurrentValue)
+	{
+		ThrowIfFailed(fence->SetEventOnCompletion(fenceCurrentValue, fenceEvent));
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
+	currentFrameIdx = swapChain->GetCurrentBackBufferIndex();
 }

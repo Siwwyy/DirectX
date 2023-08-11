@@ -22,6 +22,8 @@ PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
     result.position = position;
     result.color = color;
 
+    position += float4(0.01, 0.01, 0.01, 0.01);
+
     return result;
 }
 
@@ -29,9 +31,12 @@ PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    #ifdef PIXEL_SHADER_ENABLED
-		return input.color;
-    #endif
-    return float4(0,0,0,0); //RGBA
+  //  #ifdef PIXEL_SHADER_ENABLED
+		//return input.color;
+  //  #endif
+  //  return float4(0,0,0,0); //RGBA
+
+    return input.color;
+
 }
 

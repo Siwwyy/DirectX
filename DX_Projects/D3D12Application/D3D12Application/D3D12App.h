@@ -55,10 +55,11 @@ private:
 	ComPtr<ID3D12PipelineState>							pipelineState;
 	ComPtr<ID3D12RootSignature>							rootSignature;
 
-
-	// D3D12 Vertex data
+	// D3D12 Vertex and Index data
 	ComPtr<ID3D12Resource>								vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
+	ComPtr<ID3D12Resource>								indexBuffer;
+	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
 
 	// D3D12 SwapChain
 	ComPtr<IDXGISwapChain3>								swapChain;
