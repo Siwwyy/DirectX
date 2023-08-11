@@ -187,22 +187,23 @@ void D3D12App::Initialize()
 	const DxcDefine shaderDefines[] =
 	{
 		L"PIXEL_SHADER_ENABLED", L"1",
-		NULL, NULL
 	};
 
-	constexpr LPCWSTR shaderPath = L"E://!!PROJECTS_VS//DirectX//DX_Projects//D3D12Application//D3D12Application//shaders//vertex_pixel_shader.hlsl";
+	//constexpr LPCWSTR shaderPath = L"E://!!PROJECTS_VS//DirectX//DX_Projects//D3D12Application//D3D12Application//shaders//vertex_pixel_shader.hlsl";
+	constexpr LPCWSTR vertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DX_Projects//D3D12Application//D3D12Application//shaders//vertex_pixel_shader.hlsl";
+	constexpr LPCWSTR pixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DX_Projects//D3D12Application//D3D12Application//shaders//vertex_pixel_shader.hlsl";
 	D3D12ShaderCompiler shaderCompiler;
 
 	// compile Vertex Shader
 	auto compiledVSBlob = shaderCompiler.CompileShader(
-		shaderPath,
-		shaderDefines,
+		vertexShaderPath,
+		nullptr,
 		L"VSMain",
 		L"vs_6_0");
 
 	// Compile Pixel Shader
 	auto compiledPSBlob = shaderCompiler.CompileShader(
-		shaderPath,
+		pixelShaderPath,
 		shaderDefines,
 		L"PSMain",
 		L"ps_6_0");

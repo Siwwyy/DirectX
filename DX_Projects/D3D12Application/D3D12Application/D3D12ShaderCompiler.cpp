@@ -28,7 +28,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 		entryPoint,									// pEntryPoint
 	    targetProfile,								// pTargetProfile, currently it has to be lower-case
 		nullptr, 0,									// pArguments, argCount
-		&shaderDefines[0], shaderDefinesAmount,		// pDefines, defineCount
+		shaderDefines ? &shaderDefines[0] : nullptr, shaderDefines ? shaderDefinesAmount : 0,		// pDefines, defineCount
 	    nullptr,									// pIncludeHandler
 		&result);									// ppResult
 
