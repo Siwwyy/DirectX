@@ -20,7 +20,7 @@ public:
 
 	// Utility functions
 	void WaitForFence();
-	void Flush();
+	void ExecuteCommandLists(DXCommandList* commandLists[]);
 	//void Flush();
 
 private:

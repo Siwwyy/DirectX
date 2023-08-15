@@ -44,3 +44,9 @@ void CommandQueue::WaitForFence()
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
 }
+
+void CommandQueue::ExecuteCommandLists(DXCommandList* commandLists[])
+{
+	constexpr auto countOfCommandLists = sizeof(commandLists) / sizeof(DXCommandList);
+	commandQueue->ExecuteCommandLists(countOfCommandLists, commandLists);
+}
