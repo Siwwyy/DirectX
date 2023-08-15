@@ -3,6 +3,7 @@
 
 #pragma once
 #include <DirectXMath.h>
+#include "D3D12Helpers.h"
 
 namespace Math
 {

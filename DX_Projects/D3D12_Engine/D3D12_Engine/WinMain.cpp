@@ -13,9 +13,9 @@
 #include <DirectXMath.h>
 #include "d3dx12.h"
 
-#include <string>
+
 #include <wrl.h>
-#include <shellapi.h>
+
 
 // Own includes
 #include "D3D12App.h"

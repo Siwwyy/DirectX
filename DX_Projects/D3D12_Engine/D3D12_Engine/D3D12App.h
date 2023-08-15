@@ -36,7 +36,7 @@ public:
 private:
 
 	//Utility functions
-	void WaitForPreviousFrame();
+	//void WaitForPreviousFrame();
 
 	// Window Properties
 	UINT												windowWidth;
@@ -51,48 +51,10 @@ private:
 	// D3D12 Variables
 	ComPtr<IDXGIFactory4>								factory;
 	ComPtr<ID3D12Device>								device;
-	ComPtr<ID3D12CommandQueue>							commandQueue;
-	ComPtr<ID3D12CommandAllocator>						commandAllocator;
-	ComPtr<ID3D12GraphicsCommandList>					commandList;
-	ComPtr<ID3D12PipelineState>							pipelineState;
-	ComPtr<ID3D12RootSignature>							rootSignature;
-
-	// D3D12 Vertex and Index data
-	ComPtr<ID3D12Resource>								vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
-	ComPtr<ID3D12Resource>								indexBuffer;
-	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
-
-	// D3D12 Depth buffer
-	ComPtr<ID3D12Resource>								depthStencilBuffer;
-	ComPtr<ID3D12DescriptorHeap>						depthStencilHeap;
-
-	// D3D12 Constant buffers
-	// this is the structure of our constant buffer.
-	struct ConstantBuffer {
-		DirectX::XMFLOAT4 colorMultiplier;
-	};
-	std::vector<ComPtr<ID3D12Resource>>					constantBuffers{};
-	std::vector<ComPtr<ID3D12DescriptorHeap>>			constantBuffersHeap{};
-	ConstantBuffer cbColorMultiplierData; // this is the constant buffer data we will send to the gpu // (which will be placed in the resource we created above)
-	//std::unique_ptr<UINT8[]> cbColorMultiplierVirtualGPUAddress; // this is a pointer to the virtual memory location we get when we map our constant buffer
-	INT8* cbColorMultiplierVirtualGPUAddress; // this is a pointer to the virtual memory location we get when we map our constant buffer
-
 
 	// D3D12 SwapChain
 	ComPtr<IDXGISwapChain3>								swapChain;
 	UINT												bufferCount;
 	UINT												currentFrameIdx;
-
-	// D3D12 Render Targets stuffs
-	ComPtr<ID3D12DescriptorHeap>						rtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					renderTargets{};
-	UINT												rtvDescriptorSize;
-
-	// D3D12 Fence CPU<->GPU Synchronization point
-	HANDLE												fenceEvent;
-	UINT64												fenceValue;
-	ComPtr<ID3D12Fence>									fence;
-
 
 };

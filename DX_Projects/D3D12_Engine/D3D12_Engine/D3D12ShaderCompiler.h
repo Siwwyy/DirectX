@@ -7,6 +7,7 @@
 class D3D12ShaderCompiler
 {
 public:
+	DISABLE_COPY(D3D12ShaderCompiler)
 
 	D3D12ShaderCompiler();
 	~D3D12ShaderCompiler() = default;
@@ -16,6 +17,12 @@ public:
 		const DxcDefine* shaderDefines,
 		LPCWSTR entryPoint,
 		LPCWSTR targetProfile);	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
+
+	[[deprecated]] ComPtr<ID3DBlob> CompileShaderD3D(
+		LPCWSTR shaderAbsolutePath, 
+		const D3D_SHADER_MACRO* shaderDefines,
+		LPCSTR entryPoint, 
+		LPCSTR targetProfile);
 
 private:
 
