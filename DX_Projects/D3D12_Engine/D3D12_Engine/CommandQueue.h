@@ -1,3 +1,4 @@
+
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
 #pragma once
@@ -13,15 +14,18 @@ public:
 
 	DISABLE_COPY(CommandQueue)
 
-	CommandQueue() = delete;
+	CommandQueue() = default;
 	~CommandQueue() = default;
 
 	CommandQueue(DXDevice* const device, const D3D12_COMMAND_LIST_TYPE commandListType);
 
 	// Utility functions
 	void WaitForFence();
-	void ExecuteCommandLists(DXCommandList* commandLists[]);
-	//void Flush();
+	void ExecuteCommandLists(DXCommandList* commandLists[]) const;
+
+	[[nodiscard]] DXCommandQueue* GetCommandQueue() const noexcept { return commandQueue.Get(); }
+	[[nodiscard]] DXFence* GetFence() const noexcept { return fence.Get(); }
+
 
 private:
 

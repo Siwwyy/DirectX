@@ -19,21 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommandListInterface.cpp" />
+    <ClCompile Include="GraphicsCommandList.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
     <ClCompile Include="D3D12App.cpp" />
     <ClCompile Include="D3D12Helpers.cpp" />
     <ClCompile Include="D3D12Math.cpp" />
     <ClCompile Include="D3D12ShaderCompiler.cpp" />
+    <ClCompile Include="ResourceBarrier.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandListInterface.h" />
+    <ClInclude Include="GraphicsCommandList.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="D3D12App.h" />
     <ClInclude Include="D3D12Helpers.h" />
     <ClInclude Include="D3D12Math.h" />
     <ClInclude Include="D3D12ShaderCompiler.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="ResourceBarrier.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -108,7 +108,8 @@ void D3D12App::InitializeCommandQueue()
 	ThrowIfFailed(device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue)));
 }
 
-void D3D12App::InitializeCommandAllocator()
+void D3D12App::Initialize
+()
 {
 	ThrowIfFailed(device->CreateCommandAllocator(COMMAND_LIST_TYPE, IID_PPV_ARGS(&commandAllocator)));
 	ThrowIfFailed(commandAllocator->Reset());

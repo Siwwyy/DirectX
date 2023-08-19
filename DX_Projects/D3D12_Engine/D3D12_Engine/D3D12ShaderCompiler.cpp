@@ -19,6 +19,8 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 	LPCWSTR entryPoint,
 	LPCWSTR targetProfile)
 {
+	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
+
 	// Create blob from shader file
 	uint32_t codePage = CP_UTF8;
 	ComPtr<IDxcBlobEncoding> sourceBlob;
@@ -32,7 +34,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 		shaderAbsolutePath,							// pSourceName
 		entryPoint,									// pEntryPoint
 	    targetProfile,								// pTargetProfile, currently it has to be lower-case
-		nullptr, 0,									// pArguments, argCount
+		nullptr, 0,						// pArguments, argCount
 		shaderDefines ? &shaderDefines[0] : nullptr, shaderDefines ? shaderDefinesAmount : 0,		// pDefines, defineCount
 	    nullptr,									// pIncludeHandler
 		&result);									// ppResult
@@ -62,10 +64,13 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 }
 
 // Old D3D HLSL Shader compiler
-ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(LPCWSTR shaderAbsolutePath, const D3D_SHADER_MACRO* shaderDefines,
-	LPCSTR entryPoint, LPCSTR targetProfile)
+ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
+	LPCWSTR shaderAbsolutePath, 
+	const D3D_SHADER_MACRO* shaderDefines,
+	LPCSTR entryPoint, 
+	LPCSTR targetProfile)
 {
-	DXASSERT(!shaderAbsolutePath || !entryPoint || !targetProfile, "Shader path, entry point or target profile has been not provided");
+	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
 
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if DEBUG_MODE

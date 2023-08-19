@@ -1,13 +1,11 @@
 #include "CommandQueue.h"
 
-#include <cassert>
-
 using Helpers::ThrowIfFailed;
 
 CommandQueue::CommandQueue(DXDevice* const device, const D3D12_COMMAND_LIST_TYPE commandListType)
 	: fenceValue(0)
 {
-	assert(!device && "Device pointer must be provided");
+	DXASSERT(device, "Device pointer must be provided");
 
 	// Initialize command queue
 	D3D12_COMMAND_QUEUE_DESC commandQueueDesc;
@@ -45,7 +43,7 @@ void CommandQueue::WaitForFence()
 	}
 }
 
-void CommandQueue::ExecuteCommandLists(DXCommandList* commandLists[])
+void CommandQueue::ExecuteCommandLists(DXCommandList* commandLists[]) const
 {
 	constexpr auto countOfCommandLists = sizeof(commandLists) / sizeof(DXCommandList);
 	commandQueue->ExecuteCommandLists(countOfCommandLists, commandLists);
