@@ -12,14 +12,13 @@
 #include "CommandQueue.h"
 #include "d3dx12.h"
 #include "D3D12Helpers.h"
-#include "GraphicsCommandList.h"
+#include "GraphicsCommandList1.h"
 
 class D3D12App
 {
 public:
 	D3D12App() = delete;
 	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
-	//~D3D12App();
 
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 
@@ -27,7 +26,7 @@ public:
 	[[nodiscard]] UINT											GetWindowWidth() const { return windowWidth; }
 	[[nodiscard]] UINT											GetWindowHeight() const { return windowHeight; }
 	[[nodiscard]] float											GetAspectRatio() const { return aspectRatio; }
-	[[nodiscard]] const std::wstring&								GetWindowName() const { return windowName; }
+	[[nodiscard]] const std::wstring&							GetWindowName() const { return windowName; }
 
 	// Functions
 	void Initialize();
@@ -76,6 +75,6 @@ private:
 
 	// Own util class
 	std::unique_ptr<CommandQueue>						commandQueue;
-	std::unique_ptr<GraphicsCommandList>				commandList;
+	std::unique_ptr<GraphicsCommandList1>				commandList;
 
 };

@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandListInterface.cpp" />
-    <ClCompile Include="GraphicsCommandList.cpp" />
+    <ClCompile Include="GraphicsCommandList1.cpp" />
     <ClCompile Include="CommandQueue.cpp" />
     <ClCompile Include="D3D12App.cpp" />
     <ClCompile Include="D3D12Helpers.cpp" />
@@ -32,7 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandListInterface.h" />
-    <ClInclude Include="GraphicsCommandList.h" />
+    <ClInclude Include="GraphicsCommandList1.h" />
     <ClInclude Include="CommandQueue.h" />
     <ClInclude Include="D3D12App.h" />
     <ClInclude Include="D3D12Helpers.h" />

@@ -26,7 +26,6 @@ public:
 	[[nodiscard]] DXCommandQueue* GetCommandQueue() const noexcept { return commandQueue.Get(); }
 	[[nodiscard]] DXFence* GetFence() const noexcept { return fence.Get(); }
 
-
 private:
 
 	ComPtr<DXCommandQueue>			commandQueue;

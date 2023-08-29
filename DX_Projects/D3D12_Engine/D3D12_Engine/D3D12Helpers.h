@@ -143,6 +143,13 @@ namespace Helpers
         }
     }
 
+    // make function for a ComPtr
+    template <typename T, typename... Types, std::enable_if_t<!std::is_array_v<T>, int> = 0>
+    _NODISCARD_SMART_PTR_ALLOC _CONSTEXPR23 ComPtr<T> make_com(Types&&... args)
+	{ 
+        return ComPtr<T>(new T(_STD forward<Types>(args)...));
+    }
+
 }
 
 #endif //D3D12_HELPER_H_INCLUDED

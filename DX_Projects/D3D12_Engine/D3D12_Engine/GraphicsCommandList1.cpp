@@ -1,9 +1,9 @@
-#include "GraphicsCommandList.h"
+#include "GraphicsCommandList1.h"
 
 
 using Helpers::ThrowIfFailed;
 
-GraphicsCommandList::GraphicsCommandList(
+GraphicsCommandList1::GraphicsCommandList1(
 	DXDevice* const device,
 	const D3D12_COMMAND_LIST_TYPE commandListType,
 	_In_opt_ DXPipelineState * const pipelineState,
@@ -28,7 +28,7 @@ GraphicsCommandList::GraphicsCommandList(
 	}
 }
 
-void GraphicsCommandList::ResetCommandList(_In_opt_ DXPipelineState * const pipelineState)
+void GraphicsCommandList1::ResetCommandList(_In_opt_ DXPipelineState * const pipelineState)
 {
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be, before 
@@ -43,7 +43,7 @@ void GraphicsCommandList::ResetCommandList(_In_opt_ DXPipelineState * const pipe
 	ThrowIfFailed(commandList->Reset(GetCommandAllocator(), this->pipelineState.Get()));
 }
 
-void GraphicsCommandList::CloseCommandList() const
+void GraphicsCommandList1::CloseCommandList() const
 {
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.

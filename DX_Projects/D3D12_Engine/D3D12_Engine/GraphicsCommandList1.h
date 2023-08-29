@@ -5,16 +5,16 @@
 
 #include "CommandListInterface.h"
 
-class GraphicsCommandList : public CommandListInterface
+class GraphicsCommandList1 : public CommandListInterface
 {
 public:
 
-	DISABLE_COPY(GraphicsCommandList)
+	DISABLE_COPY(GraphicsCommandList1)
 
-	GraphicsCommandList() = default;
-	virtual ~GraphicsCommandList() = default;
+	GraphicsCommandList1() = default;
+	virtual ~GraphicsCommandList1() override = default;
 
-	GraphicsCommandList(
+	GraphicsCommandList1(
 		DXDevice* const device,
 		const D3D12_COMMAND_LIST_TYPE commandListType,
 		_In_opt_ DXPipelineState * const pipelineState = nullptr,
@@ -28,7 +28,6 @@ public:
 	void CloseCommandList() const;
 
 	// Functor for easier recording and getting pointer to command list
-	//[[nodiscard]] DXGraphicsCommandList1* operator()() const noexcept { return commandList.Get(); }
 	[[nodiscard]] DXGraphicsCommandList1* GetCommandList() const noexcept { return commandList.Get(); }
 
 private:

@@ -204,7 +204,7 @@ void D3D12App::Initialize()
 
 
 	// Initialize and create command lists with pipeline state object
-	commandList = std::make_unique<GraphicsCommandList>(device.Get(), COMMAND_LIST_TYPE);
+	commandList = std::make_unique<GraphicsCommandList1>(device.Get(), COMMAND_LIST_TYPE);
 
 
 
@@ -284,9 +284,7 @@ void D3D12App::Update()
 
 void D3D12App::Destroy()
 {
-	//vertexBuffer.Reset();
-	commandQueue.release();
-	commandList.release();
+
 }
 
 void D3D12App::PopulateCommandLists()

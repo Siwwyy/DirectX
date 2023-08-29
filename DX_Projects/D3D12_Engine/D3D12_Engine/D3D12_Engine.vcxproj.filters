@@ -36,7 +36,7 @@
     <ClCompile Include="CommandQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GraphicsCommandList.cpp">
+    <ClCompile Include="GraphicsCommandList1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CommandListInterface.cpp">
@@ -68,7 +68,7 @@
     <ClInclude Include="CommandQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GraphicsCommandList.h">
+    <ClInclude Include="GraphicsCommandList1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CommandListInterface.h">
