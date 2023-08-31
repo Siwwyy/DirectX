@@ -10,6 +10,7 @@
 
 #include "d3dx12.h"
 #include "D3D12Helpers.h"
+#include "D3D12Utils.h"
 
 
 class D3D12App
@@ -31,6 +32,9 @@ public:
 	void Render();
 	void Update();
 	void Destroy();
+
+	void ArrowUp();
+	void ArrowDown();
 
 private:
 
@@ -78,6 +82,12 @@ private:
 	// D3D12 Vertex data
 	ComPtr<ID3D12Resource>								vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
+
+	// D3D12 Constant buffer data
+	ComPtr<ID3D12DescriptorHeap>						cbvHeap;
+	ComPtr<ID3D12Resource>								constantBuffer;
+	Utils::SceneConstantBuffer							constantBufferData;
+	UINT8*												constantBufferDataGPUAddress;
 
 	// Own util class
 
