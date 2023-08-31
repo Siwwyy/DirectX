@@ -18,6 +18,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CommandListInterface.cpp" />
+    <ClCompile Include="GraphicsCommandList1.cpp" />
+    <ClCompile Include="CommandQueue.cpp" />
+    <ClCompile Include="D3D12App.cpp" />
+    <ClCompile Include="D3D12Helpers.cpp" />
+    <ClCompile Include="D3D12Math.cpp" />
+    <ClCompile Include="D3D12ShaderCompiler.cpp" />
+    <ClCompile Include="ResourceBarrier.cpp" />
+    <ClCompile Include="Win32Proc.cpp" />
+    <ClCompile Include="WinMain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommandListInterface.h" />
+    <ClInclude Include="GraphicsCommandList1.h" />
+    <ClInclude Include="CommandQueue.h" />
+    <ClInclude Include="D3D12App.h" />
+    <ClInclude Include="D3D12Helpers.h" />
+    <ClInclude Include="D3D12Math.h" />
+    <ClInclude Include="D3D12ShaderCompiler.h" />
+    <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="ResourceBarrier.h" />
+    <ClInclude Include="Win32Proc.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -76,11 +100,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;D3DCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -92,13 +117,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;D3DCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -108,11 +134,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;D3DCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
@@ -124,31 +151,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxcompiler.lib;D3DCompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>d3d12.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12App.cpp" />
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12Helpers.cpp" />
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12Math.cpp" />
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12ShaderCompiler.cpp" />
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\Win32Proc.cpp" />
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\WinMain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12App.h" />
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12Helpers.h" />
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12Math.h" />
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12ShaderCompiler.h" />
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\Win32Proc.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

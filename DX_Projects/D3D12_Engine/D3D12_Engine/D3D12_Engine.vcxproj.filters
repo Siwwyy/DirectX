@@ -15,39 +15,66 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12App.cpp">
+    <ClCompile Include="D3D12App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12Helpers.cpp">
+    <ClCompile Include="D3D12Helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12Math.cpp">
+    <ClCompile Include="D3D12Math.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\D3D12ShaderCompiler.cpp">
+    <ClCompile Include="D3D12ShaderCompiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\Win32Proc.cpp">
+    <ClCompile Include="Win32Proc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\D3D12Application\D3D12Application\WinMain.cpp">
+    <ClCompile Include="WinMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsCommandList1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandListInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceBarrier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12App.h">
+    <ClInclude Include="D3D12App.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12Helpers.h">
+    <ClInclude Include="D3D12Helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12Math.h">
+    <ClInclude Include="D3D12Math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\D3D12ShaderCompiler.h">
+    <ClInclude Include="D3D12ShaderCompiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\D3D12Application\D3D12Application\Win32Proc.h">
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32Proc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsCommandList1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandListInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceBarrier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

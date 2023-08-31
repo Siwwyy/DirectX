@@ -4,29 +4,7 @@
 #include "D3D12Helpers.h"
 
 #include <dxgi1_6.h>
-#include <stdexcept>
 
-constexpr UINT Helpers::CalculateConstantBufferByteSize(UINT byteSize) noexcept
-{
-	// Constant buffer size is required to be aligned.
-	return (byteSize + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
-}
-
-void Helpers::ThrowIfFailed(HRESULT hr)
-{
-    auto HrToString = [&]
-    {
-        char s_str[64] = {};
-        sprintf_s(s_str, "HRESULT of 0x%08X", static_cast<UINT>(hr));
-        return std::string{ s_str };
-    };
-
-    if (FAILED(hr))
-    {
-        //no need to pass argument to lambda
-        throw std::runtime_error(HrToString());
-    }
-}
 
 ComPtr<IDXGIAdapter1> Helpers::GetAdapter(ComPtr<IDXGIFactory1> pFactory, D3D_FEATURE_LEVEL deviceFeatureLevel, bool useWarpAdapter,
 	bool requestHighPerformanceAdapter)
