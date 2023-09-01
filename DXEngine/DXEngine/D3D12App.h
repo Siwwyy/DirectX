@@ -87,6 +87,11 @@ private:
 	ComPtr<ID3D12Resource>								indexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
 
+	// D3D12 Depth Stencil
+	ComPtr<ID3D12DescriptorHeap>						dsvHeap;
+	ComPtr<ID3D12Resource>								depthStencil;
+	UINT												dsvIncrementDescriptorSize;
+
 	// D3D12 Constant buffer data
 	ComPtr<ID3D12DescriptorHeap>						cbvHeap;
 	ComPtr<ID3D12Resource>								constantBuffer;

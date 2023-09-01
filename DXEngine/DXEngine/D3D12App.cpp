@@ -244,9 +244,10 @@ void D3D12App::Initialize()
 		psoDesc.PS								= CD3DX12_SHADER_BYTECODE(pixelShaderBlob.Get());
 		psoDesc.RasterizerState					= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		psoDesc.BlendState						= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		psoDesc.DepthStencilState.DepthEnable	= FALSE;
-		psoDesc.DepthStencilState.StencilEnable = FALSE;
-		//psoDesc.DepthStencilState				= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		//psoDesc.DepthStencilState.DepthEnable	= FALSE;
+		//psoDesc.DepthStencilState.StencilEnable = FALSE;
+		psoDesc.DepthStencilState				= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		psoDesc.DSVFormat						= DEPTH_STENCIL_FORMAT;
 		psoDesc.SampleMask						= UINT_MAX;
 		psoDesc.PrimitiveTopologyType			= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		psoDesc.NumRenderTargets				= 1;
@@ -279,11 +280,11 @@ void D3D12App::Initialize()
 			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
 			{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
 
-			//// Second Quad
-			//{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-			//{ { 0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			//{ { -0.75f, -0.75f, 0.7f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-			//{ { 0.75f, -0.75f, 0.7f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+			// Second Quad
+			{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+			{ { 0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { -0.75f, -0.75f, 0.7f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+			{ { 0.75f, -0.75f, 0.7f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
 		};
 
 		constexpr UINT vertexBufferSize = sizeof(triangleVertices);
@@ -321,8 +322,8 @@ void D3D12App::Initialize()
 		const DWORD indicesList[] = 
 		{
 			0, 1, 2, // first triangle
-			//0, 3, 1 // second triangle
-			1, 2, 3 // second triangle (mine)
+			0, 3, 1 // second triangle
+			//1, 2, 3 // second triangle (mine)
 		};
 
 		constexpr UINT indexBufferSize = sizeof(indicesList);
@@ -352,7 +353,39 @@ void D3D12App::Initialize()
 
 	//Depth Stencil
 	{
-		
+		// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
+		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+		dsvHeapDesc.NumDescriptors	= 1;
+		dsvHeapDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap)));
+
+		// create a depth stencil view
+		D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+		depthStencilViewDesc.Format			= DEPTH_STENCIL_FORMAT;
+		depthStencilViewDesc.ViewDimension	= D3D12_DSV_DIMENSION_TEXTURE2D;
+		depthStencilViewDesc.Flags			= D3D12_DSV_FLAG_NONE;
+
+		// clear value for depth stencil
+		D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+		depthOptimizedClearValue.Format						= DEPTH_STENCIL_FORMAT;
+		depthOptimizedClearValue.DepthStencil.Depth			= 1.0f;
+		depthOptimizedClearValue.DepthStencil.Stencil		= 0;
+
+		// Create Depth Stencil Texture 2D
+		const auto defaultHeapDesc		= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		const auto depthStencilDesc		= CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_STENCIL_FORMAT, windowWidth, windowHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+		ThrowIfFailed(device->CreateCommittedResource(
+			&defaultHeapDesc,
+			D3D12_HEAP_FLAG_NONE,
+			&depthStencilDesc,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			&depthOptimizedClearValue,
+			IID_PPV_ARGS(&depthStencil)));
+
+		// Create Depth Stencil View
+		device->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
+
+		dsvIncrementDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	}
 
 	//Create Constant Buffer Data
@@ -366,9 +399,9 @@ void D3D12App::Initialize()
 		cbvHeapDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		ThrowIfFailed(device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&cbvHeap)));
 
-		constexpr UINT constantBufferSize = sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
-		const auto uploadHeapDesc = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		const auto constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize);
+		constexpr UINT constantBufferSize	= sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
+		const auto uploadHeapDesc			= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		const auto constantBufferDesc		= CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize);
 		ThrowIfFailed(device->CreateCommittedResource(
 			&uploadHeapDesc,
 			D3D12_HEAP_FLAG_NONE,
@@ -510,11 +543,14 @@ void D3D12App::PopulateCommandLists()
 
 	// Output Merger Set Render Target
 	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentFrameIdx, rtvIncrementDescriptorSize);
-	commandList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
+	// get a handle to the depth/stencil buffer
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvHeap->GetCPUDescriptorHandleForHeapStart());
+	commandList->OMSetRenderTargets(1, &rtvHandle, TRUE, &dsvHandle);
 
-	// Clear RT
+	// Clear RT and Depth Stencil
 	constexpr float clearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 
 
@@ -526,7 +562,8 @@ void D3D12App::PopulateCommandLists()
 	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	//commandList->DrawInstanced(4, 1, 0, 0);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw first quad
+	commandList->DrawIndexedInstanced(6, 1, 0, 4, 0); // draw second quad
 
 
 
