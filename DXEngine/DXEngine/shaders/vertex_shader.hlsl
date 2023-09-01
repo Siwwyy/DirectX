@@ -26,7 +26,7 @@ VSOutput VSMain(VSInput input)
     VSOutput result;
 
     result.position = float4(input.position, 1.0) + positionMultiplier;
-    result.color    = input.color * colorMultiplier;
+    result.color    = input.color;// *colorMultiplier;
 
     return result;
 }

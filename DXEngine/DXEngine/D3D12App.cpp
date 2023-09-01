@@ -246,6 +246,7 @@ void D3D12App::Initialize()
 		psoDesc.BlendState						= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		psoDesc.DepthStencilState.DepthEnable	= FALSE;
 		psoDesc.DepthStencilState.StencilEnable = FALSE;
+		//psoDesc.DepthStencilState				= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		psoDesc.SampleMask						= UINT_MAX;
 		psoDesc.PrimitiveTopologyType			= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		psoDesc.NumRenderTargets				= 1;
@@ -272,10 +273,17 @@ void D3D12App::Initialize()
 		// Define the geometry for a triangle.
 		const Vertex triangleVertices[] =
 		{
+			// First Quad
 			{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
 			{ { 0.5f, 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
 			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+			{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+
+			//// Second Quad
+			//{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { -0.75f, -0.75f, 0.7f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.75f, -0.75f, 0.7f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
 		};
 
 		constexpr UINT vertexBufferSize = sizeof(triangleVertices);
@@ -305,6 +313,20 @@ void D3D12App::Initialize()
 		vertexBufferView.BufferLocation		= vertexBuffer->GetGPUVirtualAddress();
 		vertexBufferView.StrideInBytes		= sizeof(Vertex);
 		vertexBufferView.SizeInBytes		= vertexBufferSize;
+	}
+
+	// Index Buffer
+	{
+		DWORD indicesList[] = 
+		{
+			0, 1, 2, // first triangle
+			0, 3, 1 // second triangle
+		};
+	}
+
+	//Depth Stencil
+	{
+		
 	}
 
 	//Create Constant Buffer Data
@@ -372,37 +394,37 @@ void D3D12App::Update()
 
 	// Position change logic
 
-	constantBufferData.positionMultiplier.x += xIncrement;
+	//constantBufferData.positionMultiplier.x += xIncrement;
 
-	if (constantBufferData.positionMultiplier.x >= 1.0f || constantBufferData.positionMultiplier.x <= -1.0f)
-	{
-		xIncrement = -xIncrement;
-	}
+	//if (constantBufferData.positionMultiplier.x >= 1.0f || constantBufferData.positionMultiplier.x <= -1.0f)
+	//{
+	//	xIncrement = -xIncrement;
+	//}
 
-	// Color multiplier logic
-	static float rIncrement = 0.002f;
-	static float gIncrement = 0.006f;
-	static float bIncrement = 0.009f;
+	//// Color multiplier logic
+	//static float rIncrement = 0.002f;
+	//static float gIncrement = 0.006f;
+	//static float bIncrement = 0.009f;
 
-	constantBufferData.colorMultiplier.x += rIncrement;
-	constantBufferData.colorMultiplier.y += gIncrement;
-	constantBufferData.colorMultiplier.z += bIncrement;
+	//constantBufferData.colorMultiplier.x += rIncrement;
+	//constantBufferData.colorMultiplier.y += gIncrement;
+	//constantBufferData.colorMultiplier.z += bIncrement;
 
-	if (constantBufferData.colorMultiplier.x >= 1.0 || constantBufferData.colorMultiplier.x <= 0.0f)
-	{
-		constantBufferData.colorMultiplier.x = constantBufferData.colorMultiplier.x >= 1.0f ? 1.0f : 0.0f;
-		rIncrement = -rIncrement;
-	}
-	if (constantBufferData.colorMultiplier.y >= 1.0f || constantBufferData.colorMultiplier.y <= 0.0f)
-	{
-		constantBufferData.colorMultiplier.y = constantBufferData.colorMultiplier.y >= 1.0f ? 1.0f : 0.0f;
-		gIncrement = -gIncrement;
-	}
-	if (constantBufferData.colorMultiplier.z >= 1.0f || constantBufferData.colorMultiplier.z <= 0.0f)
-	{
-		constantBufferData.colorMultiplier.z = constantBufferData.colorMultiplier.z >= 1.0f ? 1.0f : 0.0f;
-		bIncrement = -bIncrement;
-	}
+	//if (constantBufferData.colorMultiplier.x >= 1.0 || constantBufferData.colorMultiplier.x <= 0.0f)
+	//{
+	//	constantBufferData.colorMultiplier.x = constantBufferData.colorMultiplier.x >= 1.0f ? 1.0f : 0.0f;
+	//	rIncrement = -rIncrement;
+	//}
+	//if (constantBufferData.colorMultiplier.y >= 1.0f || constantBufferData.colorMultiplier.y <= 0.0f)
+	//{
+	//	constantBufferData.colorMultiplier.y = constantBufferData.colorMultiplier.y >= 1.0f ? 1.0f : 0.0f;
+	//	gIncrement = -gIncrement;
+	//}
+	//if (constantBufferData.colorMultiplier.z >= 1.0f || constantBufferData.colorMultiplier.z <= 0.0f)
+	//{
+	//	constantBufferData.colorMultiplier.z = constantBufferData.colorMultiplier.z >= 1.0f ? 1.0f : 0.0f;
+	//	bIncrement = -bIncrement;
+	//}
 
 
 	memcpy(constantBufferDataGPUAddress, &constantBufferData, sizeof(constantBufferData));
@@ -421,15 +443,15 @@ void D3D12App::Destroy()
 	CloseHandle(fenceEvent);
 }
 
-void D3D12App::ArrowUp()
-{
-	xIncrement += 0.001f;
-}
-
-void D3D12App::ArrowDown()
-{
-	xIncrement -= 0.001f;
-}
+//void D3D12App::ArrowUp()
+//{
+//	xIncrement += 0.001f;
+//}
+//
+//void D3D12App::ArrowDown()
+//{
+//	xIncrement -= 0.001f;
+//}
 
 void D3D12App::PopulateCommandLists()
 {

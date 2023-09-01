@@ -91,14 +91,14 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		case VK_UP:
 		{
 			// Process the UP ARROW key.
-			dx12App->ArrowUp();
+			//dx12App->ArrowUp();
 		}
 		return 0;
 
 		case VK_DOWN:
 		{
 			// Process the UP ARROW key.
-			dx12App->ArrowDown();
+			//dx12App->ArrowDown();
 		}
 		return 0;
 		default: return 0;

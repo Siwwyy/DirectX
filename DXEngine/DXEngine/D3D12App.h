@@ -33,8 +33,8 @@ public:
 	void Update();
 	void Destroy();
 
-	void ArrowUp();
-	void ArrowDown();
+	//void ArrowUp();
+	//void ArrowDown();
 
 private:
 
