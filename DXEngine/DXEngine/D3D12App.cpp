@@ -275,9 +275,9 @@ void D3D12App::Initialize()
 		{
 			// First Quad
 			{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.5f, 0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
 			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+			{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
 
 			//// Second Quad
 			//{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
@@ -317,11 +317,37 @@ void D3D12App::Initialize()
 
 	// Index Buffer
 	{
-		DWORD indicesList[] = 
+		// Indices
+		const DWORD indicesList[] = 
 		{
 			0, 1, 2, // first triangle
-			0, 3, 1 // second triangle
+			//0, 3, 1 // second triangle
+			1, 2, 3 // second triangle (mine)
 		};
+
+		constexpr UINT indexBufferSize = sizeof(indicesList);
+
+		const auto uploadHeapDesc = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		const auto indexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize);
+		ThrowIfFailed(device->CreateCommittedResource(
+			&uploadHeapDesc,
+			D3D12_HEAP_FLAG_NONE,
+			&indexBufferDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&indexBuffer)));
+
+		// Copy the index data to the index buffer.
+		UINT8* pIndexDataBegin;
+		CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+		ThrowIfFailed(indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin)));
+		memcpy(pIndexDataBegin, indicesList, sizeof(indicesList));
+		indexBuffer->Unmap(0, nullptr);
+
+		// Initialize the index buffer view.
+		indexBufferView.BufferLocation	= indexBuffer->GetGPUVirtualAddress();
+		indexBufferView.Format			= DXGI_FORMAT_R32_UINT;
+		indexBufferView.SizeInBytes		= indexBufferSize;
 	}
 
 	//Depth Stencil
@@ -459,6 +485,11 @@ void D3D12App::PopulateCommandLists()
 	ThrowIfFailed(commandAllocator->Reset());
 	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), pipelineState.Get()));
 
+	// Set viewport and scissors
+	commandList->RSSetViewports(1, &viewPort);
+	commandList->RSSetScissorRects(1, &scissorRect);
+
+
 	// Set necessary state.
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	ID3D12DescriptorHeap* ppHeaps[] = { cbvHeap.Get() };
@@ -467,22 +498,41 @@ void D3D12App::PopulateCommandLists()
 	commandList->SetGraphicsRootDescriptorTable(0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 
+
+
+	// Record commands.
+
+	// Render Target part
+
 	// Indicate that the back buffer will be used as a render target.
 	const CD3DX12_RESOURCE_BARRIER barrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->ResourceBarrier(1, &barrierPresentToRTV);
 
+	// Output Merger Set Render Target
 	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), currentFrameIdx, rtvIncrementDescriptorSize);
 	commandList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
 
-	// Record commands.
+	// Clear RT
 	constexpr float clearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	commandList->RSSetViewports(1, &viewPort);
-	commandList->RSSetScissorRects(1, &scissorRect);
-	////commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+
+
+
+
+	// Draw something
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-	commandList->DrawInstanced(4, 1, 0, 0);
+	commandList->IASetIndexBuffer(&indexBufferView);
+	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	//commandList->DrawInstanced(4, 1, 0, 0);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+
+
+
+
+
 
 	// Indicate that the back buffer will be used as a render target.
 	const CD3DX12_RESOURCE_BARRIER barrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
