@@ -25,7 +25,7 @@ namespace Utils
 	using Helpers::CommandListDesc;
 
 	// Creates a Command List. Optionally with Command Allocator and Pipeline State
-	[[nodiscard]] DXGraphicsCommandList *			CreateGraphicsCommandList(DXDevice * const device, CommandListDesc commandListDesc, DXCommandAllocator * commandAllocator, DXPipelineState * pipelineState); //TODO add command allocator and pipeline state pointers
+	[[nodiscard]] DXGraphicsCommandList *			CreateGraphicsCommandList(DXDevice * const device, CommandListDesc commandListDesc, DXCommandAllocator * commandAllocator, DXPipelineState * pipelineState);
 
 	// Creates a GraphicsCommandList1 in closed state, using Device4 inside
 	[[nodiscard]] DXGraphicsCommandList1 *			CreateGraphicsCommandList1(DXDevice * const device, CommandListDesc commandListDesc);

@@ -74,6 +74,7 @@
 #define DXGraphicsCommandList6          ID3D12GraphicsCommandList6
 #define DXCommandAllocator              ID3D12CommandAllocator
 #define DXPipelineState                 ID3D12PipelineState
+#define DXDescriptorHeap                ID3D12DescriptorHeap
 
 #define DXDebugDevice                   ID3D12DebugDevice
 #define DXDebugCommandQueue             ID3D12DebugCommandQueue
@@ -92,7 +93,6 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 
 
-
 namespace Helpers
 {
     /***************************
@@ -100,9 +100,9 @@ namespace Helpers
 	 ***************************/
     struct CommandListDesc
     {
-        UINT                        nodeMask;
-        D3D12_COMMAND_LIST_TYPE     Type;
-        D3D12_COMMAND_LIST_FLAGS    Flags;
+        UINT                        nodeMask;       //GPU Id
+        D3D12_COMMAND_LIST_TYPE     Type;           //Command List type
+        D3D12_COMMAND_LIST_FLAGS    Flags;          //Additional flags for Command List
     };
 
     /***************************

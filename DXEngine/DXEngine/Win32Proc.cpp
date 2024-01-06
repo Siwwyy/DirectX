@@ -1,20 +1,18 @@
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
 #include "Win32Proc.h"
-#include "D3D12App.h"
 
 HWND Win32Proc::hwnd = nullptr;
 
-
-int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, D3D12App * dx12App)
+int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 {
 	// Parse Command line arguments
 	//TODO Parsing command line arguments
 
 	//Constants
 	const wchar_t*      windowTitle = dx12App->GetWindowName().c_str();
-	const LONG          MaxWidth = dx12App->GetWindowWidth();
-	const LONG          MaxHeight = dx12App->GetWindowHeight();
+	const LONG          MaxWidth	= dx12App->GetWindowWidth();
+	const LONG          MaxHeight	= dx12App->GetWindowHeight();
 
 	// Initialization of window class
 	WNDCLASSEX windowClass{};
@@ -70,7 +68,7 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, D3D12App * dx12App)
 
 LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	D3D12App* dx12App = reinterpret_cast<D3D12App*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	CurrentApp* dx12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
 	switch (message)
 	{
@@ -91,14 +89,14 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		case VK_UP:
 		{
 			// Process the UP ARROW key.
-			//dx12App->ArrowUp();
+			dx12App->ArrowUp();
 		}
 		return 0;
 
 		case VK_DOWN:
 		{
 			// Process the UP ARROW key.
-			//dx12App->ArrowDown();
+			dx12App->ArrowDown();
 		}
 		return 0;
 		default: return 0;

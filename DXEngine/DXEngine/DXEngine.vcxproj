@@ -144,6 +144,7 @@
     <ClCompile Include="D3D12Math.cpp" />
     <ClCompile Include="D3D12ShaderCompiler.cpp" />
     <ClCompile Include="D3D12Utils.cpp" />
+    <ClCompile Include="DXApp3D.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -153,6 +154,7 @@
     <ClInclude Include="D3D12Math.h" />
     <ClInclude Include="D3D12ShaderCompiler.h" />
     <ClInclude Include="D3D12Utils.h" />
+    <ClInclude Include="DXApp3D.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

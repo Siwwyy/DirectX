@@ -215,7 +215,7 @@ void D3D12App::Initialize()
 		// Shaders Macro
 		constexpr D3D_SHADER_MACRO shaderDefines[] =
 		{
-			"PIXEL_SHADER_ENABLED", "1",
+			"PIXEL_SHADER_ENABLED", "0",
 			NULL, NULL
 		};
 
@@ -281,10 +281,10 @@ void D3D12App::Initialize()
 			{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
 
 			// Second Quad
-			{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			{ { -0.75f, -0.75f, 0.7f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.75f, -0.75f, 0.7f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+			{ { -0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { 0.25f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { -0.75f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			{ { 0.25f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } }
 		};
 
 		constexpr UINT vertexBufferSize = sizeof(triangleVertices);
@@ -424,6 +424,12 @@ void D3D12App::Initialize()
 		ThrowIfFailed(constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&constantBufferDataGPUAddress)));
 		memcpy(constantBufferDataGPUAddress, &constantBufferData, sizeof(constantBufferData));
 	}
+
+
+	// 
+	{
+		
+	}
 }
 
 void D3D12App::Render()
@@ -453,7 +459,7 @@ void D3D12App::Update()
 
 	// Position change logic
 
-	//constantBufferData.positionMultiplier.x += xIncrement;
+	constantBufferData.positionMultiplier.x += xIncrement;
 
 	//if (constantBufferData.positionMultiplier.x >= 1.0f || constantBufferData.positionMultiplier.x <= -1.0f)
 	//{
@@ -502,15 +508,15 @@ void D3D12App::Destroy()
 	CloseHandle(fenceEvent);
 }
 
-//void D3D12App::ArrowUp()
-//{
-//	xIncrement += 0.001f;
-//}
-//
-//void D3D12App::ArrowDown()
-//{
-//	xIncrement -= 0.001f;
-//}
+void D3D12App::ArrowUp()
+{
+	xIncrement += 0.001f;
+}
+
+void D3D12App::ArrowDown()
+{
+	xIncrement -= 0.001f;
+}
 
 void D3D12App::PopulateCommandLists()
 {
