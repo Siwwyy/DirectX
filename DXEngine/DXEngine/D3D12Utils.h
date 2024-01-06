@@ -11,13 +11,6 @@ namespace Utils
 	 **** CLASSES & STRUCTS ****
 	 ***************************/
 
-	struct alignas(256) SceneConstantBuffer
-	{
-		DirectX::XMFLOAT4 positionMultiplier;
-		DirectX::XMFLOAT4 colorMultiplier;
-	};
-	static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
-
 	/***************************
 	 ******** FUNCTIONS ********
 	 ***************************/

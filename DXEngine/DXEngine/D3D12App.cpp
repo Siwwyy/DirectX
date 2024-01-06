@@ -17,6 +17,13 @@ _CONSTEVAL D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL		= D3D_FEATURE_LEVEL::D3D_FEA
 _CONSTEVAL DXGI_FORMAT					BACK_BUFFER_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 _CONSTEVAL DXGI_FORMAT					DEPTH_STENCIL_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;		//depth stencil format
 
+struct alignas(256) SceneConstantBuffer
+{
+	DirectX::XMFLOAT4 positionMultiplier;
+	DirectX::XMFLOAT4 colorMultiplier;
+};
+static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
+
 using namespace Helpers;
 using namespace Math;
 using namespace Utils;

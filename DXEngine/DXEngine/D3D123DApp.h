@@ -1,5 +1,5 @@
 
-//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+//Copyright, Damian Andrysiak 2024, All Rights Reserved.
 
 #pragma once
 
@@ -12,15 +12,20 @@
 #include "D3D12Helpers.h"
 #include "D3D12Utils.h"
 
+//Forward Declarations
 struct alignas(256) SceneConstantBuffer;
 
-class D3D12App
+//Usings
+using DirectX::XMFLOAT4X4;
+using DirectX::XMFLOAT4;
+
+class D3D123DApp
 {
 public:
-	D3D12App() = delete;
-	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
+	D3D123DApp() = delete;
+	~D3D123DApp() = default; //just do nothing, app takes care of deallocation with smart pointers
 
-	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
+	D3D123DApp(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 
 	// Getters
 	[[nodiscard]] UINT											GetWindowWidth() const { return windowWidth; }
@@ -34,11 +39,7 @@ public:
 	void Update();
 	void Destroy();
 
-	void ArrowUp();
-	void ArrowDown();
-
 private:
-
 
 	//Utility functions
 	void PopulateCommandLists();
@@ -73,7 +74,7 @@ private:
 
 	// D3D12 Frame Buffer Render Target
 	ComPtr<ID3D12DescriptorHeap>						rtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					renderTargets{};
+	std::vector<ComPtr<DXResource>>						renderTargets{};
 	UINT												rtvIncrementDescriptorSize;
 
 	// Pipeline state and root signature
@@ -81,24 +82,38 @@ private:
 	ComPtr<ID3D12RootSignature>							rootSignature;
 
 	// D3D12 Vertex data
-	ComPtr<ID3D12Resource>								vertexBuffer;
+	ComPtr<DXResource>									vertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
 
 	// D3D12 Index buffer data
-	ComPtr<ID3D12Resource>								indexBuffer;
+	ComPtr<DXResource>									indexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
 
 	// D3D12 Depth Stencil
 	ComPtr<ID3D12DescriptorHeap>						dsvHeap;
-	ComPtr<ID3D12Resource>								depthStencil;
+	ComPtr<DXResource>									depthStencil;
 	UINT												dsvIncrementDescriptorSize;
 
-	// D3D12 Constant buffer data
-	ComPtr<ID3D12DescriptorHeap>						cbvHeap;
-	ComPtr<ID3D12Resource>								constantBuffer;
-	SceneConstantBuffer									constantBufferData;
-	UINT8*												constantBufferDataGPUAddress;
-
 	// Own util class
+	UINT												constantBufferPerObjectAlignedSize = (sizeof(SceneConstantBuffer) + 255) & ~255;
+	SceneConstantBuffer									cbPerObject; // this is the constant buffer data we will send to the gpu 
+	std::vector<ComPtr<DXResource>>						cbUploadHeaps; // this is the memory on the gpu where constant buffers for each frame will be placed
+	std::vector<UINT8*>									cbvGPUAddress; // this is a pointer to each of the constant buffer resource heaps
 
+	XMFLOAT4X4											cameraProjMat; // this will store our projection matrix
+	XMFLOAT4X4											cameraViewMat; // this will store our view matrix
+
+	XMFLOAT4											cameraPosition; // this is our cameras position vector
+	XMFLOAT4											cameraTarget; // a vector describing the point in space our camera is looking at
+	XMFLOAT4											cameraUp; // the worlds up vector
+
+	XMFLOAT4X4											cube1WorldMat; // our first cubes world matrix (transformation matrix)
+	XMFLOAT4X4											cube1RotMat; // this will keep track of our rotation for the first cube
+	XMFLOAT4											cube1Position; // our first cubes position in space
+
+	XMFLOAT4X4											cube2WorldMat; // our first cubes world matrix (transformation matrix)
+	XMFLOAT4X4											cube2RotMat; // this will keep track of our rotation for the second cube
+	XMFLOAT4											cube2PositionOffset; // our second cube will rotate around the first cube, so this is the position offset from the first cube
+
+	UINT												numCubeIndices; // the number of indices to draw the cube
 };
