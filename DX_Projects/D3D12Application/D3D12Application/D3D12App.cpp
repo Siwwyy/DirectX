@@ -487,12 +487,12 @@ void D3D12App::Initialize()
 	memcpy(&cbColorMultiplierVirtualGPUAddress, &cbColorMultiplierData, sizeof(cbColorMultiplierData));*/
 
 
-	//// Close Command list before executing
-	//ThrowIfFailed(commandList->Close());
+	// Close Command list before executing
+	ThrowIfFailed(commandList->Close());
 
-	//// Execute the command list.
-	//ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
-	//commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	// Execute the command list.
+	ID3D12CommandList* ppCommandLists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	WaitForPreviousFrame();
 }
