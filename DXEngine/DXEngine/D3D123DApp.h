@@ -12,8 +12,12 @@
 #include "D3D12Helpers.h"
 #include "D3D12Utils.h"
 
-//Forward Declarations
-struct alignas(256) SceneConstantBuffer;
+
+struct alignas(256) ConstantBuffer
+{
+	DirectX::XMFLOAT4X4 wvpMat;
+};
+static_assert((sizeof(ConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
 
 //Usings
 using DirectX::XMFLOAT4X4;
@@ -95,8 +99,8 @@ private:
 	UINT												dsvIncrementDescriptorSize;
 
 	// Own util class
-	UINT												constantBufferPerObjectAlignedSize = (sizeof(SceneConstantBuffer) + 255) & ~255;
-	SceneConstantBuffer									cbPerObject; // this is the constant buffer data we will send to the gpu 
+	UINT												constantBufferPerObjectAlignedSize = (sizeof(ConstantBuffer) + 255) & ~255;
+	ConstantBuffer										cbPerObject; // this is the constant buffer data we will send to the gpu 
 	std::vector<ComPtr<DXResource>>						cbUploadHeaps; // this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									cbvGPUAddress; // this is a pointer to each of the constant buffer resource heaps
 

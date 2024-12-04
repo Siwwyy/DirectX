@@ -6,9 +6,11 @@
 
 #include "D3D12App.h"
 #include "DXApp3D.h"
+#include "D3D123DApp.h"
 
 //using CurrentApp = DXApp3D;
-using CurrentApp = D3D12App;
+//using CurrentApp = D3D12App;
+using CurrentApp = D3D123DApp;
 
 class Win32Proc
 {

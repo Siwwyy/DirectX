@@ -13,6 +13,5 @@ namespace Math
 		DirectX::XMFLOAT4 color;
 	};
 
-	struct
 
 }

@@ -30,7 +30,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     LPSTR     lpCmdLine,
     int       nCmdShow)
 {
-    D3D12App dx12App(1280u, 720u, L"MyApp");
+    D3D123DApp dx12App(1280u, 720u, L"MyApp");
+    //D3D12App dx12App(1280u, 720u, L"MyApp");
     //DXApp3D dx12App(1280u, 720u, L"MyApp");
     return Win32Proc::Run(hInstance, nCmdShow, &dx12App);
 }
