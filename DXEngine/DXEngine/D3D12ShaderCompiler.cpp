@@ -24,7 +24,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
 
 	// Create blob from shader file
-	uint32_t codePage = 0;
+	uint32_t codePage = CP_UTF8;
 	ComPtr<IDxcBlobEncoding> sourceBlob;
 	ThrowIfFailed(library->CreateBlobFromFile(shaderAbsolutePath, &codePage, &sourceBlob));
 
