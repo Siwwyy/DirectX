@@ -1,10 +1,7 @@
 #include "D3D12App.h"
+
+
 #include "Win32Proc.h"
-
-#include <D3Dcompiler.h>
-#include <DirectXMath.h>
-#include <dxcapi.h>
-
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
 #include "D3D12Utils.h"
@@ -62,8 +59,6 @@ void D3D12App::Initialize()
 #endif
 
 	ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
-
-
 
 	// Initialize device
 	const ComPtr<IDXGIAdapter1> hardwareAdapter = GetAdapter(factory, D3D12_FEATURE_LEVEL);
@@ -207,17 +202,16 @@ void D3D12App::Initialize()
 		ComPtr<ID3DBlob> vertexShader;
 		ComPtr<ID3DBlob> pixelShader;
 
-#if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-
 		// Shaders Macro
-		constexpr D3D_SHADER_MACRO shaderDefines[] =
+		//constexpr D3D_SHADER_MACRO shaderDefines[] =
+		//{
+		//	"PIXEL_SHADER_ENABLED", "0",
+		//	NULL, NULL
+		//};
+
+		constexpr DxcDefine shaderDefines[] =
 		{
-			"PIXEL_SHADER_ENABLED", "0",
+			L"PIXEL_SHADER_ENABLED", L"0",
 			NULL, NULL
 		};
 
@@ -227,9 +221,8 @@ void D3D12App::Initialize()
 
 
 		D3D12ShaderCompiler shaderCompiler;
-		auto vertexShaderBlob = shaderCompiler.CompileShaderD3D(vertexShaderPath
-		, nullptr, "VSMain", "vs_5_0");
-		auto pixelShaderBlob = shaderCompiler.CompileShaderD3D(pixelShaderPath, shaderDefines, "PSMain", "ps_5_0");
+		auto vertexShaderBlob = shaderCompiler.CompileShader(vertexShaderPath, nullptr, L"VSMain", L"vs_6_0");
+		auto pixelShaderBlob = shaderCompiler.CompileShader(pixelShaderPath, shaderDefines, L"PSMain", L"ps_6_0");
 
 		// Define the vertex input layout.
 		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
@@ -259,8 +252,6 @@ void D3D12App::Initialize()
 	}
 
 
-
-
 	// Initialize and create command list with pipeline state object and command allocator
 
 	//Create the command allocator (as many as frame buffers)
@@ -268,7 +259,6 @@ void D3D12App::Initialize()
 
 	// Create the command list. (it is already in closed state)
 	commandList = Utils::CreateGraphicsCommandList1(device.Get(), CommandListDesc{0,COMMAND_LIST_TYPE,D3D12_COMMAND_LIST_FLAG_NONE});
-
 
 
 	// Create the vertex buffer.

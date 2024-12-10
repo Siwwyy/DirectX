@@ -1,7 +1,9 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#pragma once
+#ifndef D3D12_MATH_H_INCLUDED
+#define D3D12_MATH_H_INCLUDED
+
 #include <DirectXMath.h>
 #include "D3D12Helpers.h"
 
@@ -15,3 +17,5 @@ namespace Math
 
 
 }
+
+#endif // D3D12_MATH_H_INCLUDED

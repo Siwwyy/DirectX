@@ -1,15 +1,16 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#pragma once
+#ifndef D3D12_APP_H_INCLUDED
+#define D3D12_APP_H_INCLUDED
 
 #include <DirectXMath.h>
 #include <wrl/client.h>
 #include <windows.h>
-#include <dxgi1_6.h>
 
 #include "D3D12Helpers.h"
 #include "D3D12Utils.h"
+
 
 struct alignas(256) SceneConstantBuffer
 {
@@ -106,3 +107,5 @@ private:
 	// Own util class
 
 };
+
+#endif // D3D12_APP_H_INCLUDED

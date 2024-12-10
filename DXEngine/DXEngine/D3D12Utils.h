@@ -1,8 +1,6 @@
 #ifndef D3D12_UTILS_H_INCLUDED
 #define D3D12_UTILS_H_INCLUDED
-#pragma once
 
-#include <DirectXMath.h>
 #include "D3D12Helpers.h"
 
 namespace Utils

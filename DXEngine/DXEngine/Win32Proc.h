@@ -1,16 +1,16 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#pragma once
-#include <D3Dcompiler.h>
+#ifndef WIN32_PROC_H_INCLUDED
+#define WIN32_PROC_H_INCLUDED
 
 #include "D3D12App.h"
-#include "DXApp3D.h"
-#include "D3D123DApp.h"
+//#include "DXApp3D.h"
+//#include "D3D123DApp.h"
 
 //using CurrentApp = DXApp3D;
-//using CurrentApp = D3D12App;
-using CurrentApp = D3D123DApp;
+//using CurrentApp = D3D123DApp;
+using CurrentApp = D3D12App;
 
 class Win32Proc
 {
@@ -27,3 +27,5 @@ private:
 
     static HWND hwnd;
 };
+
+#endif // WIN32_PROC_H_INCLUDED

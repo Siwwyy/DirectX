@@ -3,12 +3,12 @@
 
 #ifndef D3D12_HELPERS_H_INCLUDED
 #define D3D12_HELPERS_H_INCLUDED
-#pragma once
 
-#include <dxgi.h>
 #include <stdexcept>
 #include <cassert>
 #include <wrl/client.h>
+#include <dxgi1_6.h>
+
 #include "d3dx12.h"
 
 /***************************
@@ -159,7 +159,7 @@ namespace Helpers
 
     // make function for a ComPtr
     template <typename T, typename... Types, std::enable_if_t<!std::is_array_v<T>, int> = 0>
-    _NODISCARD_SMART_PTR_ALLOC _CONSTEXPR23 ComPtr<T> make_com(Types&&... args)
+    _NODISCARD constexpr ComPtr<T> make_com(Types&&... args)
 	{ 
         return ComPtr<T>(new T(_STD forward<Types>(args)...));
     }

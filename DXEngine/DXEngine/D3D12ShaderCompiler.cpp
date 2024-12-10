@@ -2,15 +2,17 @@
 
 #include <cassert>
 #include <D3Dcompiler.h>
-#include <dxgi1_6.h>
 
 
 using namespace Helpers;
+
+
 
 D3D12ShaderCompiler::D3D12ShaderCompiler()
 {
 	ThrowIfFailed(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&library)));
 	ThrowIfFailed(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler)));
+	ThrowIfFailed(library->CreateIncludeHandler(&dxcIncludeHandler));
 }
 
 ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
@@ -22,7 +24,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
 
 	// Create blob from shader file
-	uint32_t codePage = CP_UTF8;
+	uint32_t codePage = 0;
 	ComPtr<IDxcBlobEncoding> sourceBlob;
 	ThrowIfFailed(library->CreateBlobFromFile(shaderAbsolutePath, &codePage, &sourceBlob));
 
@@ -30,14 +32,15 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 	constexpr auto shaderDefinesAmount = static_cast<UINT32>(sizeof(DxcDefine) / sizeof(shaderDefines[0]));
 	ComPtr<IDxcOperationResult> result;
 	auto hr = compiler->Compile(
-		sourceBlob.Get(),							// pSource
-		shaderAbsolutePath,							// pSourceName
-		entryPoint,									// pEntryPoint
-	    targetProfile,								// pTargetProfile, currently it has to be lower-case
-		nullptr, 0,						// pArguments, argCount
-		shaderDefines ? &shaderDefines[0] : nullptr, shaderDefines ? shaderDefinesAmount : 0,		// pDefines, defineCount
-	    nullptr,									// pIncludeHandler
-		&result);									// ppResult
+		sourceBlob.Get(),																		// pSource
+		shaderAbsolutePath,																		// pSourceName
+		entryPoint,																				// pEntryPoint
+	    targetProfile,																			// pTargetProfile, currently it has to be lower-case
+		nullptr, 0,																				// pArguments, argCount
+		shaderDefines ? &shaderDefines[0] : nullptr, shaderDefines ? shaderDefinesAmount : 0,	// pDefines, defineCount
+	    nullptr,																				// pIncludeHandler
+		&result																					// ppResult
+	);
 
 	if (SUCCEEDED(hr))
 	{
@@ -46,14 +49,11 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 
 	if (FAILED(hr))
 	{
-		if (result)
+		ComPtr<IDxcBlobEncoding> errorsBlob;
+		hr = result->GetErrorBuffer(&errorsBlob);
+		if (SUCCEEDED(hr) && errorsBlob)
 		{
-			ComPtr<IDxcBlobEncoding> errorsBlob;
-			hr = result->GetErrorBuffer(&errorsBlob);
-			if (SUCCEEDED(hr) && errorsBlob)
-			{
-				OutputDebugStringA(static_cast<const char*>(errorsBlob->GetBufferPointer()));
-			}
+			OutputDebugStringA(static_cast<const char*>(errorsBlob->GetBufferPointer()));
 		}
 		// Handle compilation error somehow...
 	}
@@ -72,9 +72,13 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
 {
 	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
 
-	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if DEBUG_MODE
-	flags |= D3DCOMPILE_DEBUG;
+#if defined(_DEBUG)
+	// Enable better shader debugging with the graphics debugging tools.
+	UINT compileFlags = D3DCOMPILE_DEBUG | 
+						D3DCOMPILE_SKIP_OPTIMIZATION | 
+						D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#else
+	UINT compileFlags = 0;
 #endif
 
 	ComPtr<ID3DBlob> code;
@@ -85,7 +89,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entryPoint, 
 		targetProfile,
-		flags, 
+		compileFlags,
 		0, 
 		&code, 
 		&errorBlob);

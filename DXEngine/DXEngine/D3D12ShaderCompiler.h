@@ -1,4 +1,8 @@
-#pragma once
+
+//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+
+#ifndef D3D12_SHADER_COMPILER_H_INCLUDED
+#define D3D12_SHADER_COMPILER_H_INCLUDED
 
 
 #include "D3D12Helpers.h"
@@ -29,5 +33,8 @@ private:
 	// IDxc variables
 	ComPtr<IDxcLibrary>							library;
 	ComPtr<IDxcCompiler>						compiler;
+	ComPtr<IDxcIncludeHandler>					dxcIncludeHandler;
 
 };
+
+#endif // D3D12_SHADER_COMPILER_H_INCLUDED
