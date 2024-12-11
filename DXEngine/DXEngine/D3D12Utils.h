@@ -1,3 +1,6 @@
+
+//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+
 #ifndef D3D12_UTILS_H_INCLUDED
 #define D3D12_UTILS_H_INCLUDED
 

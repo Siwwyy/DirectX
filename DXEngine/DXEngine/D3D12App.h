@@ -12,13 +12,6 @@
 #include "D3D12Utils.h"
 
 
-struct alignas(256) SceneConstantBuffer
-{
-	DirectX::XMFLOAT4 positionMultiplier;
-	DirectX::XMFLOAT4 colorMultiplier;
-};
-static_assert((sizeof(SceneConstantBuffer) % 256) == 0, "Constant Buffer size must be 256-byte aligned");
-
 class D3D12App
 {
 public:
@@ -39,8 +32,6 @@ public:
 	void Update();
 	void Destroy();
 
-	void ArrowUp();
-	void ArrowDown();
 
 private:
 
@@ -99,10 +90,8 @@ private:
 	UINT												dsvIncrementDescriptorSize;
 
 	// D3D12 Constant buffer data
-	ComPtr<ID3D12DescriptorHeap>						cbvHeap;
-	ComPtr<ID3D12Resource>								constantBuffer;
-	SceneConstantBuffer									constantBufferData;
-	UINT8*												constantBufferDataGPUAddress;
+	std::vector<ComPtr<ID3D12Resource>>					constantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
+	std::vector<UINT8>									cbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 
 	// Own util class
 

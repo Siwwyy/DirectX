@@ -15,18 +15,12 @@ struct VSOutput
     float4 color    : COLOR;
 };
 
-cbuffer SceneConstantBuffer : register(b0)
-{
-    float4 positionMultiplier;
-    float4 colorMultiplier;
-};
-
 VSOutput VSMain(VSInput input)
 {
     VSOutput result;
 
-    result.position = float4(input.position, 1.0) + positionMultiplier;
-    result.color    = input.color;// *colorMultiplier;
+    result.position = float4(input.position, 1.0) ;
+    result.color    = input.color;
 
     return result;
 }

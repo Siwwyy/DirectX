@@ -5,6 +5,7 @@
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
 #include "D3D12Utils.h"
+#include <iostream>
 
 
 //CONSTANTS
@@ -36,10 +37,15 @@ D3D12App::D3D12App(const UINT windowWidth, const UINT windowHeight, const std::w
 
 	// Render Targets
 	renderTargets.resize(BACK_BUFFER_COUNT);
+	// Constant buffer heaps
+	constantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
+	// Constat buffer gpu addresses
+	cbvGPUAddress.resize(BACK_BUFFER_COUNT);
 }
 
 void D3D12App::Initialize()
 {
+
 	// Initialize factory
 	UINT dxgiFactoryFlags = 0;
 
@@ -264,22 +270,52 @@ void D3D12App::Initialize()
 	// Create the vertex buffer.
 	{
 		// Define the geometry for a triangle.
-		const Vertex triangleVertices[] =
+		Vertex triangleVertices[] =
 		{
 			// First Quad
-			{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-			{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+			//{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
 
-			// Second Quad
-			{ { -0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//// Second Quad
+			//{ { -0.75f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { 0.25f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { -0.75f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { 0.25f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } }
+
+			//Triangle #1
+			{ /*Position*/ {-1.0f, -1.0f, 0.9f} , /*Color*/ {1.0f, 1.0f, 1.0f, 1.0f}},
+			{ /*Position*/ {0.0f, 1.0f, 0.9f} , /*Color*/ {1.0f, 1.0f, 1.0f, 1.0f}},
+			{ /*Position*/ {1.0f, -1.0f, 0.9f} , /*Color*/ {1.0f, 1.0f, 1.0f, 1.0f}},
+
+			//Triangle #2
+			//{ /*Position*/ {-0.8f, -0.8f, 0.3f} , /*Color*/ {1.0f, 1.0f, 1.0f, 1.0f}},
+			//{ /*Position*/ {0.0f, 1.0f, 0.3f} , /*Color*/ {0.0f, 1.0f, 1.0f, 1.0f}},
+			//{ /*Position*/ {0.8f, -0.8f, 0.3f} , /*Color*/ {0.0f, 1.0f, 1.0f, 1.0f}},
+			//{ /*Position*/ {0.8f, -0.8f, 0.3f} , /*Color*/ {0.0f, 1.0f, 1.0f, 1.0f}}
+			{ { -0.75f, 0.75f, 0.7f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
 			{ { 0.25f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			{ { -0.75f, -0.25f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-			{ { 0.25f, 0.75f, 0.7f }, { 0.0f, 1.0f, 0.0f, 1.0f } }
-		};
+			{ { -0.75f, -0.25f, 0.7f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+			{ { 0.25f, 0.75f, 0.7f }, { 0.0f, 0.0f, 0.0f, 1.0f } }
 
+
+			//{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+			//{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+			//{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } }
+		};
 		constexpr UINT vertexBufferSize = sizeof(triangleVertices);
+
+		for (UINT i = 0; i < 3; ++i)
+		{
+			Vertex NewPos;
+			NewPos.position.x = triangleVertices[i].position.x * 0.5f;
+			NewPos.position.y = triangleVertices[i].position.y * 0.5f;
+			NewPos.position.z = triangleVertices[i].position.z;
+			triangleVertices[i].position = NewPos.position;
+		}
+
 
 		// Note: using upload heaps to transfer static data like vert buffers is not 
 		// recommended. Every time the GPU needs it, the upload heap will be marshalled 
@@ -314,8 +350,7 @@ void D3D12App::Initialize()
 		const DWORD indicesList[] = 
 		{
 			0, 1, 2, // first triangle
-			0, 3, 1 // second triangle
-			//1, 2, 3 // second triangle (mine)
+			0, 3, 1, // second triangle
 		};
 
 		constexpr UINT indexBufferSize = sizeof(indicesList);
@@ -389,32 +424,8 @@ void D3D12App::Initialize()
 		cbvHeapDesc.NumDescriptors	= 1;
 		cbvHeapDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		cbvHeapDesc.Type			= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		ThrowIfFailed(device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&cbvHeap)));
 
-		constexpr UINT constantBufferSize	= sizeof(SceneConstantBuffer);    // CB size is required to be 256-byte aligned.
-		const auto uploadHeapDesc			= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		const auto constantBufferDesc		= CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize);
-		ThrowIfFailed(device->CreateCommittedResource(
-			&uploadHeapDesc,
-			D3D12_HEAP_FLAG_NONE,
-			&constantBufferDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&constantBuffer)));
 
-		// Describe and create a constant buffer view.
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-		ZeroMemory(&cbvDesc, sizeof(cbvDesc));
-		cbvDesc.BufferLocation	= constantBuffer->GetGPUVirtualAddress();
-		cbvDesc.SizeInBytes		= constantBufferSize;
-		device->CreateConstantBufferView(&cbvDesc, cbvHeap->GetCPUDescriptorHandleForHeapStart());
-
-		// Map and initialize the constant buffer. We don't unmap this until the
-		// app closes. Keeping things mapped for the lifetime of the resource is okay.
-		ZeroMemory(&constantBufferData, sizeof(constantBufferData));
-		CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-		ThrowIfFailed(constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&constantBufferDataGPUAddress)));
-		memcpy(constantBufferDataGPUAddress, &constantBufferData, sizeof(constantBufferData));
 	}
 
 
@@ -443,54 +454,15 @@ void D3D12App::Render()
 	WaitForPreviousFrame();
 }
 
-static float xIncrement = 0.f;
-
 void D3D12App::Update()
 {
-	// Update constant buffer
 
-	// Position change logic
-
-	constantBufferData.positionMultiplier.x += xIncrement;
-
-	//if (constantBufferData.positionMultiplier.x >= 1.0f || constantBufferData.positionMultiplier.x <= -1.0f)
-	//{
-	//	xIncrement = -xIncrement;
-	//}
-
-	//// Color multiplier logic
-	//static float rIncrement = 0.002f;
-	//static float gIncrement = 0.006f;
-	//static float bIncrement = 0.009f;
-
-	//constantBufferData.colorMultiplier.x += rIncrement;
-	//constantBufferData.colorMultiplier.y += gIncrement;
-	//constantBufferData.colorMultiplier.z += bIncrement;
-
-	//if (constantBufferData.colorMultiplier.x >= 1.0 || constantBufferData.colorMultiplier.x <= 0.0f)
-	//{
-	//	constantBufferData.colorMultiplier.x = constantBufferData.colorMultiplier.x >= 1.0f ? 1.0f : 0.0f;
-	//	rIncrement = -rIncrement;
-	//}
-	//if (constantBufferData.colorMultiplier.y >= 1.0f || constantBufferData.colorMultiplier.y <= 0.0f)
-	//{
-	//	constantBufferData.colorMultiplier.y = constantBufferData.colorMultiplier.y >= 1.0f ? 1.0f : 0.0f;
-	//	gIncrement = -gIncrement;
-	//}
-	//if (constantBufferData.colorMultiplier.z >= 1.0f || constantBufferData.colorMultiplier.z <= 0.0f)
-	//{
-	//	constantBufferData.colorMultiplier.z = constantBufferData.colorMultiplier.z >= 1.0f ? 1.0f : 0.0f;
-	//	bIncrement = -bIncrement;
-	//}
-
-
-	memcpy(constantBufferDataGPUAddress, &constantBufferData, sizeof(constantBufferData));
 }
 
 void D3D12App::Destroy()
 {
 	// Unmap mapped resource
-	constantBuffer->Unmap(0, nullptr);
+	//constantBuffer->Unmap(0, nullptr);
 
 	// Ensure that the GPU is no longer referencing resources that are about to be
 	// cleaned up by the destructor.
@@ -498,16 +470,6 @@ void D3D12App::Destroy()
 
 	// Close handle of fence event
 	CloseHandle(fenceEvent);
-}
-
-void D3D12App::ArrowUp()
-{
-	xIncrement += 0.001f;
-}
-
-void D3D12App::ArrowDown()
-{
-	xIncrement -= 0.001f;
 }
 
 void D3D12App::PopulateCommandLists()
@@ -523,13 +485,7 @@ void D3D12App::PopulateCommandLists()
 
 	// Set necessary state.
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
-	ID3D12DescriptorHeap* ppHeaps[] = { cbvHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 	// set the root descriptor table 0 to the constant buffer descriptor heap
-	commandList->SetGraphicsRootDescriptorTable(0, cbvHeap->GetGPUDescriptorHandleForHeapStart());
-
-
-
 
 	// Record commands.
 
@@ -551,18 +507,16 @@ void D3D12App::PopulateCommandLists()
 	commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 
-
-
-
 	// Draw something
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 	commandList->IASetIndexBuffer(&indexBufferView);
-	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	//commandList->DrawInstanced(4, 1, 0, 0);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw first quad
-	commandList->DrawIndexedInstanced(6, 1, 0, 4, 0); // draw second quad
+	commandList->DrawInstanced(3, 1, 0, 0);
+	//commandList->DrawInstanced(4, 1, 3, 0);
 
+	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//commandList->DrawIndexedInstanced(3, 1, 0, 0, 0); // draw first triangle
+	commandList->DrawIndexedInstanced(6, 1, 0, 3, 0); // draw first quad
 
 
 

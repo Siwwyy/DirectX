@@ -47,6 +47,12 @@
 // assert with splitted condition and message inside
 #define DXASSERT(CONDITION, MESSAGE) assert((CONDITION) && (MESSAGE))
 
+// logging to console
+#define DXLOG(MESSAGE, ...)                                  \
+        char MsgBuffer[256]{};                               \
+        sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);          \
+        OutputDebugStringA(MsgBuffer);                       \
+
 
 
 #define DXFactory                       IDXGIFactory
