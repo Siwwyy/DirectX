@@ -11,7 +11,7 @@
 class D3D12ShaderCompiler
 {
 public:
-	DISABLE_COPY(D3D12ShaderCompiler)
+	DISABLE_COPY_MOVE(D3D12ShaderCompiler)
 
 	D3D12ShaderCompiler();
 	~D3D12ShaderCompiler() = default;
