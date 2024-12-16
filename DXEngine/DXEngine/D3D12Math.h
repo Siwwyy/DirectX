@@ -4,11 +4,11 @@
 #ifndef D3D12_MATH_H_INCLUDED
 #define D3D12_MATH_H_INCLUDED
 
-#include <DirectXMath.h>
-#include "D3D12Helpers.h"
+#include "pch.h"
 
-namespace Math
-{
+//namespace Math
+//{
+	// Vertex attributes
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 position;
@@ -23,7 +23,11 @@ namespace Math
 		DirectX::XMFLOAT4X4 WorldViewProjectionMat4x4;
 	};
 	static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
+	constexpr auto ConstantBufferPerObjectSize = sizeof(ConstantBufferPerObject);
+	constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
+
+	// Camera matrices
 	struct alignas(256) CameraMatrices
 	{
 		DirectX::XMFLOAT4X4 cameraProjMat;			// this will store our projection matrix
@@ -34,12 +38,14 @@ namespace Math
 		DirectX::XMFLOAT4	cameraUp;				// the worlds up vector
 	};
 
+
+	// Cube Matrices
 	struct alignas(256) CubeMatrices
 	{
-		DirectX::XMFLOAT4X4 cube1WorldMat;			// our first cubes world matrix (transformation matrix)
-		DirectX::XMFLOAT4X4 cube1RotMat;			// this will keep track of our rotation for the first cube
-		DirectX::XMFLOAT4	cube1Position;			// our first cubes position in space
+		DirectX::XMFLOAT4X4 cubeWorldMat;			// our first cubes world matrix (transformation matrix)
+		DirectX::XMFLOAT4X4 cubeRotMat;			// this will keep track of our rotation for the first cube
+		DirectX::XMFLOAT4	cubePosition;			// our first cubes position in space
 	};
-}
+//}
 
 #endif // D3D12_MATH_H_INCLUDED

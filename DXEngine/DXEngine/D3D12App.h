@@ -4,12 +4,14 @@
 #ifndef D3D12_APP_H_INCLUDED
 #define D3D12_APP_H_INCLUDED
 
-#include <DirectXMath.h>
-#include <wrl/client.h>
-#include <windows.h>
 
-#include "D3D12Helpers.h"
+#include "pch.h"
 #include "D3D12Utils.h"
+#include "D3D12Math.h"
+
+//struct alignas(256) ConstantBufferPerObject;
+//struct alignas(256) CameraMatrices;
+//struct alignas(256) CubeMatrices;
 
 
 class D3D12App
@@ -54,7 +56,7 @@ private:
 	ComPtr<DXFactory4>									factory;
 	ComPtr<DXDevice>									device;
 	ComPtr<DXCommandQueue>								commandQueue;
-	ComPtr<DXGraphicsCommandList1>						commandList;
+	ComPtr<DXGraphicsCommandList>						commandList;
 	ComPtr<DXCommandAllocator>							commandAllocator;
 
 	// D3D12 Synchronization CPU<->GPU
@@ -92,6 +94,10 @@ private:
 	// D3D12 Constant buffer data
 	std::vector<ComPtr<ID3D12Resource>>					constantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8>									cbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+	ConstantBufferPerObject								cbvPerCube;
+	CameraMatrices										camMatrices;
+	CubeMatrices										cube1Matrices;
+	CubeMatrices										cube2Matrices;
 
 	// Own util class
 

@@ -4,7 +4,7 @@
 #ifndef D3D12_UTILS_H_INCLUDED
 #define D3D12_UTILS_H_INCLUDED
 
-#include "D3D12Helpers.h"
+#include "pch.h"
 
 namespace Utils
 {

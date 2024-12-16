@@ -4,19 +4,14 @@
 #ifndef D3D12_HELPERS_H_INCLUDED
 #define D3D12_HELPERS_H_INCLUDED
 
-#include <stdexcept>
-#include <cassert>
-#include <wrl/client.h>
-#include <dxgi1_6.h>
-
-#include "d3dx12.h"
+#include "pch.h"
 
 /***************************
  ********* DEFINES *********
  ***************************/
 
  // Indicates if debug mode is set
-#define DEBUG_MODE _DEBUG
+#define DEBUG_MODE _DEBUG || DEBUG
 //#define DEBUG_MODE 0
 
 // Safe Release of ComPtr<T>
@@ -26,8 +21,8 @@
 // Naming helper for ComPtr<T>.
 // Assigns the name of the variable as the name of the object.
 // The indexed variant will include the index in the name of the object.
-#define NAME_D3D12_OBJECT(x) SetName((x).Get(), L#x)
-#define NAME_D3D12_OBJECT_INDEXED(x, n) SetNameIndexed((x)[n].Get(), L#x, n)
+#define NAME_D3D12_OBJECT(x, NAME) x->SetName(L#NAME)
+#define NAME_D3D12_OBJECT_INDEXED(x, n, NAME) SetNameIndexed((x)[n].Get(), L#NAME, n)
 
 
 // Disables copy ability of specified class
