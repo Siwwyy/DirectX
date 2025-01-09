@@ -20,7 +20,8 @@ public:
 		LPCWSTR shaderAbsolutePath,
 		DxcDefine const * const shaderDefines,
 		LPCWSTR entryPoint,
-		LPCWSTR targetProfile);	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
+		LPCWSTR targetProfile,
+		std::vector<LPCWSTR> arguments = {});	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
 
 	/* [[deprecated]] */ ComPtr<ID3DBlob> CompileShaderD3D(
 		LPCWSTR shaderAbsolutePath, 
@@ -32,7 +33,8 @@ private:
 
 	// IDxc variables
 	ComPtr<IDxcLibrary>							library;
-	ComPtr<IDxcCompiler>						compiler;
+	ComPtr<IDxcCompiler3>						compiler;	//Use IDxcCompiler3 instead of IDxcCompiler (because of Deprecatness Compile() function)
+	ComPtr<IDxcUtils>							utils;
 	ComPtr<IDxcIncludeHandler>					dxcIncludeHandler;
 
 };

@@ -11,6 +11,9 @@
 	// Vertex attributes
 	struct Vertex
 	{
+		Vertex(float x, float y, float z, float r, float g, float b, float a) : position(x, y, z), color(r, g, b, a) {}
+
+
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT4 color;
 	};
@@ -23,7 +26,7 @@
 		DirectX::XMFLOAT4X4 WorldViewProjectionMat4x4;
 	};
 	static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
-	constexpr auto ConstantBufferPerObjectSize = sizeof(ConstantBufferPerObject);
+	constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
 	constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
 
@@ -43,7 +46,7 @@
 	struct alignas(256) CubeMatrices
 	{
 		DirectX::XMFLOAT4X4 cubeWorldMat;			// our first cubes world matrix (transformation matrix)
-		DirectX::XMFLOAT4X4 cubeRotMat;			// this will keep track of our rotation for the first cube
+		DirectX::XMFLOAT4X4 cubeRotMat;				// this will keep track of our rotation for the first cube
 		DirectX::XMFLOAT4	cubePosition;			// our first cubes position in space
 	};
 //}

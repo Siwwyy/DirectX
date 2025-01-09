@@ -44,7 +44,7 @@
 
 // logging to console
 #define DXLOG(MESSAGE, ...)                                  \
-        char MsgBuffer[256]{};                               \
+        char MsgBuffer[512]{};                               \
         sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);          \
         OutputDebugStringA(MsgBuffer);                       \
 
@@ -101,7 +101,7 @@ namespace Helpers
 	 ***************************/
     struct CommandListDesc
     {
-        UINT                        nodeMask;       //GPU Id
+        UINT                        NodeMask;       //GPU Id
         D3D12_COMMAND_LIST_TYPE     Type;           //Command List type
         D3D12_COMMAND_LIST_FLAGS    Flags;          //Additional flags for Command List
     };
@@ -117,7 +117,7 @@ namespace Helpers
     {
         auto HrToString = [&]
         {
-            char s_str[64] = {};
+            char s_str[512] = {};
             sprintf_s(s_str, "HRESULT of 0x%08X", static_cast<UINT>(hr));
             return std::string{ s_str };
         };

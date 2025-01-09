@@ -6,8 +6,8 @@
 
 
 // Libs for linker
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "D3DCompiler.lib")
+//#pragma comment(lib, "d3d12.lib")
+//#pragma comment(lib, "D3DCompiler.lib")
 
 
 #define _CRT_SECURE_NO_WARNINGS

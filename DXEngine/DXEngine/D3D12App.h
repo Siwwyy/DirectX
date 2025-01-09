@@ -9,10 +9,11 @@
 #include "D3D12Utils.h"
 #include "D3D12Math.h"
 
-//struct alignas(256) ConstantBufferPerObject;
-//struct alignas(256) CameraMatrices;
-//struct alignas(256) CubeMatrices;
-
+void Initialize_Fence();
+void Initialize_CommandQueue();
+void Initialize_CommandAllocator();
+void Initialize_Fences();
+void Initialize_Fences();
 
 class D3D12App
 {
@@ -23,10 +24,10 @@ public:
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 
 	// Getters
-	[[nodiscard]] UINT											GetWindowWidth() const { return windowWidth; }
-	[[nodiscard]] UINT											GetWindowHeight() const { return windowHeight; }
-	[[nodiscard]] float											GetAspectRatio() const { return aspectRatio; }
-	[[nodiscard]] const std::wstring&							GetWindowName() const { return windowName; }
+	[[nodiscard]] UINT											GetWindowWidth() const { return WindowWidth; }
+	[[nodiscard]] UINT											GetWindowHeight() const { return WindowHeight; }
+	[[nodiscard]] float											GetAspectRatio() const { return AspectRatio; }
+	[[nodiscard]] const std::wstring&							GetWindowName() const { return WindowName; }
 
 	// Functions
 	void Initialize();
@@ -37,67 +38,67 @@ public:
 
 private:
 
-
 	//Utility functions
+	void InitializePerFrameResources();
 	void PopulateCommandLists();
+	void SubmitCommandLists();
 	void WaitForPreviousFrame();
 
 	// Window Properties
-	UINT												windowWidth;
-	UINT												windowHeight;
-	float												aspectRatio;
-	std::wstring										windowName;
+	UINT												WindowWidth;
+	UINT												WindowHeight;
+	float												AspectRatio;
+	std::wstring										WindowName;
 
 	// D3D12 Window Properties
-	CD3DX12_VIEWPORT									viewPort;
-	CD3DX12_RECT										scissorRect;
+	CD3DX12_VIEWPORT									ViewPort;
+	CD3DX12_RECT										ScissorRect;
 
 	// D3D12 Variables
-	ComPtr<DXFactory4>									factory;
-	ComPtr<DXDevice>									device;
-	ComPtr<DXCommandQueue>								commandQueue;
-	ComPtr<DXGraphicsCommandList>						commandList;
-	ComPtr<DXCommandAllocator>							commandAllocator;
+	ComPtr<DXFactory4>									Factory;
+	ComPtr<DXDevice>									Device;
+	ComPtr<DXCommandQueue>								CommandQueue;
+	ComPtr<DXGraphicsCommandList>						CommandList;
+	std::vector<ComPtr<DXCommandAllocator>>				CommandAllocators;
 
 	// D3D12 Synchronization CPU<->GPU
-	ComPtr<DXFence>										fence;
-	UINT64												fenceValue;
-	HANDLE												fenceEvent;
+	std::vector<ComPtr<DXFence>>						Fences;
+	std::vector<UINT64>									FenceValue;
+	HANDLE												FenceEvent;
 
 	// D3D12 SwapChain
-	ComPtr<IDXGISwapChain3>								swapChain;
-	UINT												bufferCount;
-	UINT												currentFrameIdx;
+	ComPtr<IDXGISwapChain3>								SwapChain;
+	UINT												CurrentFrameIdx;
 
 	// D3D12 Frame Buffer Render Target
-	ComPtr<ID3D12DescriptorHeap>						rtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					renderTargets{};
-	UINT												rtvIncrementDescriptorSize;
+	ComPtr<ID3D12DescriptorHeap>						RtvHeap;
+	std::vector<ComPtr<ID3D12Resource>>					RenderTargets{};
+	UINT												RtvIncrementDescriptorSize;
 
 	// Pipeline state and root signature
-	ComPtr<ID3D12PipelineState>							pipelineState;
-	ComPtr<ID3D12RootSignature>							rootSignature;
+	ComPtr<ID3D12PipelineState>							PipelineState;
+	ComPtr<ID3D12RootSignature>							RootSignature;
 
-	// D3D12 Vertex data
-	ComPtr<ID3D12Resource>								vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
+	//// D3D12 Vertex data
+	//ComPtr<ID3D12Resource>								vertexBuffer;
+	//D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
 
-	// D3D12 Index buffer data
-	ComPtr<ID3D12Resource>								indexBuffer;
-	D3D12_INDEX_BUFFER_VIEW								indexBufferView;
+	//// D3D12 Index buffer data
+	//ComPtr<ID3D12Resource>								indexBuffer;
+	//D3D12_INDEX_BUFFER_VIEW								indexBufferView;
 
-	// D3D12 Depth Stencil
-	ComPtr<ID3D12DescriptorHeap>						dsvHeap;
-	ComPtr<ID3D12Resource>								depthStencil;
-	UINT												dsvIncrementDescriptorSize;
+	//// D3D12 Depth Stencil
+	//ComPtr<ID3D12DescriptorHeap>						dsvHeap;
+	//ComPtr<ID3D12Resource>								depthStencil;
+	//UINT												dsvIncrementDescriptorSize;
 
-	// D3D12 Constant buffer data
-	std::vector<ComPtr<ID3D12Resource>>					constantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
-	std::vector<UINT8>									cbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	ConstantBufferPerObject								cbvPerCube;
-	CameraMatrices										camMatrices;
-	CubeMatrices										cube1Matrices;
-	CubeMatrices										cube2Matrices;
+	//// D3D12 Constant buffer data
+	//std::vector<ComPtr<ID3D12Resource>>					constantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
+	//std::vector<UINT8*>									cbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+	//ConstantBufferPerObject								cbvPerCube;
+	//CameraMatrices										camMatrices;
+	//CubeMatrices										cube1Matrices;
+	//CubeMatrices										cube2Matrices;
 
 	// Own util class
 

@@ -1,5 +1,5 @@
 
-//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+//Copyright, Damian Andrysiak 2024, All Rights Reserved.
 
 // Vertex Shader Input struct
 struct VSInput
@@ -15,12 +15,26 @@ struct VSOutput
     float4 color    : COLOR;
 };
 
+cbuffer ConstantBuffer : register(b0)
+{
+    float4x4 WorldViewProjectionMat4x4;
+};
+
 VSOutput VSMain(VSInput input)
 {
-    VSOutput result;
+    VSOutput output;
+    output.position = mul(input.position, WorldViewProjectionMat4x4);
+    //output.position = float4(input.position, 1.f);
+    output.color = input.color;
+    return output;
+}
 
-    result.position = float4(input.position, 1.0) ;
-    result.color    = input.color;
+float4 PSMain(VSOutput input) : SV_TARGET
+{
+    // #ifdef PIXEL_SHADER_ENABLED
+	// 	return input.color;
+	// #endif
+    // return float4(0,0,0,0); //RGBA
 
-    return result;
+    return input.color;
 }
