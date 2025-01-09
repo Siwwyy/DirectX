@@ -90,23 +90,30 @@ void D3D12App::Initialize()
 	));
 
 
+	// Initialization of command queue
+	D3D12_COMMAND_QUEUE_DESC CommandQueueDesc	= {};
+	CommandQueueDesc.Flags						= D3D12_COMMAND_QUEUE_FLAG_NONE;
+	CommandQueueDesc.NodeMask					= 0; //single GPU env for now
+	CommandQueueDesc.Priority					= D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+	CommandQueueDesc.Type						= COMMAND_LIST_TYPE;
+	CommandQueue								= Utils::CreateCommandQueue(Device.Get(), CommandQueueDesc);
+
 	// Initialization of Swap Chain
 	// Get aplication window's handle (hwnd)
 	auto windowHwnd = Win32Proc::GetHwnd();
 
 	// Describe and create the swap chain.
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-	swapChainDesc.BufferCount = BACK_BUFFER_COUNT;
-	swapChainDesc.Width = WindowWidth;
-	swapChainDesc.Height = WindowHeight;
-	swapChainDesc.Format = BACK_BUFFER_FORMAT;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc		= {};
+	swapChainDesc.BufferCount				= BACK_BUFFER_COUNT;
+	swapChainDesc.Width						= WindowWidth;
+	swapChainDesc.Height					= WindowHeight;
+	swapChainDesc.Format					= BACK_BUFFER_FORMAT;
+	swapChainDesc.BufferUsage				= DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.SwapEffect				= DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	//swapChainDesc.SwapEffect				= DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	swapChainDesc.SampleDesc.Count = 1;
 
-	auto swapChain1 = dynamic_cast<IDXGISwapChain1*>(SwapChain.Get()); //retrieve IDXGISwapChain1 from IDXGISwapChain3
-
+	ComPtr<IDXGISwapChain1> swapChain1;
 	ThrowIfFailed(Factory->CreateSwapChainForHwnd(
 		CommandQueue.Get(),        // Swap chain needs the queue so that it can force a flush on it.
 		windowHwnd,
@@ -115,6 +122,11 @@ void D3D12App::Initialize()
 		nullptr,
 		&swapChain1
 	));
+
+	//auto swapChain1 = dynamic_cast<IDXGISwapChain1*>(SwapChain.Get()); //retrieve IDXGISwapChain1 from IDXGISwapChain3
+	
+	// Convert SwapChain1 interface to SwapChain4
+	ThrowIfFailed(swapChain1.As(&SwapChain));
 
 	// This sample does not support fullscreen transitions.
 	ThrowIfFailed(Factory->MakeWindowAssociation(windowHwnd, DXGI_MWA_NO_ALT_ENTER));
@@ -133,15 +145,6 @@ void D3D12App::Initialize()
 
 	// Get Render Target View Increment Descriptor size
 	RtvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(descriptorHeapType);
-
-
-	// Initialization of command queue
-	D3D12_COMMAND_QUEUE_DESC CommandQueueDesc;
-	CommandQueueDesc.Flags			= D3D12_COMMAND_QUEUE_FLAG_NONE;
-	CommandQueueDesc.NodeMask		= 0; //single GPU env for now
-	CommandQueueDesc.Priority		= D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	CommandQueueDesc.Type			= COMMAND_LIST_TYPE;
-	CommandQueue = Utils::CreateCommandQueue(Device.Get(), CommandQueueDesc);
 
 	// Create an event handle to use for frame synchronization.
 	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -165,19 +168,17 @@ void D3D12App::Initialize()
 	// Root parameters
 	{
 		// create a root descriptor, which explains where to find the data for this root parameter
-		D3D12_ROOT_DESCRIPTOR rootCBVDescriptor		= {};
-		rootCBVDescriptor.RegisterSpace				= 0;
-		rootCBVDescriptor.ShaderRegister			= 0;
+		D3D12_ROOT_DESCRIPTOR RootCBVDescriptor = CreateRootDescriptor(0, 0);
 
-		// create a root parameter and fill it out
-		D3D12_ROOT_PARAMETER rootParameters[1]		= {};										// only one parameter right now
-		rootParameters[0].ParameterType				= D3D12_ROOT_PARAMETER_TYPE_CBV;			// this is a constant buffer view root descriptor
-		rootParameters[0].Descriptor				= rootCBVDescriptor;						// this is the root descriptor for this root parameter
-		rootParameters[0].ShaderVisibility			= D3D12_SHADER_VISIBILITY_VERTEX;			// our pixel shader will be the only shader accessing this parameter for now
+		// Create root parameters
+		const std::vector<D3D12_ROOT_PARAMETER> RootParameters = CreateRootParameters({
+			RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, RootCBVDescriptor),
+			});
 
-		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(_countof(rootParameters), // we have 1 root parameter
-			rootParameters, // a pointer to the beginning of our root parameters array
+		// Create Root Signature Descriptor
+		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc = {};
+		RootSignatureDesc.Init(RootParameters.size(), // we have 1 root parameter
+			RootParameters.data(), // a pointer to the beginning of our root parameters array
 			0,
 			nullptr,
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
@@ -188,7 +189,7 @@ void D3D12App::Initialize()
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
-		ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+		ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
 		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 
 	}
