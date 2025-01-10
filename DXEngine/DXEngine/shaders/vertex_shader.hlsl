@@ -23,18 +23,8 @@ cbuffer ConstantBuffer : register(b0)
 VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    output.position = mul(input.position, WorldViewProjectionMat4x4);
-    //output.position = float4(input.position, 1.f);
+    // output.position = mul(input.position, WorldViewProjectionMat4x4);
+    output.position = float4(input.position, 1.f);
     output.color = input.color;
     return output;
-}
-
-float4 PSMain(VSOutput input) : SV_TARGET
-{
-    // #ifdef PIXEL_SHADER_ENABLED
-	// 	return input.color;
-	// #endif
-    // return float4(0,0,0,0); //RGBA
-
-    return input.color;
 }

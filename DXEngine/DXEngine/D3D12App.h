@@ -40,8 +40,8 @@ private:
 
 	//Utility functions
 	void InitializePerFrameResources();
-	void PopulateCommandLists();
-	void SubmitCommandLists();
+	void BeginFrame();
+	void EndFrame();
 	void WaitForPreviousFrame();
 
 	// Window Properties
@@ -79,29 +79,32 @@ private:
 	ComPtr<ID3D12PipelineState>							PipelineState;
 	ComPtr<ID3D12RootSignature>							RootSignature;
 
-	//// D3D12 Vertex data
-	//ComPtr<ID3D12Resource>								vertexBuffer;
-	//D3D12_VERTEX_BUFFER_VIEW							vertexBufferView;
+	// D3D12 Vertex data
+	ComPtr<ID3D12Resource>								VertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW							VertexBufferView;
 
-	//// D3D12 Index buffer data
-	//ComPtr<ID3D12Resource>								indexBuffer;
-	//D3D12_INDEX_BUFFER_VIEW								indexBufferView;
+	// D3D12 Index buffer data
+	ComPtr<ID3D12Resource>								IndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
 
-	//// D3D12 Depth Stencil
-	//ComPtr<ID3D12DescriptorHeap>						dsvHeap;
-	//ComPtr<ID3D12Resource>								depthStencil;
-	//UINT												dsvIncrementDescriptorSize;
+	// D3D12 Depth Stencil
+	ComPtr<ID3D12DescriptorHeap>						DsvHeap;
+	ComPtr<ID3D12Resource>								DepthStencil;
+	UINT												DsvIncrementDescriptorSize;
 
-	//// D3D12 Constant buffer data
-	//std::vector<ComPtr<ID3D12Resource>>					constantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
-	//std::vector<UINT8*>									cbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	//ConstantBufferPerObject								cbvPerCube;
-	//CameraMatrices										camMatrices;
-	//CubeMatrices										cube1Matrices;
-	//CubeMatrices										cube2Matrices;
+	// D3D12 Constant buffer data
+	std::vector<ComPtr<ID3D12Resource>>					ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
+	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+	ConstantBufferPerObject								CbvPerCube;
+	CameraMatrices										CamMatrices;
+	CubeMatrices										Cube1Matrices;
+	CubeMatrices										Cube2Matrices;
 
 	// Own util class
-
+	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
+	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
+	ComPtr<ID3D12Resource>								VertexBufferUploadHeap;
+	ComPtr<ID3D12Resource>								IndexBufferUploadHeap;
 };
 
 #endif // D3D12_APP_H_INCLUDED

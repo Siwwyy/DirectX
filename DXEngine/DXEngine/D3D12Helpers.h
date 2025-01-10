@@ -92,15 +92,13 @@
 template<typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-
-
 namespace Helpers
 {
     /***************************
 	 ****** HELPER STRUCTS *****
 	 ***************************/
 
-    // Command List
+    // Command List Helper
     struct CommandListDesc
     {
         UINT                        NodeMask;       //GPU Id
@@ -109,99 +107,7 @@ namespace Helpers
     };
 
 
-    // Root Params
-    struct RootParamBase
-    {
-        D3D12_ROOT_PARAMETER_TYPE       ParameterType;
-        D3D12_SHADER_VISIBILITY         ShaderVisibility;
-
-        RootParamBase(D3D12_ROOT_PARAMETER_TYPE ParameterType,
-            D3D12_SHADER_VISIBILITY ShaderVisibility)
-            : ParameterType(ParameterType)
-            , ShaderVisibility(ShaderVisibility)
-        {}
-
-        virtual D3D12_ROOT_PARAMETER CreateParam() noexcept
-        {
-            D3D12_ROOT_PARAMETER temp   = {};
-            temp.ParameterType          = ParameterType;
-            temp.ShaderVisibility       = ShaderVisibility;
-            return temp;
-        }
-
-    private:
-        DISABLE_COPY(RootParamBase)
-    };
-
-    struct RootConstant final : public RootParamBase
-    {
-        D3D12_ROOT_CONSTANTS            Constants;
-
-        RootConstant(RootParamBase RootParamsBase,
-            D3D12_ROOT_CONSTANTS Constants)
-            : RootParamBase(RootParamsBase.ParameterType, RootParamsBase.ShaderVisibility)
-            , Constants(Constants)
-        {}
-
-        D3D12_ROOT_PARAMETER CreateParam() noexcept override
-        {
-            D3D12_ROOT_PARAMETER temp   = {};
-            temp.ParameterType          = ParameterType;
-            temp.Constants              = Constants;
-            temp.ShaderVisibility       = ShaderVisibility;
-            return temp;
-        }
-
-    private:
-        DISABLE_COPY(RootConstant)
-    };
-
-    struct RootDescriptor final : public RootParamBase
-    {
-        D3D12_ROOT_DESCRIPTOR           Descriptor;
-
-        RootDescriptor(RootParamBase RootParamsBase,
-            D3D12_ROOT_DESCRIPTOR Descriptor)
-            : RootParamBase(RootParamsBase.ParameterType, RootParamsBase.ShaderVisibility)
-            , Descriptor(Descriptor)
-        {}
-
-        D3D12_ROOT_PARAMETER CreateParam() noexcept override
-        {
-            D3D12_ROOT_PARAMETER temp   = {};
-            temp.ParameterType          = ParameterType;
-            temp.Descriptor             = Descriptor;
-            temp.ShaderVisibility       = ShaderVisibility;
-            return temp;
-        }
-
-    private:
-        DISABLE_COPY(RootDescriptor)
-    };
-
-    struct RootDescriptorTable final : public RootParamBase
-    {
-        D3D12_ROOT_DESCRIPTOR_TABLE     DescriptorTable;
-
-        RootDescriptorTable(RootParamBase RootParamsBase,
-            D3D12_ROOT_DESCRIPTOR_TABLE DescriptorTable)
-            : RootParamBase(RootParamsBase.ParameterType, RootParamsBase.ShaderVisibility)
-            , DescriptorTable(DescriptorTable)
-        {}
-
-        D3D12_ROOT_PARAMETER CreateParam() noexcept override
-        {
-            D3D12_ROOT_PARAMETER temp   = {};
-            temp.ParameterType          = ParameterType;
-            temp.DescriptorTable        = DescriptorTable;
-            temp.ShaderVisibility       = ShaderVisibility;
-            return temp;
-        }
-
-    private:
-        DISABLE_COPY(RootDescriptorTable)
-    };
-
+    // Root Param Helper
     struct RootParamHelper
     {
         D3D12_ROOT_PARAMETER_TYPE       ParameterType;
@@ -234,7 +140,7 @@ namespace Helpers
             ActiveField.DescriptorTable = DescriptorTable;
         }
 
-        D3D12_ROOT_PARAMETER CreateParam() const noexcept
+        D3D12_ROOT_PARAMETER CreateRootParameter() const noexcept
         {
             D3D12_ROOT_PARAMETER temp       = {};
             temp.ParameterType              = ParameterType;
@@ -246,14 +152,13 @@ namespace Helpers
         }
 
     private:
-        union /* NoName */
+        struct /* NoName */
         {
             D3D12_ROOT_CONSTANTS        Constants;
             D3D12_ROOT_DESCRIPTOR       Descriptor;
             D3D12_ROOT_DESCRIPTOR_TABLE DescriptorTable;
         } ActiveField;
 
-        //DISABLE_COPY(RootParamHelper)
     };
 
     /***************************

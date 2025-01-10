@@ -38,7 +38,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 
 	// Use if IDxcCompiler3 TODO
 	ComPtr<IDxcCompilerArgs> CompilerArgs;
-	utils->BuildArguments(
+	auto hrResult = utils->BuildArguments(
 		shaderAbsolutePath,																		// pSourceName
 		entryPoint,																				// pEntryPoint
 		targetProfile,																			// pTargetProfile, currently it has to be lower-case
