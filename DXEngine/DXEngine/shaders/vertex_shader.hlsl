@@ -23,8 +23,8 @@ cbuffer ConstantBuffer : register(b0)
 VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    // output.position = mul(input.position, WorldViewProjectionMat4x4);
-    output.position = float4(input.position, 1.f);
-    output.color = input.color;
+    output.position     = mul(float4(input.position, 1.f), WorldViewProjectionMat4x4);
+    //output.position     = float4(input.position, 1.f);
+    output.color        = input.color;
     return output;
 }

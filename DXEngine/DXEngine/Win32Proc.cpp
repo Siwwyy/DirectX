@@ -118,7 +118,7 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	case WM_PAINT:
 	{
-		//dx12App->Update();
+		dx12App->Update();
 		dx12App->Render();
 	}
 	return 0;
