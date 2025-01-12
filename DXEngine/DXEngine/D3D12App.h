@@ -105,6 +105,17 @@ private:
 	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
 	ComPtr<ID3D12Resource>								VertexBufferUploadHeap;
 	ComPtr<ID3D12Resource>								IndexBufferUploadHeap;
+
+	ID3D12Resource* textureBuffer; // the resource heap containing our texture
+
+	int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int &bytesPerRow);
+
+	DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
+
+	ID3D12DescriptorHeap* mainDescriptorHeap;
+	ID3D12Resource* textureBufferUploadHeap;
 };
 
 #endif // D3D12_APP_H_INCLUDED

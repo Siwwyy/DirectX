@@ -27,55 +27,94 @@ static const CD3DX12_HEAP_PROPERTIES		HEAP_PROPERTY_CUSTOM		= CD3DX12_HEAP_PROPE
 // Vertices/Index buffers etc.
 Vertex CubeVertices[] =
 {
+//	// front face
+//	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//	// right side face
+//	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//	// left side face
+//	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//	// back face
+//	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//	// top face
+//	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//	// bottom face
+//	{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//	{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
+//
+//
+//
+//	/////////////////////////////
+//	//{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//	//{  0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//	//{  0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f }
+//	/////////////////////////////
+//
+	//With UV Tex coord
 	// front face
-	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ -0.5f, 0.5f, -0.5f, 0.0f, 0.0f },
+	{ 0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	{ -0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	{ 0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
 
 	// right side face
-	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+	{ 0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
 
 	// left side face
-	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+	{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
 
 	// back face
-	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ 0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+	{ -0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+	{ 0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
 
 	// top face
-	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f },
+	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+	{ 0.5f,  0.5f, -0.5f, 1.0f, 1.0f },
+	{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
 
 	// bottom face
-	{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-
-
-	/////////////////////////////
-	//{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	//{  0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	//{  0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f }
-	/////////////////////////////
-
+	{ 0.5f, -0.5f,  0.5f, 0.0f, 0.0f },
+	{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
+ 
 };
 
 constexpr UINT VertexBufferSize = sizeof(CubeVertices);
 
-DWORD CubeIndices[] = {
+DWORD CubeIndices[] = 
+{
 	// front face
 	0, 1, 2, // first triangle
 	0, 3, 1, // second triangle
@@ -107,8 +146,8 @@ DWORD CubeIndices[] = {
 	///////////////////////////////
 };
 
-constexpr UINT IndexBufferSize = sizeof(CubeIndices);
-constexpr UINT NumCubeIndices = IndexBufferSize / sizeof(DWORD);
+constexpr UINT IndexBufferSize	= sizeof(CubeIndices);
+constexpr UINT NumCubeIndices	= IndexBufferSize / sizeof(DWORD);
 
 //////////////////////////////////////////////////////////////////
 
@@ -226,40 +265,64 @@ void D3D12App::Initialize()
 	//Initialize resources per frame buffer
 	InitializePerFrameResources();
 
-	//// Root parameters
-	//// create a root descriptor, which explains where to find the data for this root parameter
-	//D3D12_ROOT_DESCRIPTOR RootCBVDescriptor = CreateRootDescriptor(0, 0);
-
-	//// Create root parameters
-	//const std::vector<D3D12_ROOT_PARAMETER> RootParameters = CreateRootParameters(
-	//	{
-	//		RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, RootCBVDescriptor),
-	//	}
-	//);
-
+	// Root parameters
 	// create a root descriptor, which explains where to find the data for this root parameter
-	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
-	rootCBVDescriptor.RegisterSpace = 0;
-	rootCBVDescriptor.ShaderRegister = 0;
+	D3D12_ROOT_DESCRIPTOR RootCBVDescriptor = CreateRootDescriptor(0, 0);
 
-	// create a root parameter and fill it out
-	D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-	rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+	// create a descriptor range (descriptor table) and fill it out
+	// this is a range of descriptors inside a descriptor heap
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
+	descriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
+	descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
+	descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+	D3D12_ROOT_DESCRIPTOR_TABLE RootSRV_DescriptorTable = CreateRootDescriptorTable(_countof(descriptorTableRanges), descriptorTableRanges);
+
+	// Create root parameters
+	const std::vector<D3D12_ROOT_PARAMETER> RootParameters = CreateRootParameters({
+			RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, RootCBVDescriptor),
+			RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, RootSRV_DescriptorTable)
+	});
+
+	// create a static sampler
+	D3D12_STATIC_SAMPLER_DESC sampler = {};
+	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.MipLODBias = 0;
+	sampler.MaxAnisotropy = 0;
+	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	sampler.MinLOD = 0.0f;
+	sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	sampler.ShaderRegister = 0;
+	sampler.RegisterSpace = 0;
+	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	//// create a root descriptor, which explains where to find the data for this root parameter
+	//D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
+	//rootCBVDescriptor.RegisterSpace = 0;
+	//rootCBVDescriptor.ShaderRegister = 0;
+
+	//// create a root parameter and fill it out
+	//D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
+	//rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+	//rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+	//rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
 
 
 	// Create Root Signature Descriptor
 	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc = {};
-	RootSignatureDesc.Init(_countof(rootParameters), // we have 1 root parameter
-		rootParameters, // a pointer to the beginning of our root parameters array
-		0,
-		nullptr,
+	RootSignatureDesc.Init(RootParameters.size(), // we have 1 root parameter
+		RootParameters.data(), // a pointer to the beginning of our root parameters array
+		1, // we have one static sampler
+		&sampler, // a pointer to our static sampler (array)
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> error;
@@ -301,7 +364,8 @@ void D3D12App::Initialize()
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		//{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	// fill out an input layout description structure
@@ -341,6 +405,89 @@ void D3D12App::Initialize()
 	// Reset previously used command list and command allocator
 	ThrowIfFailed(CommandAllocators[0]->Reset());
 	ThrowIfFailed(CommandList->Reset(CommandAllocators[0].Get(), PipelineState.Get()));
+
+
+
+
+
+
+	// Load the image from file
+	D3D12_RESOURCE_DESC textureDesc;
+	int imageBytesPerRow;
+	BYTE* imageData;
+	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"bryanzar.png", imageBytesPerRow);
+
+
+	// create a default heap where the upload heap will copy its contents into (contents being the texture)
+	ThrowIfFailed(Device->CreateCommittedResource(
+		&HEAP_PROPERTY_DEFAULT, // a default heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&textureDesc, // the description of our texture
+		D3D12_RESOURCE_STATE_COPY_DEST, // We will copy the texture from the upload heap to here, so we start it out in a copy dest state
+		nullptr, // used for render targets and depth/stencil buffers
+		IID_PPV_ARGS(&textureBuffer)));
+
+	textureBuffer->SetName(L"Texture Buffer Resource Heap");
+
+	//int textureHAeapSize = ((((width * numBytesPerPixel) + 255) & ~255) * (height - 1)) + (width * numBytesPerPixel);
+
+
+	UINT64 textureUploadBufferSize;
+	// this function gets the size an upload buffer needs to be to upload a texture to the gpu.
+	// each row must be 256 byte aligned except for the last row, which can just be the size in bytes of the row
+	// eg. textureUploadBufferSize = ((((width * numBytesPerPixel) + 255) & ~255) * (height - 1)) + (width * numBytesPerPixel);
+	//textureUploadBufferSize = (((imageBytesPerRow + 255) & ~255) * (textureDesc.Height - 1)) + imageBytesPerRow;
+	Device->GetCopyableFootprints(&textureDesc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
+
+	// now we create an upload heap to upload our texture to the GPU
+	const auto TextureUploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize);
+	ThrowIfFailed(Device->CreateCommittedResource(
+		&HEAP_PROPERTY_UPLOAD, // upload heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&TextureUploadBufferDesc, // resource description for a buffer (storing the image data in this heap just to copy to the default heap)
+		D3D12_RESOURCE_STATE_GENERIC_READ, // We will copy the contents from this heap to the default heap above
+		nullptr,
+		IID_PPV_ARGS(&textureBufferUploadHeap)));
+	textureBufferUploadHeap->SetName(L"Texture Buffer Upload Resource Heap");
+
+	// store vertex buffer in upload heap
+	D3D12_SUBRESOURCE_DATA textureData = {};
+	textureData.pData = &imageData[0]; // pointer to our image data
+	textureData.RowPitch = imageBytesPerRow; // size of all our triangle vertex data
+	textureData.SlicePitch = imageBytesPerRow * textureDesc.Height; // also the size of our triangle vertex data
+
+	// Now we copy the upload buffer contents to the default heap
+	UpdateSubresources(CommandList.Get(), textureBuffer, textureBufferUploadHeap, 0, 0, 1, &textureData);
+
+	// transition the texture default heap to a pixel shader resource (we will be sampling from this heap in the pixel shader to get the color of pixels)
+	const auto TextureBufferBarrierCDtoPSR = CD3DX12_RESOURCE_BARRIER::Transition(textureBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	CommandList->ResourceBarrier(1, &TextureBufferBarrierCDtoPSR);
+
+
+	// create the descriptor heap that will store our srv
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = 1;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap)));
+
+	// now we create a shader resource view (descriptor that points to the texture and describes it)
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+	Device->CreateShaderResourceView(textureBuffer, &srvDesc, mainDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// we are done with image data now that we've uploaded it to the gpu, so free it up
+	delete imageData;
+
+
+
+
+
+
+
 
 	// Create vertex buffer
 	const auto VertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(VertexBufferSize);
@@ -504,40 +651,6 @@ void D3D12App::Initialize()
 		tmpMat							= DirectX::XMMatrixTranslationFromVector(posVec); // create translation matrix from cube2's position offset vector
 		DirectX::XMStoreFloat4x4(&Cube2Matrices.cubeRotMat, DirectX::XMMatrixIdentity()); // initialize cube2's rotation matrix to identity matrix
 		DirectX::XMStoreFloat4x4(&Cube2Matrices.cubeWorldMat, tmpMat); // store cube2's world matrix
-
-		//// build projection and view matrix
-		//XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f * (3.14f / 180.0f), (float)WindowWidth / (float)WindowHeight, 0.1f, 1000.0f);
-		//XMStoreFloat4x4(&CamMatrices.cameraProjMat, tmpMat);
-
-		//// set starting camera state
-		//CamMatrices.cameraPosition = XMFLOAT4(0.0f, 2.0f, -4.0f, 0.0f);
-		//CamMatrices.cameraTarget = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-		//CamMatrices.cameraUp = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-
-		//// build view matrix
-		//XMVECTOR cPos = XMLoadFloat4(&CamMatrices.cameraPosition);
-		//XMVECTOR cTarg = XMLoadFloat4(&CamMatrices.cameraTarget);
-		//XMVECTOR cUp = XMLoadFloat4(&CamMatrices.cameraUp);
-		//tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
-		//XMStoreFloat4x4(&CamMatrices.cameraViewMat, tmpMat);
-
-		//// set starting cubes position
-		//// first cube
-		//Cube1Matrices.cubePosition = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f); // set cube 1's position
-		//XMVECTOR posVec = XMLoadFloat4(&Cube1Matrices.cubePosition); // create xmvector for cube1's position
-
-		//tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
-		//XMStoreFloat4x4(&Cube1Matrices.cubeRotMat, XMMatrixIdentity()); // initialize cube1's rotation matrix to identity matrix
-		//XMStoreFloat4x4(&Cube1Matrices.cubeWorldMat, tmpMat); // store cube1's world matrix
-
-		//// second cube
-		//Cube2Matrices.cubePosition = XMFLOAT4(1.5f, 0.0f, 0.0f, 0.0f);
-		//posVec = XMLoadFloat4(&Cube2Matrices.cubePosition) + XMLoadFloat4(&Cube1Matrices.cubePosition); // create xmvector for cube2's position
-		//																			// we are rotating around cube1 here, so add cube2's position to cube1
-
-		//tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube2's position offset vector
-		//XMStoreFloat4x4(&Cube2Matrices.cubeRotMat, XMMatrixIdentity()); // initialize cube2's rotation matrix to identity matrix
-		//XMStoreFloat4x4(&Cube2Matrices.cubeWorldMat, tmpMat); // store cube2's world matrix
 	}
 }
 
@@ -548,9 +661,14 @@ void D3D12App::Render()
 
 	// Set necessary state.
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	// set the descriptor heap
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap };
+	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	CommandList->SetGraphicsRootDescriptorTable(1, mainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
 	CommandList->RSSetViewports(1, &ViewPort);
 	CommandList->RSSetScissorRects(1, &ScissorRect);	
-	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->IASetVertexBuffers(0, 1, &VertexBufferView);
 	CommandList->IASetIndexBuffer(&IndexBufferView);
 
@@ -655,70 +773,6 @@ void D3D12App::Update()
 
 	// store cube2's world matrix
 	XMStoreFloat4x4(&Cube2Matrices.cubeWorldMat, worldMat);
-
-	//	// update app logic, such as moving the camera or figuring out what objects are in view
-
-	//// create rotation matrices
-	//XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
-	//XMMATRIX rotYMat = XMMatrixRotationY(0.0002f);
-	//XMMATRIX rotZMat = XMMatrixRotationZ(0.0003f);
-
-	//// add rotation to cube1's rotation matrix and store it
-	//XMMATRIX rotMat = XMLoadFloat4x4(&Cube1Matrices.cubeRotMat) * rotXMat * rotYMat * rotZMat;
-	//XMStoreFloat4x4(&Cube1Matrices.cubeRotMat, rotMat);
-
-	//// create translation matrix for cube 1 from cube 1's position vector
-	//XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&Cube1Matrices.cubePosition));
-
-	//// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-	//XMMATRIX worldMat = rotMat * translationMat;
-
-	//// store cube1's world matrix
-	//XMStoreFloat4x4(&Cube1Matrices.cubeWorldMat, worldMat);
-
-	//// update constant buffer for cube1
-	//// create the wvp matrix and store in constant buffer
-	//XMMATRIX viewMat = XMLoadFloat4x4(&CamMatrices.cameraViewMat); // load view matrix
-	//XMMATRIX projMat = XMLoadFloat4x4(&CamMatrices.cameraProjMat); // load projection matrix
-	//XMMATRIX wvpMat = XMLoadFloat4x4(&Cube1Matrices.cubeWorldMat) * viewMat * projMat; // create wvp matrix
-	//XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-	//XMStoreFloat4x4(&CbvPerCube.WorldViewProjectionMat4x4, transposed); // store transposed wvp matrix in constant buffer
-
-	//// copy our ConstantBuffer instance to the mapped constant buffer resource
-	//memcpy(CbvGPUAddress[CurrentFrameIdx], &CbvPerCube, sizeof(CbvPerCube));
-
-	//// now do cube2's world matrix
-	//// create rotation matrices for cube2
-	//rotXMat = XMMatrixRotationX(0.0003f);
-	//rotYMat = XMMatrixRotationY(0.0002f);
-	//rotZMat = XMMatrixRotationZ(0.0001f);
-
-	//// add rotation to cube2's rotation matrix and store it
-	//rotMat = rotZMat * (XMLoadFloat4x4(&Cube2Matrices.cubeRotMat) * (rotXMat * rotYMat));
-	//XMStoreFloat4x4(&Cube2Matrices.cubeRotMat, rotMat);
-
-	//// create translation matrix for cube 2 to offset it from cube 1 (its position relative to cube1
-	//XMMATRIX translationOffsetMat = XMMatrixTranslationFromVector(XMLoadFloat4(&Cube2Matrices.cubePosition));
-
-	//// we want cube 2 to be half the size of cube 1, so we scale it by .5 in all dimensions
-	//XMMATRIX scaleMat = XMMatrixScaling(0.5f, 0.5f, 0.5f);
-
-	//// reuse worldMat. 
-	//// first we scale cube2. scaling happens relative to point 0,0,0, so you will almost always want to scale first
-	//// then we translate it. 
-	//// then we rotate it. rotation always rotates around point 0,0,0
-	//// finally we move it to cube 1's position, which will cause it to rotate around cube 1
-	//worldMat = scaleMat * translationOffsetMat * rotMat * translationMat;
-
-	//wvpMat = XMLoadFloat4x4(&Cube2Matrices.cubeWorldMat) * viewMat * projMat; // create wvp matrix
-	//transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-	//XMStoreFloat4x4(&CbvPerCube.WorldViewProjectionMat4x4, transposed); // store transposed wvp matrix in constant buffer
-
-	//// copy our ConstantBuffer instance to the mapped constant buffer resource
-	//memcpy(CbvGPUAddress[CurrentFrameIdx] + ConstantBufferPerObjectAlignedSize, &CbvPerCube, sizeof(CbvPerCube));
-
-	//// store cube2's world matrix
-	//XMStoreFloat4x4(&Cube2Matrices.cubeWorldMat, worldMat);
 }
 
 void D3D12App::Destroy()
@@ -816,6 +870,223 @@ void D3D12App::EndFrame()
 
 	// Move Fence / Wait for previous frame to end
 	WaitForPreviousFrame();
+}
+
+int D3D12App::LoadImageDataFromFile(BYTE ** imageData, D3D12_RESOURCE_DESC & resourceDescription, LPCWSTR filename, int & bytesPerRow)
+{
+	HRESULT hr;
+
+	// we only need one instance of the imaging factory to create decoders and frames
+	static IWICImagingFactory *wicFactory;
+
+	// reset decoder, frame and converter since these will be different for each image we load
+	IWICBitmapDecoder *wicDecoder = NULL;
+	IWICBitmapFrameDecode *wicFrame = NULL;
+	IWICFormatConverter *wicConverter = NULL;
+
+	bool imageConverted = false;
+
+	if (wicFactory == NULL)
+	{
+		// Initialize the COM library
+		CoInitialize(NULL);
+
+		// create the WIC factory
+		hr = CoCreateInstance(
+			CLSID_WICImagingFactory,
+			NULL,
+			CLSCTX_INPROC_SERVER,
+			IID_PPV_ARGS(&wicFactory)
+		);
+		if (FAILED(hr)) return 0;
+	}
+
+	// load a decoder for the image
+	hr = wicFactory->CreateDecoderFromFilename(
+		filename,                        // Image we want to load in
+		NULL,                            // This is a vendor ID, we do not prefer a specific one so set to null
+		GENERIC_READ,                    // We want to read from this file
+		WICDecodeMetadataCacheOnLoad,    // We will cache the metadata right away, rather than when needed, which might be unknown
+		&wicDecoder                      // the wic decoder to be created
+	);
+	if (FAILED(hr)) return 0;
+
+	// get image from decoder (this will decode the "frame")
+	hr = wicDecoder->GetFrame(0, &wicFrame);
+	if (FAILED(hr)) return 0;
+
+	// get wic pixel format of image
+	WICPixelFormatGUID pixelFormat;
+	hr = wicFrame->GetPixelFormat(&pixelFormat);
+	if (FAILED(hr)) return 0;
+
+	// get size of image
+	UINT textureWidth, textureHeight;
+	hr = wicFrame->GetSize(&textureWidth, &textureHeight);
+	if (FAILED(hr)) return 0;
+
+	// we are not handling sRGB types in this tutorial, so if you need that support, you'll have to figure
+	// out how to implement the support yourself
+
+	// convert wic pixel format to dxgi pixel format
+	DXGI_FORMAT dxgiFormat = GetDXGIFormatFromWICFormat(pixelFormat);
+
+	// if the format of the image is not a supported dxgi format, try to convert it
+	if (dxgiFormat == DXGI_FORMAT_UNKNOWN)
+	{
+		// get a dxgi compatible wic format from the current image format
+		WICPixelFormatGUID convertToPixelFormat = GetConvertToWICFormat(pixelFormat);
+
+		// return if no dxgi compatible format was found
+		if (convertToPixelFormat == GUID_WICPixelFormatDontCare) return 0;
+
+		// set the dxgi format
+		dxgiFormat = GetDXGIFormatFromWICFormat(convertToPixelFormat);
+
+		// create the format converter
+		hr = wicFactory->CreateFormatConverter(&wicConverter);
+		if (FAILED(hr)) return 0;
+
+		// make sure we can convert to the dxgi compatible format
+		BOOL canConvert = FALSE;
+		hr = wicConverter->CanConvert(pixelFormat, convertToPixelFormat, &canConvert);
+		if (FAILED(hr) || !canConvert) return 0;
+
+		// do the conversion (wicConverter will contain the converted image)
+		hr = wicConverter->Initialize(wicFrame, convertToPixelFormat, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
+		if (FAILED(hr)) return 0;
+
+		// this is so we know to get the image data from the wicConverter (otherwise we will get from wicFrame)
+		imageConverted = true;
+	}
+
+	int bitsPerPixel = GetDXGIFormatBitsPerPixel(dxgiFormat); // number of bits per pixel
+	bytesPerRow = (textureWidth * bitsPerPixel) / 8; // number of bytes in each row of the image data
+	int imageSize = bytesPerRow * textureHeight; // total image size in bytes
+
+	// allocate enough memory for the raw image data, and set imageData to point to that memory
+	*imageData = (BYTE*)malloc(imageSize);
+
+	// copy (decoded) raw image data into the newly allocated memory (imageData)
+	if (imageConverted)
+	{
+		// if image format needed to be converted, the wic converter will contain the converted image
+		hr = wicConverter->CopyPixels(0, bytesPerRow, imageSize, *imageData);
+		if (FAILED(hr)) return 0;
+	}
+	else
+	{
+		// no need to convert, just copy data from the wic frame
+		hr = wicFrame->CopyPixels(0, bytesPerRow, imageSize, *imageData);
+		if (FAILED(hr)) return 0;
+	}
+
+	// now describe the texture with the information we have obtained from the image
+	resourceDescription = {};
+	resourceDescription.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDescription.Alignment = 0; // may be 0, 4KB, 64KB, or 4MB. 0 will let runtime decide between 64KB and 4MB (4MB for multi-sampled textures)
+	resourceDescription.Width = textureWidth; // width of the texture
+	resourceDescription.Height = textureHeight; // height of the texture
+	resourceDescription.DepthOrArraySize = 1; // if 3d image, depth of 3d image. Otherwise an array of 1D or 2D textures (we only have one image, so we set 1)
+	resourceDescription.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level
+	resourceDescription.Format = dxgiFormat; // This is the dxgi format of the image (format of the pixels)
+	resourceDescription.SampleDesc.Count = 1; // This is the number of samples per pixel, we just want 1 sample
+	resourceDescription.SampleDesc.Quality = 0; // The quality level of the samples. Higher is better quality, but worse performance
+	resourceDescription.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN; // The arrangement of the pixels. Setting to unknown lets the driver choose the most efficient one
+	resourceDescription.Flags = D3D12_RESOURCE_FLAG_NONE; // no flags
+
+	// return the size of the image. remember to delete the image once your done with it (in this tutorial once its uploaded to the gpu)
+	return imageSize;
+}
+
+DXGI_FORMAT D3D12App::GetDXGIFormatFromWICFormat(WICPixelFormatGUID & wicFormatGUID)
+{
+	if (wicFormatGUID == GUID_WICPixelFormat128bppRGBAFloat) return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGBAHalf) return DXGI_FORMAT_R16G16B16A16_FLOAT;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGBA) return DXGI_FORMAT_R16G16B16A16_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppRGBA) return DXGI_FORMAT_R8G8B8A8_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppBGRA) return DXGI_FORMAT_B8G8R8A8_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppBGR) return DXGI_FORMAT_B8G8R8X8_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppRGBA1010102XR) return DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM;
+
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppRGBA1010102) return DXGI_FORMAT_R10G10B10A2_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppBGRA5551) return DXGI_FORMAT_B5G5R5A1_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppBGR565) return DXGI_FORMAT_B5G6R5_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppGrayFloat) return DXGI_FORMAT_R32_FLOAT;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppGrayHalf) return DXGI_FORMAT_R16_FLOAT;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppGray) return DXGI_FORMAT_R16_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat8bppGray) return DXGI_FORMAT_R8_UNORM;
+	else if (wicFormatGUID == GUID_WICPixelFormat8bppAlpha) return DXGI_FORMAT_A8_UNORM;
+
+	else return DXGI_FORMAT_UNKNOWN;
+}
+
+WICPixelFormatGUID D3D12App::GetConvertToWICFormat(WICPixelFormatGUID & wicFormatGUID)
+{
+	if (wicFormatGUID == GUID_WICPixelFormatBlackWhite) return GUID_WICPixelFormat8bppGray;
+	else if (wicFormatGUID == GUID_WICPixelFormat1bppIndexed) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat2bppIndexed) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat4bppIndexed) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat8bppIndexed) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat2bppGray) return GUID_WICPixelFormat8bppGray;
+	else if (wicFormatGUID == GUID_WICPixelFormat4bppGray) return GUID_WICPixelFormat8bppGray;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppGrayFixedPoint) return GUID_WICPixelFormat16bppGrayHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppGrayFixedPoint) return GUID_WICPixelFormat32bppGrayFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat16bppBGR555) return GUID_WICPixelFormat16bppBGRA5551;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppBGR101010) return GUID_WICPixelFormat32bppRGBA1010102;
+	else if (wicFormatGUID == GUID_WICPixelFormat24bppBGR) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat24bppRGB) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppPBGRA) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppPRGBA) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat48bppRGB) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat48bppBGR) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppBGRA) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppPRGBA) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppPBGRA) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat48bppRGBFixedPoint) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat48bppBGRFixedPoint) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGBAFixedPoint) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppBGRAFixedPoint) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGBFixedPoint) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGBHalf) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat48bppRGBHalf) return GUID_WICPixelFormat64bppRGBAHalf;
+	else if (wicFormatGUID == GUID_WICPixelFormat128bppPRGBAFloat) return GUID_WICPixelFormat128bppRGBAFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat128bppRGBFloat) return GUID_WICPixelFormat128bppRGBAFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat128bppRGBAFixedPoint) return GUID_WICPixelFormat128bppRGBAFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat128bppRGBFixedPoint) return GUID_WICPixelFormat128bppRGBAFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppRGBE) return GUID_WICPixelFormat128bppRGBAFloat;
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppCMYK) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppCMYK) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat40bppCMYKAlpha) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat80bppCMYKAlpha) return GUID_WICPixelFormat64bppRGBA;
+
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
+	else if (wicFormatGUID == GUID_WICPixelFormat32bppRGB) return GUID_WICPixelFormat32bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppRGB) return GUID_WICPixelFormat64bppRGBA;
+	else if (wicFormatGUID == GUID_WICPixelFormat64bppPRGBAHalf) return GUID_WICPixelFormat64bppRGBAHalf;
+#endif
+
+	else return GUID_WICPixelFormatDontCare;
+}
+
+int D3D12App::GetDXGIFormatBitsPerPixel(DXGI_FORMAT & dxgiFormat)
+{
+	if (dxgiFormat == DXGI_FORMAT_R32G32B32A32_FLOAT) return 128;
+	else if (dxgiFormat == DXGI_FORMAT_R16G16B16A16_FLOAT) return 64;
+	else if (dxgiFormat == DXGI_FORMAT_R16G16B16A16_UNORM) return 64;
+	else if (dxgiFormat == DXGI_FORMAT_R8G8B8A8_UNORM) return 32;
+	else if (dxgiFormat == DXGI_FORMAT_B8G8R8A8_UNORM) return 32;
+	else if (dxgiFormat == DXGI_FORMAT_B8G8R8X8_UNORM) return 32;
+	else if (dxgiFormat == DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM) return 32;
+
+	else if (dxgiFormat == DXGI_FORMAT_R10G10B10A2_UNORM) return 32;
+	else if (dxgiFormat == DXGI_FORMAT_B5G5R5A1_UNORM) return 16;
+	else if (dxgiFormat == DXGI_FORMAT_B5G6R5_UNORM) return 16;
+	else if (dxgiFormat == DXGI_FORMAT_R32_FLOAT) return 32;
+	else if (dxgiFormat == DXGI_FORMAT_R16_FLOAT) return 16;
+	else if (dxgiFormat == DXGI_FORMAT_R16_UNORM) return 16;
+	else if (dxgiFormat == DXGI_FORMAT_R8_UNORM) return 8;
+	else if (dxgiFormat == DXGI_FORMAT_A8_UNORM) return 8;
 }
 
 void D3D12App::WaitForPreviousFrame()

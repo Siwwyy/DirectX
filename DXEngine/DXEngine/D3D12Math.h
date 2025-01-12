@@ -11,11 +11,13 @@
 	// Vertex attributes
 	struct Vertex
 	{
-		Vertex(float x, float y, float z, float r, float g, float b, float a) : position(x, y, z), color(r, g, b, a) {}
+		Vertex(float x, float y, float z, float u, float v) : position(x, y, z), texcoord(u,v) {}
+			//, color(r, g, b, a) {}
 
 
 		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT4 color;
+		DirectX::XMFLOAT2 texcoord;
+		//DirectX::XMFLOAT4 color;
 	};
 
 

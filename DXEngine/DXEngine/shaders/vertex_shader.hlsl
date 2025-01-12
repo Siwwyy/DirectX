@@ -5,14 +5,16 @@
 struct VSInput
 {
     float3 position : POSITION;
-    float4 color    : COLOR;
+    // float4 color    : COLOR;
+    float2 texCoord: TEXCOORD;
 };
 
 // Vertex Shader Output struct
 struct VSOutput
 {
     float4 position : SV_POSITION;
-    float4 color    : COLOR;
+    // float4 color    : COLOR;
+    float2 texCoord: TEXCOORD;
 };
 
 cbuffer ConstantBuffer : register(b0)
@@ -23,8 +25,10 @@ cbuffer ConstantBuffer : register(b0)
 VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    output.position     = mul(float4(input.position, 1.f), WorldViewProjectionMat4x4);
+    output.position     = mul(float4(input.position, 1.f), WorldViewProjectionMat4x4); //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
+    //instead of keeping it float4x4...
     //output.position     = float4(input.position, 1.f);
-    output.color        = input.color;
+    //output.color        = input.color;
+    output.texCoord = input.texCoord;
     return output;
 }
