@@ -36,7 +36,7 @@
     <ClCompile Include="D3D12Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DXApp3D.cpp">
+    <ClCompile Include="D3D12ShaderUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,8 +59,16 @@
     <ClInclude Include="D3D12Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DXApp3D.h">
+    <ClInclude Include="D3D12ShaderUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Temp.cpp">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

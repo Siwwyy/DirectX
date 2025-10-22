@@ -70,6 +70,8 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 {
 	CurrentApp* dx12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
+	// create an instance of timer
+	Helpers::Timer timer;
 	switch (message)
 	{
 	case WM_CREATE:
@@ -89,14 +91,13 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		case VK_UP:
 		{
 			// Process the UP ARROW key.
-			dx12App->ArrowUp();
 		}
 		return 0;
 
 		case VK_DOWN:
 		{
 			// Process the UP ARROW key.
-			dx12App->ArrowDown();
+
 		}
 		return 0;
 		default: return 0;
@@ -119,7 +120,8 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	case WM_PAINT:
 	{
-		dx12App->Update();
+		auto DeltaTime = timer.GetFrameDelta();
+		dx12App->Update(static_cast<float>(DeltaTime));
 		dx12App->Render();
 	}
 	return 0;

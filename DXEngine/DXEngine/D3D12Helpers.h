@@ -3,20 +3,16 @@
 
 #ifndef D3D12_HELPERS_H_INCLUDED
 #define D3D12_HELPERS_H_INCLUDED
-#pragma once
 
-#include <dxgi.h>
-#include <stdexcept>
-#include <cassert>
-#include <wrl/client.h>
-#include "d3dx12.h"
+#include "pch.h"
+#include <iostream>
 
 /***************************
  ********* DEFINES *********
  ***************************/
 
  // Indicates if debug mode is set
-#define DEBUG_MODE _DEBUG
+#define DEBUG_MODE _DEBUG || DEBUG
 //#define DEBUG_MODE 0
 
 // Safe Release of ComPtr<T>
@@ -26,8 +22,8 @@
 // Naming helper for ComPtr<T>.
 // Assigns the name of the variable as the name of the object.
 // The indexed variant will include the index in the name of the object.
-#define NAME_D3D12_OBJECT(x) SetName((x).Get(), L#x)
-#define NAME_D3D12_OBJECT_INDEXED(x, n) SetNameIndexed((x)[n].Get(), L#x, n)
+#define NAME_D3D12_OBJECT(x, NAME) x->SetName(L#NAME)
+#define NAME_D3D12_OBJECT_INDEXED(x, n, NAME) SetNameIndexed((x)[n].Get(), L#NAME, n)
 
 
 // Disables copy ability of specified class
@@ -46,6 +42,12 @@
 
 // assert with splitted condition and message inside
 #define DXASSERT(CONDITION, MESSAGE) assert((CONDITION) && (MESSAGE))
+
+// logging to console
+#define DXLOG(MESSAGE, ...)                                  \
+        char MsgBuffer[512]{};                               \
+        sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);          \
+        OutputDebugStringA(MsgBuffer);                       \
 
 
 
@@ -91,18 +93,116 @@
 template<typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-
-
 namespace Helpers
 {
     /***************************
 	 ****** HELPER STRUCTS *****
 	 ***************************/
+
+    // Command List Helper
     struct CommandListDesc
     {
-        UINT                        nodeMask;       //GPU Id
+        UINT                        NodeMask;       //GPU Id
         D3D12_COMMAND_LIST_TYPE     Type;           //Command List type
         D3D12_COMMAND_LIST_FLAGS    Flags;          //Additional flags for Command List
+    };
+
+
+    // Root Param Helper
+    struct RootParamHelper
+    {
+        D3D12_ROOT_PARAMETER_TYPE       ParameterType;
+        D3D12_SHADER_VISIBILITY         ShaderVisibility;
+
+        RootParamHelper(D3D12_ROOT_PARAMETER_TYPE ParameterType,
+            D3D12_SHADER_VISIBILITY ShaderVisibility,
+            D3D12_ROOT_CONSTANTS RootConstant)
+            : ParameterType(ParameterType)
+            , ShaderVisibility(ShaderVisibility)
+        {
+            ActiveField.Constants = RootConstant;
+        }
+
+        RootParamHelper(D3D12_ROOT_PARAMETER_TYPE ParameterType,
+            D3D12_SHADER_VISIBILITY ShaderVisibility,
+            D3D12_ROOT_DESCRIPTOR Descriptor)
+            : ParameterType(ParameterType)
+            , ShaderVisibility(ShaderVisibility)
+        {
+            ActiveField.Descriptor = Descriptor;
+        }
+
+        RootParamHelper(D3D12_ROOT_PARAMETER_TYPE ParameterType,
+            D3D12_SHADER_VISIBILITY ShaderVisibility,
+            D3D12_ROOT_DESCRIPTOR_TABLE DescriptorTable)
+            : ParameterType(ParameterType)
+            , ShaderVisibility(ShaderVisibility)
+        {
+            ActiveField.DescriptorTable = DescriptorTable;
+        }
+
+        D3D12_ROOT_PARAMETER CreateRootParameter() const noexcept
+        {
+            D3D12_ROOT_PARAMETER temp       = {};
+            temp.ParameterType              = ParameterType;
+            temp.ShaderVisibility           = ShaderVisibility;
+            temp.Constants                  = ActiveField.Constants;
+            temp.Descriptor                 = ActiveField.Descriptor;
+            temp.DescriptorTable            = ActiveField.DescriptorTable;
+            return temp;
+        }
+
+    private:
+        struct /* NoName */
+        {
+            D3D12_ROOT_CONSTANTS        Constants;
+            D3D12_ROOT_DESCRIPTOR       Descriptor;
+            D3D12_ROOT_DESCRIPTOR_TABLE DescriptorTable;
+        } ActiveField;
+
+    };
+
+    // Timer
+    struct Timer
+    {
+        double timerFrequency = 0.0;
+        long long lastFrameTime = 0;
+        long long lastSecond = 0;
+        double frameDelta = 0;
+        int fps = 0;
+
+        Timer()
+        {
+            LARGE_INTEGER li;
+            QueryPerformanceFrequency(&li);
+
+            // seconds
+            //timerFrequency = double(li.QuadPart);
+
+            // milliseconds
+            timerFrequency = double(li.QuadPart) / 1000.0;
+
+            // microseconds
+            //timerFrequency = double(li.QuadPart) / 1000000.0;
+
+            QueryPerformanceCounter(&li);
+            lastFrameTime = li.QuadPart;
+        }
+
+        // Call this once per frame
+        auto GetFrameDelta()
+        {
+            LARGE_INTEGER li;
+            QueryPerformanceCounter(&li);
+            frameDelta = double(li.QuadPart - lastFrameTime) / timerFrequency;
+            if (frameDelta > 0)
+            {
+                fps = 1000 / frameDelta;
+            }
+                
+            lastFrameTime = li.QuadPart;
+            return frameDelta;
+        }
     };
 
     /***************************
@@ -116,8 +216,9 @@ namespace Helpers
     {
         auto HrToString = [&]
         {
-            char s_str[64] = {};
+            char s_str[512] = {};
             sprintf_s(s_str, "HRESULT of 0x%08X", static_cast<UINT>(hr));
+            /*OutputDebugStringA(static_cast<LPCSTR>(hr));*/
             return std::string{ s_str };
         };
 
@@ -159,7 +260,7 @@ namespace Helpers
 
     // make function for a ComPtr
     template <typename T, typename... Types, std::enable_if_t<!std::is_array_v<T>, int> = 0>
-    _NODISCARD_SMART_PTR_ALLOC _CONSTEXPR23 ComPtr<T> make_com(Types&&... args)
+    _NODISCARD constexpr ComPtr<T> make_com(Types&&... args)
 	{ 
         return ComPtr<T>(new T(_STD forward<Types>(args)...));
     }

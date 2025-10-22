@@ -3,8 +3,6 @@
 
 #include "D3D12Helpers.h"
 
-#include <dxgi1_6.h>
-
 
 ComPtr<IDXGIAdapter1> Helpers::GetAdapter(ComPtr<IDXGIFactory1> pFactory, D3D_FEATURE_LEVEL deviceFeatureLevel, bool useWarpAdapter,
 	bool requestHighPerformanceAdapter)

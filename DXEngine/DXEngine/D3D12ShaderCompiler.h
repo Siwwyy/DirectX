@@ -1,13 +1,17 @@
-#pragma once
+
+//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+
+#ifndef D3D12_SHADER_COMPILER_H_INCLUDED
+#define D3D12_SHADER_COMPILER_H_INCLUDED
 
 
-#include "D3D12Helpers.h"
+#include "pch.h"
 #include <dxcapi.h> //for new DX shader compiler API | Has to be included at the end, otherwise got many errors
 
 class D3D12ShaderCompiler
 {
 public:
-	DISABLE_COPY(D3D12ShaderCompiler)
+	DISABLE_COPY_MOVE(D3D12ShaderCompiler)
 
 	D3D12ShaderCompiler();
 	~D3D12ShaderCompiler() = default;
@@ -16,7 +20,8 @@ public:
 		LPCWSTR shaderAbsolutePath,
 		DxcDefine const * const shaderDefines,
 		LPCWSTR entryPoint,
-		LPCWSTR targetProfile);	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
+		LPCWSTR targetProfile,
+		std::vector<LPCWSTR> arguments = {});	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
 
 	/* [[deprecated]] */ ComPtr<ID3DBlob> CompileShaderD3D(
 		LPCWSTR shaderAbsolutePath, 
@@ -28,6 +33,10 @@ private:
 
 	// IDxc variables
 	ComPtr<IDxcLibrary>							library;
-	ComPtr<IDxcCompiler>						compiler;
+	ComPtr<IDxcCompiler3>						compiler;	//Use IDxcCompiler3 instead of IDxcCompiler (because of Deprecatness Compile() function)
+	ComPtr<IDxcUtils>							utils;
+	ComPtr<IDxcIncludeHandler>					dxcIncludeHandler;
 
 };
+
+#endif // D3D12_SHADER_COMPILER_H_INCLUDED

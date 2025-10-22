@@ -7,19 +7,8 @@
 
 #include <windows.h>
 
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <D3Dcompiler.h>
-#include <DirectXMath.h>
-#include "d3dx12.h"
-
-
-#include <wrl.h>
-
-
 // Own includes
 #include "D3D12App.h"
-#include "DXApp3D.h"
 #include "Win32Proc.h"
 ////
 
@@ -31,6 +20,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
     int       nCmdShow)
 {
     D3D12App dx12App(1280u, 720u, L"MyApp");
-    //DXApp3D dx12App(1280u, 720u, L"MyApp");
+    //D3D12App dx12App(800, 600, L"MyApp");
     return Win32Proc::Run(hInstance, nCmdShow, &dx12App);
 }

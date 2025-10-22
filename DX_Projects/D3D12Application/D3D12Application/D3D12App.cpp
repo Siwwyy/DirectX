@@ -10,11 +10,11 @@
 
 
 //CONSTANTS
-_CONSTEVAL D3D12_COMMAND_LIST_TYPE		COMMAND_LIST_TYPE		= D3D12_COMMAND_LIST_TYPE_DIRECT;
-_CONSTEVAL UINT							BACK_BUFFER_COUNT		= 2;
-_CONSTEVAL D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL		= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
-_CONSTEVAL DXGI_FORMAT					BACK_BUFFER_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-_CONSTEVAL DXGI_FORMAT					DEPTH_STENCIL_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;		//depth stencil format
+constexpr D3D12_COMMAND_LIST_TYPE		COMMAND_LIST_TYPE		= D3D12_COMMAND_LIST_TYPE_DIRECT;
+constexpr UINT							BACK_BUFFER_COUNT		= 2;
+constexpr D3D_FEATURE_LEVEL			D3D12_FEATURE_LEVEL		= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
+constexpr DXGI_FORMAT					BACK_BUFFER_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+constexpr DXGI_FORMAT					DEPTH_STENCIL_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;		//depth stencil format
 
 using namespace Helpers;
 using namespace Math;
@@ -27,7 +27,7 @@ using namespace Math;
 //	}
 //	cbColorMultiplierVirtualGPUAddress.release();
 //}
-
+ComPtr<IDXGISwapChain1> swapChain1;
 D3D12App::D3D12App(const UINT windowWidth, const UINT windowHeight, const std::wstring windowName)
 	: windowWidth(windowWidth)
 	, windowHeight(windowHeight)
@@ -130,21 +130,21 @@ void D3D12App::Initialize()
 	swapChainDesc.SampleDesc.Count = 1;
 
 	//auto swapChain1 = &dynamic_cast<IDXGISwapChain1*>(swapChain.Get());
-	ComPtr<IDXGISwapChain1> swapChain1;
+	/*ComPtr<IDXGISwapChain1> swapChain1;*/
 	ThrowIfFailed(factory->CreateSwapChainForHwnd(
 		commandQueue.Get(),        // Swap chain needs the queue so that it can force a flush on it.
 		windowHwnd,
 		&swapChainDesc,
 		nullptr,
 		nullptr,
-		&swapChain1
+		dynamic_cast<IDXGISwapChain1*>(swapChain.GetAddressOf())
 	));
 
 	// This sample does not support fullscreen transitions.
 	ThrowIfFailed(factory->MakeWindowAssociation(windowHwnd, DXGI_MWA_NO_ALT_ENTER));
 
 	// Convert SwapChain1 interface to SwapChain4
-	ThrowIfFailed(swapChain1.As(&swapChain));
+	//ThrowIfFailed(swapChain1.As(&swapChain));
 	currentFrameIdx = swapChain->GetCurrentBackBufferIndex();
 
 
