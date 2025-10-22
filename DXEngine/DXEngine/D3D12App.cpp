@@ -9,11 +9,11 @@
 
 
 //CONSTANTS
-_CONSTEVAL D3D12_COMMAND_LIST_TYPE			COMMAND_LIST_TYPE			= D3D12_COMMAND_LIST_TYPE_DIRECT;
-_CONSTEVAL UINT								BACK_BUFFER_COUNT			= 3;
-_CONSTEVAL D3D_FEATURE_LEVEL				D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
-_CONSTEVAL DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-_CONSTEVAL DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
+const D3D12_COMMAND_LIST_TYPE			COMMAND_LIST_TYPE			= D3D12_COMMAND_LIST_TYPE_DIRECT;
+const UINT								BACK_BUFFER_COUNT			= 3;
+const D3D_FEATURE_LEVEL					D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
+const DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+const DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
 
 // HEAP PROPERTIES
 static const CD3DX12_HEAP_PROPERTIES		HEAP_PROPERTY_DEFAULT		= CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);		//Heap type default
@@ -301,20 +301,8 @@ void D3D12App::Initialize()
 	sampler.RegisterSpace = 0;
 	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	//// create a root descriptor, which explains where to find the data for this root parameter
-	//D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
-	//rootCBVDescriptor.RegisterSpace = 0;
-	//rootCBVDescriptor.ShaderRegister = 0;
-
-	//// create a root parameter and fill it out
-	//D3D12_ROOT_PARAMETER  rootParameters[1]; // only one parameter right now
-	//rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-	//rootParameters[0].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-	//rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
-
-
 	// Create Root Signature Descriptor
-	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc = {};
+	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
 	RootSignatureDesc.Init(RootParameters.size(), // we have 1 root parameter
 		RootParameters.data(), // a pointer to the beginning of our root parameters array
 		1, // we have one static sampler
@@ -363,8 +351,10 @@ void D3D12App::Initialize()
 	// Define the vertex input layout.
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		//{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		//{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
@@ -405,8 +395,6 @@ void D3D12App::Initialize()
 	// Reset previously used command list and command allocator
 	ThrowIfFailed(CommandAllocators[0]->Reset());
 	ThrowIfFailed(CommandList->Reset(CommandAllocators[0].Get(), PipelineState.Get()));
-
-
 
 
 
@@ -481,11 +469,6 @@ void D3D12App::Initialize()
 
 	// we are done with image data now that we've uploaded it to the gpu, so free it up
 	delete imageData;
-
-
-
-
-
 
 
 
@@ -652,6 +635,98 @@ void D3D12App::Initialize()
 		DirectX::XMStoreFloat4x4(&Cube2Matrices.cubeRotMat, DirectX::XMMatrixIdentity()); // initialize cube2's rotation matrix to identity matrix
 		DirectX::XMStoreFloat4x4(&Cube2Matrices.cubeWorldMat, tmpMat); // store cube2's world matrix
 	}
+
+	// Text stuffs
+	{
+		//constexpr const wchar_t* TextVertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DXEngine//DXEngine//shaders//text_vertex_shader.hlsl";
+		//constexpr const wchar_t* TextPixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXEngine//DXEngine//shaders//text_pixel_shader.hlsl";
+		//std::vector<LPCWSTR> argumentsa;
+
+		//argumentsa.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); //-Od
+		//argumentsa.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
+		//argumentsa.push_back(DXC_ARG_DEBUG); //-Zi
+
+
+		//for (const auto& define : shaderDefines)
+		//{
+		//	arguments.push_back(L"-D");
+		//	arguments.push_back(define.Name);
+		//	arguments.push_back(L"=");
+		//	arguments.push_back(define.Value);
+		//}
+		//
+		//// Compile shader
+		//auto TextVertexShader	= shaderCompiler.CompileShader(TextVertexShaderPath, nullptr, L"VSMain", L"vs_6_0");
+		//auto TextPixelShader	= shaderCompiler.CompileShader(TextPixelShaderPath, nullptr, L"PSMain", L"ps_6_0");
+
+
+		//// fill out a shader bytecode structure, which is basically just a pointer
+		//// to the shader bytecode and the size of the shader bytecode
+		//D3D12_SHADER_BYTECODE textVertexShaderBytecode	= {};
+		//textVertexShaderBytecode.BytecodeLength			= TextVertexShader->GetBufferSize();
+		//textVertexShaderBytecode.pShaderBytecode		= TextVertexShader->GetBufferPointer();
+
+
+		//// fill out shader bytecode structure for pixel shader
+		//D3D12_SHADER_BYTECODE textPixelShaderBytecode	= {};
+		//textPixelShaderBytecode.BytecodeLength			= TextPixelShader->GetBufferSize();
+		//textPixelShaderBytecode.pShaderBytecode			= TextPixelShader->GetBufferPointer();
+
+		//// create input layout
+
+		//// The input layout is used by the Input Assembler so that it knows
+		//// how to read the vertex data bound to it.
+		//D3D12_INPUT_ELEMENT_DESC textInputLayout[] =
+		//{
+		//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 },
+		//	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 },
+		//	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 }
+		//};
+
+		//// fill out an input layout description structure
+		//D3D12_INPUT_LAYOUT_DESC textInputLayoutDesc = {};
+
+		//// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
+		//textInputLayoutDesc.NumElements = sizeof(textInputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
+		//textInputLayoutDesc.pInputElementDescs = textInputLayout;
+
+		//// create the text pipeline state object (PSO)
+
+		//D3D12_GRAPHICS_PIPELINE_STATE_DESC textpsoDesc = {};
+		//textpsoDesc.InputLayout = textInputLayoutDesc;
+		//textpsoDesc.pRootSignature = RootSignature.Get();
+		//textpsoDesc.VS = textVertexShaderBytecode;
+		//textpsoDesc.PS = textPixelShaderBytecode;
+		//textpsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		//textpsoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		//textpsoDesc.SampleDesc = DefaultSampleDesc();
+		//textpsoDesc.SampleMask = 0xffffffff;
+		//textpsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+
+		//D3D12_BLEND_DESC textBlendStateDesc = {};
+		//textBlendStateDesc.AlphaToCoverageEnable = FALSE;
+		//textBlendStateDesc.IndependentBlendEnable = FALSE;
+		//textBlendStateDesc.RenderTarget[0].BlendEnable = TRUE;
+
+		//textBlendStateDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		//textBlendStateDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		//textBlendStateDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
+		//textBlendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_SRC_ALPHA;
+		//textBlendStateDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
+		//textBlendStateDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+
+		//textBlendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		//textpsoDesc.BlendState = textBlendStateDesc;
+		//textpsoDesc.NumRenderTargets = 1;
+		//D3D12_DEPTH_STENCIL_DESC textDepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		//textDepthStencilDesc.DepthEnable = false;
+		//textpsoDesc.DepthStencilState = textDepthStencilDesc;
+
+		//// create the text pso
+		//ThrowIfFailed(Device->CreateGraphicsPipelineState(&textpsoDesc, IID_PPV_ARGS(&textPSO)));
+	}
 }
 
 void D3D12App::Render()
@@ -711,7 +786,7 @@ void D3D12App::Render()
 	EndFrame();
 }
 
-void D3D12App::Update()
+void D3D12App::Update(float DeltaTime)
 {
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
@@ -797,6 +872,12 @@ void D3D12App::InitializePerFrameResources()
 	ConstantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
 	// Constat buffer gpu addresses
 	CbvGPUAddress.resize(BACK_BUFFER_COUNT);
+
+	//Text rendering stuffs
+	textVertexBuffer.resize(BACK_BUFFER_COUNT);
+	textVertexBufferView.resize(BACK_BUFFER_COUNT);
+	textVBGPUAddress.resize(BACK_BUFFER_COUNT);
+	/////
 
 	// Get handle for 0th descriptor in heap
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -1087,6 +1168,11 @@ int D3D12App::GetDXGIFormatBitsPerPixel(DXGI_FORMAT & dxgiFormat)
 	else if (dxgiFormat == DXGI_FORMAT_R16_UNORM) return 16;
 	else if (dxgiFormat == DXGI_FORMAT_R8_UNORM) return 8;
 	else if (dxgiFormat == DXGI_FORMAT_A8_UNORM) return 8;
+}
+
+Font D3D12App::LoadFont(LPCWSTR filename, int windowWidth, int windowHeight)
+{
+	return Font();
 }
 
 void D3D12App::WaitForPreviousFrame()

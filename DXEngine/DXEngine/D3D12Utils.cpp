@@ -69,7 +69,7 @@ std::vector<D3D12_ROOT_PARAMETER> Utils::CreateRootParameters(std::initializer_l
 	std::vector<D3D12_ROOT_PARAMETER> temp;
 	for (const Helpers::RootParamHelper& param : Params)
 	{
-		temp.emplace_back(param.CreateRootParameter());
+		temp.push_back(param.CreateRootParameter());
 	}
 	return temp; //initializer list<D3D12_ROOT_PARAMETER>
 }

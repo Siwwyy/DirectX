@@ -32,7 +32,7 @@ public:
 	// Functions
 	void Initialize();
 	void Render();
-	void Update();
+	void Update(float DeltaTime);
 	void Destroy();
 
 
@@ -106,6 +106,8 @@ private:
 	ComPtr<ID3D12Resource>								VertexBufferUploadHeap;
 	ComPtr<ID3D12Resource>								IndexBufferUploadHeap;
 
+
+	// Texture loading stuffs
 	ID3D12Resource* textureBuffer; // the resource heap containing our texture
 
 	int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int &bytesPerRow);
@@ -116,6 +118,22 @@ private:
 
 	ID3D12DescriptorHeap* mainDescriptorHeap;
 	ID3D12Resource* textureBufferUploadHeap;
+
+	// Font stuffs
+	ID3D12PipelineState* textPSO; // pso containing a pipeline state
+
+	Font arialFont; // this will store our arial font information
+
+	int maxNumTextCharacters = 1024; // the maximum number of characters you can render during a frame. This is just used to make sure
+	// there is enough memory allocated for the text vertex buffer each frame
+
+	std::vector<ComPtr<ID3D12Resource>>			textVertexBuffer;
+	std::vector<D3D12_VERTEX_BUFFER_VIEW>		textVertexBufferView;	// a view for our text vertex buffer
+	std::vector<UINT8>							textVBGPUAddress;		// this is a pointer to each of the text constant buffers
+
+	Font LoadFont(LPCWSTR filename, int windowWidth, int windowHeight); // load a font
+
+	void RenderText(Font font, std::wstring text, XMFLOAT2 pos, XMFLOAT2 scale = XMFLOAT2(1.0f, 1.0f), XMFLOAT2 padding = XMFLOAT2(0.5f, 0.0f), XMFLOAT4 color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 };
 
 #endif // D3D12_APP_H_INCLUDED
