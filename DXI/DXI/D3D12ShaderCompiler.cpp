@@ -7,68 +7,68 @@ using namespace Helpers;
 
 D3D12ShaderCompiler::D3D12ShaderCompiler()
 {
-	ThrowIfFailed(DxcCreateInstance(CLSID_DxcLibrary,	IID_PPV_ARGS(&library)));
-	ThrowIfFailed(DxcCreateInstance(CLSID_DxcCompiler,	IID_PPV_ARGS(&compiler)));
-	ThrowIfFailed(DxcCreateInstance(CLSID_DxcUtils,		IID_PPV_ARGS(&utils)));
-	ThrowIfFailed(library->CreateIncludeHandler(&dxcIncludeHandler));
+	ThrowIfFailed(DxcCreateInstance(CLSID_DxcLibrary,	IID_PPV_ARGS(&Library)));
+	ThrowIfFailed(DxcCreateInstance(CLSID_DxcCompiler,	IID_PPV_ARGS(&Compiler)));
+	ThrowIfFailed(DxcCreateInstance(CLSID_DxcUtils,		IID_PPV_ARGS(&Utils)));
+	ThrowIfFailed(Library->CreateIncludeHandler(&DxcIncludeHandler));
 }
 
 ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
-	LPCWSTR shaderAbsolutePath,
-	DxcDefine const * const shaderDefines,
-	LPCWSTR entryPoint,
-	LPCWSTR targetProfile,
-	std::vector<LPCWSTR> arguments)
+	LPCWSTR ShaderAbsolutePath,
+	DxcDefine const * const ShaderDefines,
+	LPCWSTR EntryPoint,
+	LPCWSTR TargetProfile,
+	std::vector<LPCWSTR> Arguments)
 {
-	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
+	DXASSERT(ShaderAbsolutePath || EntryPoint || TargetProfile, "Shader path, entry point or target profile has been not provided");
 
 	// Create blob from shader file
 	uint32_t codePage = CP_UTF8;
-	ComPtr<IDxcBlobEncoding> sourceBlob;
-	ThrowIfFailed(library->CreateBlobFromFile(shaderAbsolutePath, &codePage, sourceBlob.GetAddressOf()));
+	ComPtr<IDxcBlobEncoding> SourceBlob;
+	ThrowIfFailed(Library->CreateBlobFromFile(ShaderAbsolutePath, &codePage, SourceBlob.GetAddressOf()));
 
 	// Get amount of shader defines
-	constexpr auto shaderDefinesAmount = static_cast<UINT32>(sizeof(DxcDefine) / sizeof(shaderDefines[0]));
+	constexpr auto ShaderDefinesAmount = static_cast<UINT32>(sizeof(DxcDefine) / sizeof(ShaderDefines[0]));
 
 	// Source buffer of shader
-	DxcBuffer sourceBuffer;
-	sourceBuffer.Ptr		= sourceBlob->GetBufferPointer();
-	sourceBuffer.Size		= sourceBlob->GetBufferSize();
-	sourceBuffer.Encoding	= codePage;
+	DxcBuffer SourceBuffer;
+	SourceBuffer.Ptr		= SourceBlob->GetBufferPointer();
+	SourceBuffer.Size		= SourceBlob->GetBufferSize();
+	SourceBuffer.Encoding	= codePage;
 
 	// Use if IDxcCompiler3 TODO
 	ComPtr<IDxcCompilerArgs> CompilerArgs;
-	auto hrResult = utils->BuildArguments(
-		shaderAbsolutePath,																		// pSourceName
-		entryPoint,																				// pEntryPoint
-		targetProfile,																			// pTargetProfile, currently it has to be lower-case
-		arguments.data(), arguments.size(),														// pArguments, argCount
-		shaderDefines ? &shaderDefines[0] : nullptr, shaderDefines ? shaderDefinesAmount : 0,	// pDefines, defineCount
+	auto HrResult = Utils->BuildArguments(
+		ShaderAbsolutePath,																		// pSourceName
+		EntryPoint,																				// pEntryPoint
+		TargetProfile,																			// pTargetProfile, currently it has to be lower-case
+		Arguments.data(), Arguments.size(),														// pArguments, argCount
+		ShaderDefines ? &ShaderDefines[0] : nullptr, ShaderDefines ? ShaderDefinesAmount : 0,	// pDefines, defineCount
 		CompilerArgs.GetAddressOf()																// out ppArgs
 	);
 
 	// Compile Shader
 	ComPtr<IDxcResult> result{};
-	auto hr = compiler->Compile(
-		&sourceBuffer,																		// pSource																								
+	HrResult = Compiler->Compile(
+		&SourceBuffer,																		// pSource																								
 		CompilerArgs->GetArguments(), CompilerArgs->GetCount(),								// pArguments, argCount
-		dxcIncludeHandler.Get(),															// pIncludeHandler
+		DxcIncludeHandler.Get(),															// pIncludeHandler
 		IID_PPV_ARGS(result.GetAddressOf())													// ppResult
 	);
 
-	if (SUCCEEDED(hr))
+	if (SUCCEEDED(HrResult))
 	{
-		result->GetStatus(&hr);
+		result->GetStatus(&HrResult);
 	}
 
-	if (FAILED(hr))
+	if (FAILED(HrResult))
 	{
 		ComPtr<IDxcBlobUtf8> errorsBlob;
-		hr = result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorsBlob), nullptr);
+		HrResult = result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorsBlob), nullptr);
 		if (errorsBlob && errorsBlob->GetStringLength())
 		{
 			const auto errorsBlobMessage = static_cast<const char*>(errorsBlob->GetBufferPointer());
-			DXLOG("HRESULT of %08d | %s \n", static_cast<HRESULT>(hr), errorsBlobMessage);
+			DXLOG("HRESULT of %08d | %s \n", static_cast<HRESULT>(HrResult), errorsBlobMessage);
 		}
 		//TODO Handle compilation error somehow instead of nullptr... 
 		return nullptr;
@@ -82,12 +82,12 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 
 // Old D3D HLSL Shader compiler
 ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
-	LPCWSTR shaderAbsolutePath, 
-	D3D_SHADER_MACRO const * shaderDefines,
-	LPCSTR entryPoint, 
-	LPCSTR targetProfile)
+	LPCWSTR ShaderAbsolutePath, 
+	D3D_SHADER_MACRO const * ShaderDefines,
+	LPCSTR EntryPoint, 
+	LPCSTR TargetProfile)
 {
-	DXASSERT(shaderAbsolutePath || entryPoint || targetProfile, "Shader path, entry point or target profile has been not provided");
+	DXASSERT(ShaderAbsolutePath || EntryPoint || TargetProfile, "Shader path, entry point or target profile has been not provided");
 
 #if defined(_DEBUG)
 	// Enable better shader debugging with the graphics debugging tools.
@@ -101,11 +101,11 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
 	ComPtr<ID3DBlob> code;
 	ComPtr<ID3DBlob> errorBlob;
 	auto hr = D3DCompileFromFile(
-		shaderAbsolutePath, 
-		shaderDefines,
+		ShaderAbsolutePath,
+		ShaderDefines,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
-		entryPoint, 
-		targetProfile,
+		EntryPoint, 
+		TargetProfile,
 		compileFlags,
 		0, 
 		&code, 

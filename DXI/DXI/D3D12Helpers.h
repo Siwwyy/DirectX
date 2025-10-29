@@ -169,6 +169,17 @@ namespace Helpers
 
     };
 
+    struct SAMPLER_HELPER
+    {
+        static DXGI_SAMPLE_DESC CreateSampler(UINT count, UINT quality)
+        {
+            DXGI_SAMPLE_DESC temp;
+            temp.Count = count;
+            temp.Quality = quality;
+            return temp;
+        }
+    };
+
     // Timer
     struct Timer
     {
@@ -247,13 +258,13 @@ namespace Helpers
         {
             char s_str[512] = {};
             sprintf_s(s_str, "HRESULT of 0x%08X", static_cast<UINT>(hr));
-            /*OutputDebugStringA(static_cast<LPCSTR>(hr));*/
             return std::string{ s_str };
         };
 
         if (FAILED(hr))
         {
             //no need to pass argument to lambda
+            DXLOG("HRESULT of %08d \n", static_cast<HRESULT>(hr));
             throw std::runtime_error(HrToString());
         }
     }

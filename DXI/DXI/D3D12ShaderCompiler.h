@@ -17,25 +17,25 @@ public:
 	~D3D12ShaderCompiler() = default;
 
 	ComPtr<ID3DBlob> CompileShader(
-		LPCWSTR shaderAbsolutePath,
-		DxcDefine const * const shaderDefines,
-		LPCWSTR entryPoint,
-		LPCWSTR targetProfile,
-		std::vector<LPCWSTR> arguments = {});	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
+		LPCWSTR ShaderAbsolutePath,
+		DxcDefine const * const ShaderDefines,
+		LPCWSTR EntryPoint,
+		LPCWSTR TargetProfile,
+		std::vector<LPCWSTR> Arguments = {});	//TODO Add compile arguments for compilation process, See https://simoncoenen.com/blog/programming/graphics/DxcCompiling
 
 	/* [[deprecated]] */ ComPtr<ID3DBlob> CompileShaderD3D(
-		LPCWSTR shaderAbsolutePath, 
-		D3D_SHADER_MACRO const * shaderDefines,
-		LPCSTR entryPoint, 
-		LPCSTR targetProfile);
+		LPCWSTR ShaderAbsolutePath, 
+		D3D_SHADER_MACRO const * ShaderDefines,
+		LPCSTR EntryPoint, 
+		LPCSTR TargetProfile);
 
 private:
 
 	// IDxc variables
-	ComPtr<IDxcLibrary>							library;
-	ComPtr<IDxcCompiler3>						compiler;	//Use IDxcCompiler3 instead of IDxcCompiler (because of Deprecatness Compile() function)
-	ComPtr<IDxcUtils>							utils;
-	ComPtr<IDxcIncludeHandler>					dxcIncludeHandler;
+	ComPtr<IDxcLibrary>							Library;
+	ComPtr<IDxcCompiler3>						Compiler;	//Use IDxcCompiler3 instead of IDxcCompiler (because of Deprecatness Compile() function)
+	ComPtr<IDxcUtils>							Utils;
+	ComPtr<IDxcIncludeHandler>					DxcIncludeHandler;
 
 };
 

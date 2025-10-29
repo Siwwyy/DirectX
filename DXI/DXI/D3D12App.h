@@ -8,6 +8,7 @@
 #include "pch.h"
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
+#include "D3D12ShaderCompiler.h"
 
 //APP
 class D3D12App
@@ -35,6 +36,8 @@ private:
 
 	//Utility functions
 	void InitializePerFrameResources();
+	void InitalizeShaders();
+	void InitializePSO();
 	void BeginFrame();
 	void EndFrame();
 	void WaitForPreviousFrame();
@@ -88,6 +91,7 @@ private:
 	UINT												DsvIncrementDescriptorSize;
 
 	// Shaders
+	D3D12ShaderCompiler									ShaderCompiler;
 	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
 	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
 

@@ -4,7 +4,7 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "D3D12Math.h"
-#include "D3D12ShaderCompiler.h"
+
 
 // Namespaces
 using namespace Helpers;
@@ -16,7 +16,7 @@ const UINT								BACK_BUFFER_COUNT			= 3;
 const D3D_FEATURE_LEVEL					D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 const DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 const DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
-
+const DXGI_SAMPLE_DESC					SAMPLE_DESC					= SAMPLER_HELPER::CreateSampler(1, 0);
 
 
 //Globals
@@ -25,87 +25,87 @@ const DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOA
 // Vertices/Index buffers etc.
 Vertex CubeVertices[] =
 {
-//	// front face
-//	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//
-//	// right side face
-//	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//
-//	// left side face
-//	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//
-//	// back face
-//	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//
-//	// top face
-//	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//
-//	// bottom face
-//	{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-//	{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
-//
-//
-//
-//	/////////////////////////////
-//	//{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-//	//{  0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
-//	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-//	//{  0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f }
-//	/////////////////////////////
-//
-	//With UV Tex coord
 	// front face
-	{ -0.5f, 0.5f, -0.5f, 0.0f, 0.0f },
-	{ 0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
-	{ 0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
 	// right side face
-	{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
-	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
-	{ 0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
-	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
+	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
 	// left side face
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
-	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
 	// back face
-	{ 0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
-	{ -0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
-	{ 0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
 	// top face
-	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f },
-	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
-	{ 0.5f,  0.5f, -0.5f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
 	// bottom face
-	{ 0.5f, -0.5f,  0.5f, 0.0f, 0.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
-	{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
+	{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
+
+
+
+	/////////////////////////////
+	//{ -0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{  0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f,  0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f }
+	/////////////////////////////
+
+	////With UV Tex coord
+	//// front face
+	//{ -0.5f, 0.5f, -0.5f, 0.0f, 0.0f },
+	//{ 0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	//{ -0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	//{ 0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+
+	//// right side face
+	//{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	//{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+	//{ 0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+	//{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
+
+	//// left side face
+	//{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+	//{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	//{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+	//{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+
+	//// back face
+	//{ 0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+	//{ -0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+	//{ 0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+	//{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+
+	//// top face
+	//{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f },
+	//{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+	//{ 0.5f,  0.5f, -0.5f, 1.0f, 1.0f },
+	//{ -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+
+	//// bottom face
+	//{ 0.5f, -0.5f,  0.5f, 0.0f, 0.0f },
+	//{ -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+	//{ 0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
  
 };
 
@@ -184,10 +184,6 @@ void D3D12App::Initialize()
 	}
 #endif
 
-	// Sample Descriptor
-	DXGI_SAMPLE_DESC SAMPLE_DESC = {};
-	SAMPLE_DESC.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
-
 	//Create dxgi factory
 	ThrowIfFailed(CreateDXGIFactory2(DxgiFactoryFlags, IID_PPV_ARGS(&Factory)));
 
@@ -199,7 +195,6 @@ void D3D12App::Initialize()
 		IID_PPV_ARGS(&Device)
 	));
 
-
 	// Initialization of command queue
 	D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
 	CommandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -210,7 +205,7 @@ void D3D12App::Initialize()
 
 	// Initialization of Swap Chain
 	// Get aplication window's handle (hwnd)
-	auto windowHwnd = Win32Proc::GetHwnd();
+	auto WindowHwnd = Win32Proc::GetHwnd();
 
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 SwapChainDesc		= {};
@@ -226,7 +221,7 @@ void D3D12App::Initialize()
 	ComPtr<IDXGISwapChain1> SwapChain1;
 	ThrowIfFailed(Factory->CreateSwapChainForHwnd(
 		CommandQueue.Get(),        // Swap chain needs the queue so that it can force a flush on it.
-		windowHwnd,
+		WindowHwnd,
 		&SwapChainDesc,
 		nullptr,
 		nullptr,
@@ -239,22 +234,22 @@ void D3D12App::Initialize()
 	ThrowIfFailed(SwapChain1.As(&SwapChain));
 
 	// This sample does not support fullscreen transitions.
-	ThrowIfFailed(Factory->MakeWindowAssociation(windowHwnd, DXGI_MWA_NO_ALT_ENTER));
+	ThrowIfFailed(Factory->MakeWindowAssociation(WindowHwnd, DXGI_MWA_NO_ALT_ENTER));
 	CurrentFrameIdx = SwapChain->GetCurrentBackBufferIndex();
 
 	// Create RTV Descriptor Heaps
-	constexpr auto DescriptorHeapFlags	= D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	constexpr auto descriptorHeapFlags	= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	constexpr auto DescriptorHeapType	= D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	constexpr auto DescriptorHeapFlags	= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	// Describe and create a render target view (RTV) descriptor heap.
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc	= {};
-	rtvHeapDesc.NumDescriptors				= BACK_BUFFER_COUNT;
-	rtvHeapDesc.Type						= DescriptorHeapFlags;
-	rtvHeapDesc.Flags						= descriptorHeapFlags;
-	ThrowIfFailed(Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&RtvHeap)));
+	D3D12_DESCRIPTOR_HEAP_DESC RtvHeapDesc	= {};
+	RtvHeapDesc.NumDescriptors				= BACK_BUFFER_COUNT;
+	RtvHeapDesc.Type						= DescriptorHeapType;
+	RtvHeapDesc.Flags						= DescriptorHeapFlags;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&RtvHeapDesc, IID_PPV_ARGS(&RtvHeap)));
 
 	// Get Render Target View Increment Descriptor size
-	RtvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapFlags);
+	RtvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
 	// Create an event handle to use for frame synchronization.
 	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -266,123 +261,11 @@ void D3D12App::Initialize()
 	//Initialize resources per frame buffer
 	InitializePerFrameResources();
 
-	// Root parameters
-	// create a root descriptor, which explains where to find the data for this root parameter
-	D3D12_ROOT_DESCRIPTOR RootCBVDescriptor = CreateRootDescriptor(0, 0);
+	// Initialize Shaders
+	InitalizeShaders();
 
-	// create a descriptor range (descriptor table) and fill it out
-	// this is a range of descriptors inside a descriptor heap
-	D3D12_DESCRIPTOR_RANGE  DescriptorTableRanges[1]; // only one range right now
-	DescriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
-	DescriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
-	DescriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range
-	DescriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
-	DescriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
-	D3D12_ROOT_DESCRIPTOR_TABLE RootSRV_DescriptorTable = CreateRootDescriptorTable(_countof(DescriptorTableRanges), DescriptorTableRanges);
-
-	// Create root parameters
-	const std::vector<D3D12_ROOT_PARAMETER> RootParameters = CreateRootParameters({
-			RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_SHADER_VISIBILITY_VERTEX, RootCBVDescriptor),
-			RootParamHelper(D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE, D3D12_SHADER_VISIBILITY_PIXEL, RootSRV_DescriptorTable)
-	});
-
-	// create a static sampler
-	D3D12_STATIC_SAMPLER_DESC sampler = {};
-	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.MipLODBias = 0;
-	sampler.MaxAnisotropy = 0;
-	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-	sampler.MinLOD = 0.0f;
-	sampler.MaxLOD = D3D12_FLOAT32_MAX;
-	sampler.ShaderRegister = 0;
-	sampler.RegisterSpace = 0;
-	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-	// Create Root Signature Descriptor
-	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-	RootSignatureDesc.Init(RootParameters.size(), // we have 1 root parameter
-		RootParameters.data(), // a pointer to the beginning of our root parameters array
-		1, // we have one static sampler
-		&sampler, // a pointer to our static sampler (array)
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-		D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
-
-	ComPtr<ID3DBlob> signature;
-	ComPtr<ID3DBlob> error;
-	ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-	ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
-
-	//Shaders compilation //TODO
-	// Shaders defines
-	constexpr DxcDefine shaderDefines[] =
-	{
-		L"PIXEL_SHADER_ENABLED", L"1",
-		NULL, NULL
-	};
-
-	constexpr const wchar_t* VertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DXEngine//DXEngine//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXEngine//DXEngine//shaders//pixel_shader.hlsl";
-
-	std::vector<LPCWSTR> arguments;
-
-	arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); //-Od
-	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
-	arguments.push_back(DXC_ARG_DEBUG); //-Zi
-
-
-	for (const auto& define : shaderDefines)
-	{
-		arguments.push_back(L"-D");
-		arguments.push_back(define.Name);
-		arguments.push_back(L"=");
-		arguments.push_back(define.Value);
-	}
-
-	D3D12ShaderCompiler shaderCompiler;
-	VertexShader = shaderCompiler.CompileShader(VertexShaderPath, nullptr, L"VSMain", L"vs_6_0");
-	PixelShader = shaderCompiler.CompileShader(PixelShaderPath, shaderDefines, L"PSMain", L"ps_6_0");
-
-	// Pipeline state object (PSO)
-	// Define the vertex input layout.
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-	{
-		//{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		//{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	// fill out an input layout description structure
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-
-	// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
-	inputLayoutDesc.NumElements = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-	inputLayoutDesc.pInputElementDescs = inputElementDescs;
-
-	// Describe and create the graphics pipeline state object (PSO).
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc	= {};
-	psoDesc.InputLayout							= inputLayoutDesc;
-	psoDesc.pRootSignature						= RootSignature.Get();
-	psoDesc.VS									= CD3DX12_SHADER_BYTECODE(VertexShader.Get());
-	psoDesc.PS									= CD3DX12_SHADER_BYTECODE(PixelShader.Get());
-	psoDesc.RasterizerState						= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState							= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState					= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.DSVFormat							= DEPTH_STENCIL_FORMAT;
-	psoDesc.SampleMask							= UINT_MAX;
-	psoDesc.SampleDesc							= SAMPLE_DESC;
-	psoDesc.PrimitiveTopologyType				= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets					= 1;
-	psoDesc.RTVFormats[0]						= BACK_BUFFER_FORMAT;
-	psoDesc.SampleDesc.Count					= 1;
-	ThrowIfFailed(Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&PipelineState)));
+	// Initialize PSO
+	InitializePSO();
 
 	//Initialization of command list
 	CommandList = Helpers::CreateGraphicsCommandList(
@@ -428,17 +311,19 @@ void D3D12App::Initialize()
 	// Create Depth Stencil View
 	Device->CreateDepthStencilView(DepthStencil.Get(), &DepthStencilViewDesc, DsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-	//Get Depth/Stencil View Descriptor Incremental Size (to get e.g., next resource/desc in the heap)
+	// Get Depth/Stencil View Descriptor Incremental Size (to get e.g., next resource/desc in the heap)
 	DsvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	//Submit necessary things from command list
-	// Execute command lists
-	ThrowIfFailed(CommandList->Close()); //close command list for execution
-	DXCommandList* commandLists[] = { CommandList.Get() };
-	CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	{
+		// Submit necessary things from command list
+		// Execute command lists
+		ThrowIfFailed(CommandList->Close()); //close command list for execution
+		DXCommandList* commandLists[] = { CommandList.Get() };
+		CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-	// Move Fence / Wait for previous frame to end
-	WaitForPreviousFrame();
+		// Move Fence / Wait for previous frame to end
+		WaitForPreviousFrame();
+	}
 }
 
 void D3D12App::Render()
@@ -467,6 +352,9 @@ void D3D12App::InitializePerFrameResources()
 {
 	DXASSERT(Device && SwapChain, "Device can not be null for Initialization per frame resources");
 
+	// Get handle for 0th descriptor in heap
+	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
+
 	// Resize arrays/vectors per frame buffer resources
 	// Fences
 	Fences.resize(BACK_BUFFER_COUNT);
@@ -477,11 +365,7 @@ void D3D12App::InitializePerFrameResources()
 	// Render Targets
 	RenderTargets.resize(BACK_BUFFER_COUNT);
 
-
-	// Get handle for 0th descriptor in heap
-	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	//
+	// Loop
 	for (UINT i = 0; i < BACK_BUFFER_COUNT; ++i)
 	{
 		//Create fences
@@ -502,6 +386,83 @@ void D3D12App::InitializePerFrameResources()
 			RtvHandle.Offset(1, RtvIncrementDescriptorSize);
 		}
 	}
+}
+
+void D3D12App::InitalizeShaders()
+{
+	// Shaders compilation //TODO
+	// Shaders defines
+	constexpr DxcDefine ShaderDefines[] =
+	{
+		L"PIXEL_SHADER_ENABLED", L"1",
+		NULL, NULL
+	};
+
+	constexpr const wchar_t* VertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
+
+	std::vector<LPCWSTR> arguments;
+	arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); //-Od
+	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
+	arguments.push_back(DXC_ARG_DEBUG); //-Zi
+
+	// We can define shader defines with -D
+	//for (const auto& define : ShaderDefines)
+	//{
+	//	arguments.push_back(L"-D");
+	//	arguments.push_back(define.Name);
+	//	arguments.push_back(L"=");
+	//	arguments.push_back(define.Value);
+	//}
+
+	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, nullptr, L"VSMain", L"vs_6_0", arguments);
+	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"PSMain", L"ps_6_0", arguments);
+}
+
+void D3D12App::InitializePSO()
+{
+	// Pipeline state object (PSO)
+	// Define the vertex input layout.
+	D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	// fill out an input layout description structure
+	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc = {};
+	// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
+	InputLayoutDesc.NumElements = sizeof(InputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
+	InputLayoutDesc.pInputElementDescs = InputElementDescs;
+
+	// Create an empty root signature.
+	{
+		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+	}
+
+	// Describe and create the graphics pipeline state object (PSO).
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
+	PsoDesc.InputLayout = InputLayoutDesc;
+	PsoDesc.pRootSignature = RootSignature.Get();
+	PsoDesc.VS = CD3DX12_SHADER_BYTECODE(VertexShader.Get());
+	PsoDesc.PS = CD3DX12_SHADER_BYTECODE(PixelShader.Get());
+	PsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	PsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	PsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	PsoDesc.DSVFormat = DEPTH_STENCIL_FORMAT;
+	PsoDesc.SampleMask = UINT_MAX;
+	PsoDesc.SampleDesc = SAMPLE_DESC;
+	PsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	PsoDesc.NumRenderTargets = 1;
+	PsoDesc.RTVFormats[0] = BACK_BUFFER_FORMAT;
+	PsoDesc.SampleDesc.Count = 1;
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
 }
 
 void D3D12App::BeginFrame()
