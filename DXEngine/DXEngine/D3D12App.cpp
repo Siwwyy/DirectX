@@ -365,23 +365,25 @@ void D3D12App::Initialize()
 	inputLayoutDesc.NumElements = sizeof(inputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
 
+	// Sample Descriptor
+	DXGI_SAMPLE_DESC SAMPLE_DESC = {};
+	SAMPLE_DESC.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
 	// Describe and create the graphics pipeline state object (PSO).
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc	= {};
-	psoDesc.InputLayout							= inputLayoutDesc;
-	psoDesc.pRootSignature						= RootSignature.Get();
-	psoDesc.VS									= CD3DX12_SHADER_BYTECODE(VertexShader.Get());
-	psoDesc.PS									= CD3DX12_SHADER_BYTECODE(PixelShader.Get());
-	psoDesc.RasterizerState						= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState							= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	//psoDesc.DepthStencilState.DepthEnable	= FALSE;
-	//psoDesc.DepthStencilState.StencilEnable = FALSE;
-	psoDesc.DepthStencilState					= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.DSVFormat							= DEPTH_STENCIL_FORMAT;
-	psoDesc.SampleMask							= UINT_MAX;
-	psoDesc.PrimitiveTopologyType				= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets					= 1;
-	psoDesc.RTVFormats[0]						= BACK_BUFFER_FORMAT;
-	psoDesc.SampleDesc.Count					= 1;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.InputLayout = inputLayoutDesc;
+	psoDesc.pRootSignature = RootSignature.Get();
+	psoDesc.VS = CD3DX12_SHADER_BYTECODE(VertexShader.Get());
+	psoDesc.PS = CD3DX12_SHADER_BYTECODE(PixelShader.Get());
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DSVFormat = DEPTH_STENCIL_FORMAT;
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.SampleDesc = SAMPLE_DESC;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = BACK_BUFFER_FORMAT;
+	psoDesc.SampleDesc.Count = 1;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&PipelineState)));
 
 	//Initialization of command list
