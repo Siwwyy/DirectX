@@ -1,27 +1,17 @@
 
-// //Copyright, Damian Andrysiak 2024, All Rights Reserved.
+//Copyright, Damian Andrysiak 2024, All Rights Reserved.
 
-struct PSInput
-{
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-};
+#include "Common.hlsl"
 
-PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
+PSInput VSMain(in VSInput input)
 {
     PSInput result;
 
-    result.position = position;
-    result.color = color;
+    result.position = float4(input.position, 1.f);
+    result.color = input.color;
 
     return result;
 }
-
-float4 PSMain(PSInput input) : SV_TARGET
-{
-    return input.color;
-}
-
 
 
 // // Vertex Shader Input struct

@@ -399,7 +399,7 @@ void D3D12App::InitalizeShaders()
 	};
 
 	constexpr const wchar_t* VertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 	arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); //-Od
@@ -448,20 +448,20 @@ void D3D12App::InitializePSO()
 
 	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
-	PsoDesc.InputLayout = InputLayoutDesc;
-	PsoDesc.pRootSignature = RootSignature.Get();
-	PsoDesc.VS = CD3DX12_SHADER_BYTECODE(VertexShader.Get());
-	PsoDesc.PS = CD3DX12_SHADER_BYTECODE(PixelShader.Get());
-	PsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	PsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	PsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	PsoDesc.DSVFormat = DEPTH_STENCIL_FORMAT;
-	PsoDesc.SampleMask = UINT_MAX;
-	PsoDesc.SampleDesc = SAMPLE_DESC;
-	PsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	PsoDesc.NumRenderTargets = 1;
-	PsoDesc.RTVFormats[0] = BACK_BUFFER_FORMAT;
-	PsoDesc.SampleDesc.Count = 1;
+	PsoDesc.InputLayout				= InputLayoutDesc;
+	PsoDesc.pRootSignature			= RootSignature.Get();
+	PsoDesc.VS						= CD3DX12_SHADER_BYTECODE(VertexShader.Get());
+	PsoDesc.PS						= CD3DX12_SHADER_BYTECODE(PixelShader.Get());
+	PsoDesc.RasterizerState			= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	PsoDesc.BlendState				= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	PsoDesc.DepthStencilState		= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	PsoDesc.DSVFormat				= DEPTH_STENCIL_FORMAT;
+	PsoDesc.SampleMask				= UINT_MAX;
+	PsoDesc.SampleDesc				= SAMPLE_DESC;
+	PsoDesc.PrimitiveTopologyType	= D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	PsoDesc.NumRenderTargets		= 1;
+	PsoDesc.RTVFormats[0]			= BACK_BUFFER_FORMAT;
+	PsoDesc.SampleDesc.Count		= 1;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
 }
 
