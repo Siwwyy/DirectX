@@ -9,6 +9,8 @@
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
+#include "Objects/Camera.h"
+#include "Objects/Cube.h"
 
 
 
@@ -101,7 +103,8 @@ private:
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 	ObjectMatrices										SquareMatrices;
-	CameraMatrices										CameraMatrices;
+	Cube												Cube;
+	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
 };
