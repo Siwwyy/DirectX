@@ -1,16 +1,36 @@
 
 //Copyright, Damian Andrysiak 2024, All Rights Reserved.
 
-#include "Common.hlsl"
+// #include "Common.hlsl"
 
-PSInput VSMain(in VSInput input)
+// PSInput VSMain(in VSInput input)
+// {
+//     PSInput result;
+
+//     result.position = float4(input.position, 1.f);
+//     result.color = input.color;
+
+//     return result;
+// }
+
+struct VS_INPUT
 {
-    PSInput result;
+    float3 pos : POSITION;
+    float4 color: COLOR;
+};
 
-    result.position = float4(input.position, 1.f);
-    result.color = input.color;
+struct VS_OUTPUT
+{
+    float4 pos: SV_POSITION;
+    float4 color: COLOR;
+};
 
-    return result;
+VS_OUTPUT main(VS_INPUT input)
+{
+    VS_OUTPUT output;
+    output.pos = float4(input.pos, 1.0f);
+    output.color = input.color;
+    return output;
 }
 
 

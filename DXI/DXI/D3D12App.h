@@ -31,7 +31,6 @@ public:
 	void Update(float DeltaTime);
 	void Destroy();
 
-
 private:
 
 	//Utility functions
@@ -41,6 +40,7 @@ private:
 	void BeginFrame();
 	void EndFrame();
 	void WaitForPreviousFrame();
+	void FlushCommandList();
 
 	// Window Properties
 	UINT												WindowWidth;
@@ -73,6 +73,11 @@ private:
 	std::vector<ComPtr<ID3D12Resource>>					RenderTargets{};
 	UINT												RtvIncrementDescriptorSize;
 
+	// D3D12 Depth Stencil
+	ComPtr<ID3D12DescriptorHeap>						DsvHeap;
+	ComPtr<ID3D12Resource>								DepthStencil;
+	UINT												DsvIncrementDescriptorSize;
+
 	// Pipeline state and root signature
 	ComPtr<ID3D12PipelineState>							PipelineState;
 	ComPtr<ID3D12RootSignature>							RootSignature;
@@ -84,11 +89,6 @@ private:
 	// D3D12 Index buffer data
 	ComPtr<ID3D12Resource>								IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
-
-	// D3D12 Depth Stencil
-	ComPtr<ID3D12DescriptorHeap>						DsvHeap;
-	ComPtr<ID3D12Resource>								DepthStencil;
-	UINT												DsvIncrementDescriptorSize;
 
 	// Shaders
 	D3D12ShaderCompiler									ShaderCompiler;

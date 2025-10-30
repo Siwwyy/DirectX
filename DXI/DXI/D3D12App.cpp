@@ -21,45 +21,54 @@ const DXGI_SAMPLE_DESC					SAMPLE_DESC					= SAMPLER_HELPER::CreateSampler(1, 0)
 
 //Globals
 
-
 // Vertices/Index buffers etc.
 Vertex CubeVertices[] =
 {
-	// front face
-	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	//{ 0.0f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{ 0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
 
-	// right side face
-	{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
-	// left side face
-	{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	{ 0.0f, 0.25f , 0.0f , 1.0f, 0.0f, 0.0f, 1.0f  },
+	{ 0.25f, -0.25f , 0.0f,  0.0f, 1.0f, 0.0f, 1.0f  },
+	{ -0.25f, -0.25f , 0.0f , 0.0f, 0.0f, 1.0f, 1.0f  }
 
-	// back face
-	{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
-	// top face
-	{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+	//// front face
+	//{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 
-	// bottom face
-	{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-	{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-	{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-	{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
+	//// right side face
+	//{  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+
+	//// left side face
+	//{ -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+
+	//// back face
+	//{  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+
+	//// top face
+	//{ -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{ 0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{ 0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+
+	//// bottom face
+	//{  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+	//{ -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+	//{  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+	//{ -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f }
 
 
 
@@ -173,16 +182,17 @@ void D3D12App::Initialize()
 	// Enable the debug layer (requires the Graphics Tools "optional feature").
 	// NOTE: Enabling the debug layer after device creation will invalidate the active device.
 	{
-		ComPtr<ID3D12Debug> DebugController;
-		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&DebugController))))
+		ComPtr<ID3D12Debug3> DebugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&DebugController))))
 		{
 			DebugController->EnableDebugLayer();
-
+			DebugController->SetEnableGPUBasedValidation(true);
+			
 			// Enable additional debug layers.
 			DxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 		}
 	}
-#endif
+#endif // DEBUG_MODE
 
 	//Create dxgi factory
 	ThrowIfFailed(CreateDXGIFactory2(DxgiFactoryFlags, IID_PPV_ARGS(&Factory)));
@@ -194,6 +204,16 @@ void D3D12App::Initialize()
 		D3D12_FEATURE_LEVEL,
 		IID_PPV_ARGS(&Device)
 	));
+
+#if DEBUG_MODE
+	{
+		ComPtr<ID3D12InfoQueue> InfoQueue;
+		ThrowIfFailed(Device->QueryInterface(IID_PPV_ARGS(&InfoQueue)));
+		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,	true);
+		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,		true);
+		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,			true);
+	}
+#endif // DEBUG_MODE
 
 	// Initialization of command queue
 	D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
@@ -228,10 +248,9 @@ void D3D12App::Initialize()
 		&SwapChain1
 	));
 
-	//auto SwapChain1 = dynamic_cast<IDXGISwapChain1*>(SwapChain.Get()); //retrieve IDXGISwapChain1 from IDXGISwapChain3
-
+	
 	// Convert SwapChain1 interface to SwapChain4
-	ThrowIfFailed(SwapChain1.As(&SwapChain));
+	ThrowIfFailed(SwapChain1.As(&SwapChain)); // OR | auto SwapChain1 = dynamic_cast<IDXGISwapChain1*>(SwapChain.Get()); //retrieve IDXGISwapChain1 from IDXGISwapChain3
 
 	// This sample does not support fullscreen transitions.
 	ThrowIfFailed(Factory->MakeWindowAssociation(WindowHwnd, DXGI_MWA_NO_ALT_ENTER));
@@ -251,13 +270,6 @@ void D3D12App::Initialize()
 	// Get Render Target View Increment Descriptor size
 	RtvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
-	// Create an event handle to use for frame synchronization.
-	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (FenceEvent == nullptr)
-	{
-		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-	}
-
 	//Initialize resources per frame buffer
 	InitializePerFrameResources();
 
@@ -267,23 +279,32 @@ void D3D12App::Initialize()
 	// Initialize PSO
 	InitializePSO();
 
-	//Initialization of command list
-	CommandList = Helpers::CreateGraphicsCommandList(
-		Device.Get(),
-		CommandListDesc{ 0, COMMAND_LIST_TYPE, D3D12_COMMAND_LIST_FLAG_NONE },
-		CommandAllocators[0].Get(),
-		PipelineState.Get());
+	// Create an event handle to use for frame synchronization.
+	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (FenceEvent == nullptr)
+	{
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
 
-	ThrowIfFailed(CommandList->Close()); //close not closed command list
-	// Reset previously used command list and command allocator
-	ThrowIfFailed(CommandAllocators[0]->Reset());
-	ThrowIfFailed(CommandList->Reset(CommandAllocators[0].Get(), PipelineState.Get()));
+	//Initialization of command list
+	{
+		CommandList = Helpers::CreateGraphicsCommandList(
+			Device.Get(),
+			CommandListDesc{ 0, COMMAND_LIST_TYPE, D3D12_COMMAND_LIST_FLAG_NONE },
+			CommandAllocators[0].Get(),
+			PipelineState.Get());
+
+		ThrowIfFailed(CommandList->Close()); //close not closed command list
+		// Reset previously used command list and command allocator
+		ThrowIfFailed(CommandList->Reset(CommandAllocators[0].Get(), PipelineState.Get()));
+	}
 
 	//Depth Stencil
 	// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
 	D3D12_DESCRIPTOR_HEAP_DESC DsvHeapDesc	= {};
 	DsvHeapDesc.NumDescriptors				= 1;
 	DsvHeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	DsvHeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	ThrowIfFailed(Device->CreateDescriptorHeap(&DsvHeapDesc, IID_PPV_ARGS(&DsvHeap)));
 
 	// create a depth stencil view
@@ -314,16 +335,99 @@ void D3D12App::Initialize()
 	// Get Depth/Stencil View Descriptor Incremental Size (to get e.g., next resource/desc in the heap)
 	DsvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	{
-		// Submit necessary things from command list
-		// Execute command lists
-		ThrowIfFailed(CommandList->Close()); //close command list for execution
-		DXCommandList* commandLists[] = { CommandList.Get() };
-		CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-		// Move Fence / Wait for previous frame to end
-		WaitForPreviousFrame();
+	/***************************
+	 ****** VERTEX BUFFER ******
+	 ***************************/
+	{
+		constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
+		constexpr auto StateAfter	= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		// GPU Vertex
+		Helpers::VERTEX_HELPER VertexGPU(Device.Get(),
+			VertexBufferSize,
+			DX_HEAP_PROPERTY_DEFAULT,
+			StateBefore,
+			L"VertexGPU");
+
+		// Upload Vertex
+		Helpers::VERTEX_HELPER VertexUploadToGPU(Device.Get(),
+			VertexBufferSize,
+			DX_HEAP_PROPERTY_UPLOAD,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			L"VertexUploadToGPU");
+
+		// Copy data to the intermediate upload heap and then schedule a copy 
+		// from the upload heap to the vertex buffer.
+		D3D12_SUBRESOURCE_DATA VertexData = {};
+		VertexData.pData		= reinterpret_cast<UINT8*>(CubeVertices);
+		VertexData.RowPitch		= VertexBufferSize;
+		VertexData.SlicePitch	= VertexData.RowPitch;
+
+		//PIXBeginEvent(CommandList.Get(), 0, L"Copy vertex buffer data to default resource...");
+
+		// Update Subresource
+		UpdateSubresources(CommandList.Get(), VertexGPU.GetPointer(), VertexUploadToGPU.GetPointer(), 0, 0, 1, &VertexData);
+
+		// transition the vertex buffer data from copy destination state to vertex buffer state
+		const auto VertexCmdListBarrier = CD3DX12_RESOURCE_BARRIER::Transition(VertexGPU.GetPointer(), StateBefore, StateAfter);
+		CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
+
+		// Release the resources
+		VertexBufferView	= VertexGPU.CreateView(sizeof(Vertex), VertexBufferSize);
+		VertexBuffer		= VertexGPU.ReleaseResource();
+
+		{
+			// Submit necessary things from command list
+			// Execute command lists
+			ThrowIfFailed(CommandList->Close()); //close command list for execution
+			DXCommandList* CommandLists[] = { CommandList.Get() };
+			CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+
+			// Move Fence / Wait for previous frame to end
+			WaitForPreviousFrame();
+		}
+
 	}
+
+	///////
+
+	/***************************
+	 ****** INDEX BUFFER *****
+	 ***************************/
+	{
+		//// GPU Vertex
+		//Helpers::INDEX_HELPER IndexGPU(Device.Get(),
+		//	IndexBufferSize,
+		//	DX_HEAP_PROPERTY_DEFAULT,
+		//	D3D12_RESOURCE_STATE_COPY_DEST);
+
+		//// Upload Vertex
+		//Helpers::INDEX_HELPER IndexUploadToGPU(Device.Get(),
+		//	IndexBufferSize,
+		//	DX_HEAP_PROPERTY_UPLOAD,
+		//	D3D12_RESOURCE_STATE_GENERIC_READ);
+
+		//// store index buffer in upload heap
+		//D3D12_SUBRESOURCE_DATA IndexData = {};
+		//IndexData.pData			= reinterpret_cast<UINT8*>(CubeIndices); // pointer to our index array
+		//IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
+		//IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
+
+		//// Update Subresource
+		//UpdateSubresources<1>(CommandList.Get(), IndexGPU.GetPointer(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexData);
+
+		//// transition the vertex buffer data from copy destination state to vertex buffer state
+		//constexpr auto StateBefore		= D3D12_RESOURCE_STATE_COPY_DEST;
+		//constexpr auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		//const auto IndexCmdListBarrier	= CD3DX12_RESOURCE_BARRIER::Transition(IndexGPU.GetPointer(), StateBefore, StateAfter);
+		//CommandList->ResourceBarrier(1, &IndexCmdListBarrier);
+
+		//// Release the resources
+		//IndexBufferView = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
+		//IndexBuffer		= IndexGPU.ReleaseResource();
+	}
+
+	/////////
 }
 
 void D3D12App::Render()
@@ -331,8 +435,10 @@ void D3D12App::Render()
 	//Always BeginFrame first
 	BeginFrame();
 
-
-
+	// Drawing
+	// Set necessary state.
+	CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 
 	//Always EndFrame last
 	EndFrame();
@@ -345,7 +451,26 @@ void D3D12App::Update(float DeltaTime)
 
 void D3D12App::Destroy()
 {
+	CloseHandle(FenceEvent);
 
+#if DEBUG_MODE
+	{
+		{
+			ComPtr<ID3D12InfoQueue> InfoQueue;
+			ThrowIfFailed(Device->QueryInterface(IID_PPV_ARGS(&InfoQueue)));
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION,	false);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING,		false);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR,			false);
+		}
+
+		ComPtr<ID3D12DebugDevice2> DebugDevice;
+		ThrowIfFailed(Device->QueryInterface(IID_PPV_ARGS(&DebugDevice)));
+		Device->Release();
+		ThrowIfFailed(DebugDevice->ReportLiveDeviceObjects(
+			D3D12_RLDO_SUMMARY | D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL
+		));
+	}
+#endif // DEBUG_MODE
 }
 
 void D3D12App::InitializePerFrameResources()
@@ -398,13 +523,15 @@ void D3D12App::InitalizeShaders()
 		NULL, NULL
 	};
 
-	constexpr const wchar_t* VertexShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath = L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
+	constexpr const wchar_t* VertexShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
+#if DEBUG_MODE
 	arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); //-Od
 	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
 	arguments.push_back(DXC_ARG_DEBUG); //-Zi
+#endif
 
 	// We can define shader defines with -D
 	//for (const auto& define : ShaderDefines)
@@ -415,8 +542,8 @@ void D3D12App::InitalizeShaders()
 	//	arguments.push_back(define.Value);
 	//}
 
-	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, nullptr, L"VSMain", L"vs_6_0", arguments);
-	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"PSMain", L"ps_6_0", arguments);
+	VertexShader	= ShaderCompiler.CompileShader(VertexShaderPath, nullptr, L"main", L"vs_6_0", arguments);
+	PixelShader		= ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"main", L"ps_6_0", arguments);
 }
 
 void D3D12App::InitializePSO()
@@ -429,11 +556,11 @@ void D3D12App::InitializePSO()
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	// fill out an input layout description structure
-	D3D12_INPUT_LAYOUT_DESC InputLayoutDesc = {};
-	// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
-	InputLayoutDesc.NumElements = sizeof(InputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-	InputLayoutDesc.pInputElementDescs = InputElementDescs;
+	//// fill out an input layout description structure
+	//D3D12_INPUT_LAYOUT_DESC InputLayoutDesc = {};
+	//// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
+	//InputLayoutDesc.NumElements = sizeof(InputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
+	//InputLayoutDesc.pInputElementDescs = InputElementDescs;
 
 	// Create an empty root signature.
 	{
@@ -446,9 +573,10 @@ void D3D12App::InitializePSO()
 		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 	}
 
+
 	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
-	PsoDesc.InputLayout				= InputLayoutDesc;
+	PsoDesc.InputLayout				= { InputElementDescs, _countof(InputElementDescs) };
 	PsoDesc.pRootSignature			= RootSignature.Get();
 	PsoDesc.VS						= CD3DX12_SHADER_BYTECODE(VertexShader.Get());
 	PsoDesc.PS						= CD3DX12_SHADER_BYTECODE(PixelShader.Get());
@@ -467,12 +595,16 @@ void D3D12App::InitializePSO()
 
 void D3D12App::BeginFrame()
 {
-	// Get Current Frame index 
-	CurrentFrameIdx = SwapChain->GetCurrentBackBufferIndex();
-
 	// Reset previously used command list and command allocator
 	ThrowIfFailed(CommandAllocators[CurrentFrameIdx]->Reset());
 	ThrowIfFailed(CommandList->Reset(CommandAllocators[CurrentFrameIdx].Get(), PipelineState.Get()));
+
+	// Get Current Frame index 
+	CurrentFrameIdx = SwapChain->GetCurrentBackBufferIndex();
+
+	// Indicate that the back buffer will be used as a render target.
+	const CD3DX12_RESOURCE_BARRIER BarrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &BarrierPresentToRTV);
 
 	// Set necessary state.
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
@@ -480,33 +612,31 @@ void D3D12App::BeginFrame()
 	CommandList->RSSetScissorRects(1, &ScissorRect);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// Indicate that the back buffer will be used as a render target.
-	const CD3DX12_RESOURCE_BARRIER BarrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ResourceBarrier(1, &BarrierPresentToRTV);
-}
-
-void D3D12App::EndFrame()
-{
-	constexpr float ClearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
-	const CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), CurrentFrameIdx, RtvIncrementDescriptorSize);
-	CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
-	CommandList->ClearRenderTargetView(RtvHandle, ClearColor, 0, nullptr);
-
 	// get a handle to the depth/stencil buffer
 	CD3DX12_CPU_DESCRIPTOR_HANDLE DsvHandle(DsvHeap->GetCPUDescriptorHandleForHeapStart());
 	CommandList->ClearDepthStencilView(DsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+	// SV TARGET
+	constexpr float ClearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), CurrentFrameIdx, RtvIncrementDescriptorSize);
+	CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
+	CommandList->ClearRenderTargetView(RtvHandle, ClearColor, 0, nullptr);
+}
+
+void D3D12App::EndFrame()
+{
 	// Indicate that the back buffer will now be used to present.
 	const CD3DX12_RESOURCE_BARRIER BarrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	CommandList->ResourceBarrier(1, &BarrierRTVtoPresent);
 
 	// Execute command lists
 	ThrowIfFailed(CommandList->Close()); //close command list for execution
-	DXCommandList* commandLists[] = { CommandList.Get() };
-	CommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	DXCommandList* CommandLists[] = { CommandList.Get() };
+	CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
 
 	// Present the frame
 	ThrowIfFailed(SwapChain->Present(1, 0));
+	
 
 	// Move Fence / Wait for previous frame to end
 	WaitForPreviousFrame();
@@ -515,7 +645,8 @@ void D3D12App::EndFrame()
 void D3D12App::WaitForPreviousFrame()
 {
 	// Signal and increment the fence value.
-	FenceValue[CurrentFrameIdx]++;
+	FenceValue[CurrentFrameIdx] = FenceValue[CurrentFrameIdx] + 1;
+	// Fence will keep previous value until all commands are completed, thats why FenceValue++;
 	ThrowIfFailed(CommandQueue->Signal(Fences[CurrentFrameIdx].Get(), FenceValue[CurrentFrameIdx]));
 
 	// Wait until recorded commands are processed by GPU.
@@ -524,4 +655,9 @@ void D3D12App::WaitForPreviousFrame()
 		ThrowIfFailed(Fences[CurrentFrameIdx]->SetEventOnCompletion(FenceValue[CurrentFrameIdx], FenceEvent));
 		WaitForSingleObject(FenceEvent, INFINITE);
 	}
+}
+
+void D3D12App::FlushCommandList()
+{
+	WaitForPreviousFrame();
 }

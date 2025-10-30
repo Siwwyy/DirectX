@@ -8,6 +8,75 @@ using Helpers::ThrowIfFailed;
 using Helpers::RootParamHelper;
 using Helpers::CommandListDesc;
 
+/***************************
+ ****** HELPER STRUCTS *****
+ ***************************/
+
+// Vertex Helper
+Helpers::VERTEX_HELPER::VERTEX_HELPER(DXDevice * Device, const UINT VertexBufferSize, D3D12_HEAP_PROPERTIES HEAP_PROPERTY, D3D12_RESOURCE_STATES RESOURCE_STATE, LPCWSTR Name)
+{
+	// Create vertex buffer
+	const auto VertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(VertexBufferSize);
+	ThrowIfFailed(Device->CreateCommittedResource(
+		&HEAP_PROPERTY,								        // a default heap
+		D3D12_HEAP_FLAG_NONE,								// no flags | TODO MAKE FLAGS IN FUTURE
+		&VertexBufferDesc,									// resource description for a buffer
+		RESOURCE_STATE,										// we will start this heap in the copy destination state since we will copy data from the upload heap to this heap
+		nullptr,											// optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
+		IID_PPV_ARGS(&VertexBuffer)));
+	NAME_D3D12_OBJECT(VertexBuffer, Name);
+	
+}
+
+D3D12_VERTEX_BUFFER_VIEW Helpers::VERTEX_HELPER::CreateView(const UINT StrideInBytes, const UINT SizeInBytes)
+{
+	if (!VertexBuffer)
+	{
+		DXASSERT(false, "VertexBuffer can not be empty");
+		return D3D12_VERTEX_BUFFER_VIEW();
+	}
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
+	VertexBufferView.BufferLocation = VertexBuffer->GetGPUVirtualAddress();
+	VertexBufferView.StrideInBytes	= StrideInBytes;
+	VertexBufferView.SizeInBytes	= SizeInBytes;
+	return VertexBufferView;
+}
+
+// Index helper
+Helpers::INDEX_HELPER::INDEX_HELPER(DXDevice * Device, const UINT IndexBufferSize, D3D12_HEAP_PROPERTIES HEAP_PROPERTY, D3D12_RESOURCE_STATES RESOURCE_STATE, LPCWSTR Name)
+{
+	// create default heap to hold index buffer
+	const auto IndexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(IndexBufferSize);
+	ThrowIfFailed(Device->CreateCommittedResource(
+		&HEAP_PROPERTY,								// a default heap
+		D3D12_HEAP_FLAG_NONE,						// no flags
+		&IndexBufferDesc,							// resource description for a buffer
+		RESOURCE_STATE,								// start in the copy destination state
+		nullptr,									// optimized clear value must be null for this type of resource
+		IID_PPV_ARGS(&IndexBuffer)));
+	NAME_D3D12_OBJECT(IndexBuffer, Name);
+}
+
+D3D12_INDEX_BUFFER_VIEW Helpers::INDEX_HELPER::CreateView(const UINT SizeInBytes, DXGI_FORMAT IndexFormat)
+{
+	if (!IndexBuffer)
+	{
+		DXASSERT(false, "IndexBuffer can not be empty");
+		return D3D12_INDEX_BUFFER_VIEW();
+	}
+	// create a index buffer view for the vertices. We get the GPU memory address to the index pointer using the GetGPUVirtualAddress() method later.
+	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
+	IndexBufferView.BufferLocation	= IndexBuffer->GetGPUVirtualAddress();
+	IndexBufferView.Format			= IndexFormat; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	IndexBufferView.SizeInBytes		= SizeInBytes;
+	return IndexBufferView;
+}
+
+
+/***************************
+ ******** FUNCTIONS ********
+ ***************************/
+
 ComPtr<IDXGIAdapter1> Helpers::GetAdapter(ComPtr<IDXGIFactory1> pFactory, D3D_FEATURE_LEVEL deviceFeatureLevel, bool useWarpAdapter,
 	bool requestHighPerformanceAdapter)
 {

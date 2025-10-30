@@ -21,7 +21,7 @@
 // Naming helper for ComPtr<T>.
 // Assigns the name of the variable as the name of the object.
 // The indexed variant will include the index in the name of the object.
-#define NAME_D3D12_OBJECT(x, NAME) x->SetName(L#NAME)
+#define NAME_D3D12_OBJECT(x, NAME) x->SetName(NAME)
 #define NAME_D3D12_OBJECT_INDEXED(x, n, NAME) SetNameIndexed((x)[n].Get(), L#NAME, n)
 
 
@@ -42,14 +42,16 @@
 // assert with splitted condition and message inside
 #define DXASSERT(CONDITION, MESSAGE) assert((CONDITION) && (MESSAGE))
 
-// logging to console
-#define DXLOG(MESSAGE, ...)                                  \
-        char MsgBuffer[512]{};                               \
-        sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);          \
-        OutputDebugStringA(MsgBuffer);                       \
+// logging to console | Curly brackets are for keeping MsgBuffer inside scope
+#define DXLOG(MESSAGE, ...)                                 \
+        {                                                   \
+            char MsgBuffer[512]{};                          \
+            sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);     \
+            OutputDebugStringA(MsgBuffer);                  \
+        }                                                   \
 
 
-
+// Pre-defined types
 #define DXFactory                       IDXGIFactory
 #define DXFactory1                      IDXGIFactory1
 #define DXFactory2                      IDXGIFactory2
@@ -169,6 +171,7 @@ namespace Helpers
 
     };
 
+    // SAMPLER HELPER
     struct SAMPLER_HELPER
     {
         static DXGI_SAMPLE_DESC CreateSampler(UINT count, UINT quality)
@@ -179,6 +182,83 @@ namespace Helpers
             return temp;
         }
     };
+
+    // VERTEX HELPER
+    struct VERTEX_HELPER
+    {
+        DISABLE_COPY(VERTEX_HELPER)
+        
+        // Ctor
+        VERTEX_HELPER(DXDevice * Device, const UINT VertexBufferSize, 
+            D3D12_HEAP_PROPERTIES HEAP_PROPERTY = DX_HEAP_PROPERTY_DEFAULT, 
+            D3D12_RESOURCE_STATES RESOURCE_STATE = D3D12_RESOURCE_STATE_COMMON,
+            LPCWSTR Name = L"VertexBuffer");
+
+        // Create View for Vertex Buffer
+        _NODISCARD D3D12_VERTEX_BUFFER_VIEW CreateView(const UINT StrideInBytes, const UINT SizeInBytes);
+
+        // Get pointer
+        _NODISCARD auto GetPointer()
+        {
+            if (!VertexBuffer)
+            {
+                DXASSERT(false, "VertexBuffer can not be empty");
+            }
+            return VertexBuffer.Get();
+        }
+
+        // Release the resource, that class can not be later used!
+        _NODISCARD auto ReleaseResource()
+        {
+            if (!VertexBuffer)
+            {
+                DXASSERT(false, "VertexBuffer can not be empty");
+            }
+            return std::move(VertexBuffer);
+        }
+        
+        // Resource
+        ComPtr<DXResource>  VertexBuffer;
+    };
+
+    // VERTEX HELPER
+    struct INDEX_HELPER
+    {
+        DISABLE_COPY(INDEX_HELPER)
+
+        // Ctor
+        INDEX_HELPER(DXDevice * Device, const UINT VertexBufferSize,
+            D3D12_HEAP_PROPERTIES HEAP_PROPERTY = DX_HEAP_PROPERTY_DEFAULT,
+            D3D12_RESOURCE_STATES RESOURCE_STATE = D3D12_RESOURCE_STATE_COMMON,
+            LPCWSTR Name = L"IndexBuffer");
+
+        // Create View for Vertex Buffer
+        _NODISCARD D3D12_INDEX_BUFFER_VIEW CreateView(const UINT SizeInBytes, DXGI_FORMAT IndexFormat = DXGI_FORMAT_R32_UINT);
+
+        // Get pointer
+        _NODISCARD auto GetPointer()
+        {
+            if (!IndexBuffer)
+            {
+                DXASSERT(false, "IndexBuffer can not be empty");
+            }
+            return IndexBuffer.Get();
+        }
+
+        // Release the resource, that class can not be later used!
+        _NODISCARD auto ReleaseResource()
+        {
+            if (!IndexBuffer)
+            {
+                DXASSERT(false, "IndexBuffer can not be empty");
+            }
+            return std::move(IndexBuffer);
+        }
+
+        // Resource
+        ComPtr<DXResource>  IndexBuffer;
+    };
+
 
     // Timer
     struct Timer
