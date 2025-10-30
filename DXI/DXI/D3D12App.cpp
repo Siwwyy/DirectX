@@ -29,9 +29,16 @@ Vertex CubeVertices[] =
 	//{ -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
 
 
-	{ 0.0f, 0.25f , 0.0f , 1.0f, 0.0f, 0.0f, 1.0f  },
-	{ 0.25f, -0.25f , 0.0f,  0.0f, 1.0f, 0.0f, 1.0f  },
-	{ -0.25f, -0.25f , 0.0f , 0.0f, 0.0f, 1.0f, 1.0f  }
+	//{ 0.0f, 0.25f , 0.0f , 1.0f, 0.0f, 0.0f, 1.0f  },
+	//{ 0.25f, -0.25f , 0.0f,  0.0f, 1.0f, 0.0f, 1.0f  },
+	//{ -0.25f, -0.25f , 0.0f , 0.0f, 0.0f, 1.0f, 1.0f  },
+	//{ -0.25f, -0.25f , 0.0f , 0.0f, 0.0f, 1.0f, 1.0f  }
+
+	{ -0.5f,  0.5f, 0.5f , 1.0f, 1.0f, 1.0f, 1.0f}, // top left
+	{ 0.5f , -0.5f, 0.5f , 1.0f, 1.0f, 0.0f, 1.0f},	// bottom right
+	{ -0.5f, -0.5f, 0.5f , 1.0f, 0.0f, 0.0f, 1.0f}, // bottom left
+	{  0.5f,  0.5f, 0.5f , 0.0f, 0.0f, 1.0f, 1.0f}, // top right
+
 
 
 	//// front face
@@ -122,33 +129,33 @@ constexpr UINT VertexBufferSize = sizeof(CubeVertices);
 
 DWORD CubeIndices[] = 
 {
-	// front face
-	0, 1, 2, // first triangle
-	0, 3, 1, // second triangle
+	//// front face
+	//0, 1, 2, // first triangle
+	//0, 3, 1, // second triangle
 
-	// left face
-	4, 5, 6, // first triangle
-	4, 7, 5, // second triangle
+	//// left face
+	//4, 5, 6, // first triangle
+	//4, 7, 5, // second triangle
 
-	// right face
-	8, 9, 10, // first triangle
-	8, 11, 9, // second triangle
+	//// right face
+	//8, 9, 10, // first triangle
+	//8, 11, 9, // second triangle
 
-	// back face
-	12, 13, 14, // first triangle
-	12, 15, 13, // second triangle
+	//// back face
+	//12, 13, 14, // first triangle
+	//12, 15, 13, // second triangle
 
-	// top face
-	16, 17, 18, // first triangle
-	16, 19, 17, // second triangle
+	//// top face
+	//16, 17, 18, // first triangle
+	//16, 19, 17, // second triangle
 
-	// bottom face
-	20, 21, 22, // first triangle
-	20, 23, 21, // second triangle
+	//// bottom face
+	//20, 21, 22, // first triangle
+	//20, 23, 21, // second triangle
 
 	///////////////////////////////
-	//0, 2, 1,
-	//0, 3, 1
+	0, 1, 2,
+	0, 3, 1
 
 	///////////////////////////////
 };
@@ -385,6 +392,9 @@ void D3D12App::Initialize()
 
 			// Move Fence / Wait for previous frame to end
 			WaitForPreviousFrame();
+
+			// Reset previously used command list and command allocator
+			ThrowIfFailed(CommandList->Reset(CommandAllocators[0].Get(), PipelineState.Get()));
 		}
 
 	}
@@ -395,36 +405,50 @@ void D3D12App::Initialize()
 	 ****** INDEX BUFFER *****
 	 ***************************/
 	{
-		//// GPU Vertex
-		//Helpers::INDEX_HELPER IndexGPU(Device.Get(),
-		//	IndexBufferSize,
-		//	DX_HEAP_PROPERTY_DEFAULT,
-		//	D3D12_RESOURCE_STATE_COPY_DEST);
+		// GPU Vertex
+		constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
+		constexpr auto StateAfter	= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+		Helpers::INDEX_HELPER IndexGPU(Device.Get(),
+			IndexBufferSize,
+			DX_HEAP_PROPERTY_DEFAULT,
+			StateBefore,
+			L"IndexGPU");
 
-		//// Upload Vertex
-		//Helpers::INDEX_HELPER IndexUploadToGPU(Device.Get(),
-		//	IndexBufferSize,
-		//	DX_HEAP_PROPERTY_UPLOAD,
-		//	D3D12_RESOURCE_STATE_GENERIC_READ);
+		// Upload Vertex
+		Helpers::INDEX_HELPER IndexUploadToGPU(Device.Get(),
+			IndexBufferSize,
+			DX_HEAP_PROPERTY_UPLOAD,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			L"IndexUploadToGPU");
 
-		//// store index buffer in upload heap
-		//D3D12_SUBRESOURCE_DATA IndexData = {};
-		//IndexData.pData			= reinterpret_cast<UINT8*>(CubeIndices); // pointer to our index array
-		//IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
-		//IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
+		// store index buffer in upload heap
+		D3D12_SUBRESOURCE_DATA IndexData = {};
+		IndexData.pData			= reinterpret_cast<UINT8*>(CubeIndices); // pointer to our index array
+		IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
+		IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
 
-		//// Update Subresource
-		//UpdateSubresources<1>(CommandList.Get(), IndexGPU.GetPointer(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexData);
+		// Update Subresource
+		UpdateSubresources<1>(CommandList.Get(), IndexGPU.GetPointer(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexData);
 
-		//// transition the vertex buffer data from copy destination state to vertex buffer state
-		//constexpr auto StateBefore		= D3D12_RESOURCE_STATE_COPY_DEST;
-		//constexpr auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-		//const auto IndexCmdListBarrier	= CD3DX12_RESOURCE_BARRIER::Transition(IndexGPU.GetPointer(), StateBefore, StateAfter);
-		//CommandList->ResourceBarrier(1, &IndexCmdListBarrier);
+		// transition the vertex buffer data from copy destination state to vertex buffer state
+		const auto IndexCmdListBarrier = CD3DX12_RESOURCE_BARRIER::Transition(IndexGPU.GetPointer(), StateBefore, StateAfter);
+		CommandList->ResourceBarrier(1, &IndexCmdListBarrier);
 
-		//// Release the resources
-		//IndexBufferView = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
-		//IndexBuffer		= IndexGPU.ReleaseResource();
+		// Release the resources
+		IndexBufferView = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
+		IndexBuffer		= IndexGPU.ReleaseResource();
+
+		{
+			// Submit necessary things from command list
+			// Execute command lists
+			ThrowIfFailed(CommandList->Close()); //close command list for execution
+			DXCommandList* CommandLists[] = { CommandList.Get() };
+			CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+
+			// Move Fence / Wait for previous frame to end
+			WaitForPreviousFrame();
+		}
+
 	}
 
 	/////////
@@ -438,7 +462,9 @@ void D3D12App::Render()
 	// Drawing
 	// Set necessary state.
 	CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+	CommandList->IASetIndexBuffer(&IndexBufferView);
+	//CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+	CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
 
 	//Always EndFrame last
 	EndFrame();
@@ -636,7 +662,6 @@ void D3D12App::EndFrame()
 
 	// Present the frame
 	ThrowIfFailed(SwapChain->Present(1, 0));
-	
 
 	// Move Fence / Wait for previous frame to end
 	WaitForPreviousFrame();
