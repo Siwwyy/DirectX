@@ -466,7 +466,7 @@ void D3D12App::Initialize()
 	{
 		// set starting cubes position
 		// first cube
-		SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);		// set object position
+		SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 0.0f, -4.0f);		// set object position
 		XMVECTOR PosVec = XMLoadFloat4(&SquareMatrices.Position);		// create xmvector for object position
 		auto TmpMat		= XMMatrixTranslationFromVector(PosVec);		// create translation matrix from object's position vector
 		XMStoreFloat4x4(&SquareMatrices.RotMat, XMMatrixIdentity());	// initialize object's rotation matrix to identity matrix
@@ -499,22 +499,25 @@ void D3D12App::Render()
 	BeginFrame();
 
 	// Drawing
-	//// Set necessary state.
-	//CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	//CommandList->IASetIndexBuffer(&IndexBufferView);
-	////CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 
 
-	// set objects's constant buffer
-	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+	//Square
+	{
+		// set objects's constant buffer
+		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+		CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&IndexBufferView);
+		CommandList->DrawIndexedInstanced(NumIndices, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+	}
 
-	//// draw first object
-	//CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
-	//CommandList->DrawIndexedInstanced(NumIndices, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+	// Cube
+	{
+		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + ConstantBufferPerObjectSize);
+		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
+		CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
+	}
 
-	CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
-	CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); //
 
 	//Always EndFrame last
 	EndFrame();
@@ -522,6 +525,12 @@ void D3D12App::Render()
 
 void D3D12App::Update(float DeltaTime)
 {
+	// Camera matrices
+	const auto CameraViewMat = Camera.GetViewMatrix();
+	const auto CameraProjMat = Camera.GetProjMatrix();
+	XMMATRIX ViewMat = XMLoadFloat4x4(&CameraViewMat); // load view matrix
+	XMMATRIX ProjMat = XMLoadFloat4x4(&CameraProjMat); // load projection matrix
+
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
 	// create rotation matrices
@@ -530,7 +539,7 @@ void D3D12App::Update(float DeltaTime)
 	XMMATRIX rotZMat = XMMatrixRotationZ(0.003f);
 
 	// add rotation to cube1's rotation matrix and store it
-	XMMATRIX rotMat = XMLoadFloat4x4(&SquareMatrices.RotMat) * rotYMat * rotZMat; // * rotXMat * rotYMat * rotZMat;
+	XMMATRIX rotMat = XMLoadFloat4x4(&SquareMatrices.RotMat);// *rotYMat * rotZMat; // * rotXMat * rotYMat * rotZMat;
 	XMStoreFloat4x4(&SquareMatrices.RotMat, rotMat);
 
 	// create translation matrix for cube 1 from cube 1's position vector
@@ -544,16 +553,44 @@ void D3D12App::Update(float DeltaTime)
 
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
-	const auto CameraViewMat	= Camera.GetViewMatrix();
-	const auto CameraProjMat	= Camera.GetProjMatrix();
-	XMMATRIX ViewMat			= XMLoadFloat4x4(&CameraViewMat); // load view matrix
-	XMMATRIX ProjMat			= XMLoadFloat4x4(&CameraProjMat); // load projection matrix
 	XMMATRIX MVPMat				= XMLoadFloat4x4(&SquareMatrices.WorldMat) * ViewMat * ProjMat; // create wvp matrix
 	XMMATRIX Transposed			= XMMatrixTranspose(MVPMat); // must transpose wvp matrix for the gpu
 	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, Transposed); // store transposed wvp matrix in constant buffer
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(CbvGPUAddress[CurrentFrameIdx], &CbvPerObject, sizeof(CbvPerObject));
+
+
+	// Cube
+	// create rotation matrices
+	XMMATRIX rotXMatCube = XMMatrixRotationX(0.01f);
+	XMMATRIX rotYMatCube = XMMatrixRotationY(0.002f);
+	XMMATRIX rotZMatCube = XMMatrixRotationZ(0.003f);
+
+	// add rotation to cube1's rotation matrix and store it
+	const auto CubeRotator = Cube.GetRotationMatrix();
+	XMMATRIX rotMatCube = XMLoadFloat4x4(&CubeRotator) * rotXMat * rotYMat * rotZMat;
+	Cube.SetRotationMatrix(rotMatCube);
+
+	// create translation matrix for cube 1 from cube 1's position vector
+	const auto CubePos = Cube.GetPosVector();
+	XMMATRIX translationMatCube = XMMatrixTranslationFromVector(XMLoadFloat4(&CubePos));
+
+	// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
+	XMMATRIX worldMatCube = rotMatCube * translationMatCube;
+
+	// store cube1's world matrix
+	Cube.SetWorldMatrix(worldMatCube);
+
+	// update constant buffer for cube1
+	// create the wvp matrix and store in constant buffer
+	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
+	XMMATRIX MVPMatCube			= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
+	XMMATRIX TransposedCube		= XMMatrixTranspose(MVPMatCube); // must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, TransposedCube); // store transposed wvp matrix in constant buffer
+
+	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	memcpy(CbvGPUAddress[CurrentFrameIdx] + ConstantBufferPerObjectSize, &CbvPerObject, sizeof(CbvPerObject));
 }
 
 void D3D12App::Destroy()
