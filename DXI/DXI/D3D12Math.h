@@ -30,20 +30,6 @@
 	};
 
 
-	// Font stuffs
-	struct TextVertex 
-	{
-		TextVertex(float r, float g, float b, float a, float u, float v, float tw, float th, float x, float y, float w, float h) 
-			: color(r, g, b, a)
-			, texCoord(u, v, tw, th)
-			, pos(x, y, w, h) {}
-
-		XMFLOAT4 pos;
-		XMFLOAT4 texCoord;
-		XMFLOAT4 color;
-	};
-
-
 	// Make sure Constant buffer is aligned to 256 bytes boundary
 	// https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
 	struct alignas(256) ConstantBufferPerObject 
@@ -65,12 +51,12 @@
 		DirectX::XMFLOAT4	CameraUp;				// the worlds up vector
 	};
 
-	// Cube Matrices
-	struct alignas(256) CubeMatrices
+	// ObjectMatrices Matrices
+	struct alignas(256) ObjectMatrices
 	{
-		DirectX::XMFLOAT4X4 CubeWorldMat;			// our first cubes world matrix (transformation matrix)
-		DirectX::XMFLOAT4X4 CubeRotMat;				// this will keep track of our rotation for the first cube
-		DirectX::XMFLOAT4	CubePosition;			// our first cubes position in space
+		DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
+		DirectX::XMFLOAT4X4 RotMat;				// this will keep track of our rotation for object
+		DirectX::XMFLOAT4	Position;			// position vector
 	};
 //}
 

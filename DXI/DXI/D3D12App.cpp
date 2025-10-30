@@ -156,6 +156,8 @@ DWORD CubeIndices[] =
 	///////////////////////////////
 	0, 1, 2,
 	0, 3, 1
+	// Its because its clock-wise when using Triangle List topology
+	// See: https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-primitive-topologies
 
 	///////////////////////////////
 };
@@ -452,6 +454,37 @@ void D3D12App::Initialize()
 	}
 
 	/////////
+
+	/***************************
+	 ***** Constant Buffers ****
+	 ********* Matrices ********
+	 ***************************/
+	{
+		// build projection and view matrix
+		const auto HalfFOV = 45.0f;
+		XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), (float)WindowWidth / (float)WindowHeight, 0.1f, 1000.0f);
+		XMStoreFloat4x4(&CameraMatrices.CameraProjMat, tmpMat);
+
+		// set starting camera state
+		CameraMatrices.CameraPosition	= XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
+		CameraMatrices.CameraTarget		= XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+		CameraMatrices.CameraUp			= XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
+
+		// build view matrix
+		XMVECTOR cPos	= XMLoadFloat4(&CameraMatrices.CameraPosition);
+		XMVECTOR cTarg	= XMLoadFloat4(&CameraMatrices.CameraTarget);
+		XMVECTOR cUp	= XMLoadFloat4(&CameraMatrices.CameraUp);
+		tmpMat			= XMMatrixLookAtLH(cPos, cTarg, cUp);
+		XMStoreFloat4x4(&CameraMatrices.CameraViewMat, tmpMat);
+
+		// set starting cubes position
+		// first cube
+		SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);		// set object position
+		XMVECTOR posVec = XMLoadFloat4(&SquareMatrices.Position);		// create xmvector for object position
+		tmpMat			= XMMatrixTranslationFromVector(posVec);		// create translation matrix from object's position vector
+		XMStoreFloat4x4(&SquareMatrices.RotMat, XMMatrixIdentity());	// initialize object's rotation matrix to identity matrix
+		XMStoreFloat4x4(&SquareMatrices.WorldMat, tmpMat);				// store object's world matrix
+	}
 }
 
 void D3D12App::Render()
@@ -464,7 +497,13 @@ void D3D12App::Render()
 	CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 	CommandList->IASetIndexBuffer(&IndexBufferView);
 	//CommandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
-	CommandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+
+
+	// set objects's constant buffer
+	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+
+	// draw first cube
+	CommandList->DrawIndexedInstanced(NumCubeIndices, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
 
 	//Always EndFrame last
 	EndFrame();
@@ -472,7 +511,36 @@ void D3D12App::Render()
 
 void D3D12App::Update(float DeltaTime)
 {
-	
+	// update app logic, such as moving the camera or figuring out what objects are in view
+
+	// create rotation matrices
+	XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
+	XMMATRIX rotYMat = XMMatrixRotationY(0.002f);
+	XMMATRIX rotZMat = XMMatrixRotationZ(0.003f);
+
+	// add rotation to cube1's rotation matrix and store it
+	XMMATRIX rotMat = XMLoadFloat4x4(&SquareMatrices.RotMat) * rotZMat; // * rotXMat * rotYMat * rotZMat;
+	XMStoreFloat4x4(&SquareMatrices.RotMat, rotMat);
+
+	// create translation matrix for cube 1 from cube 1's position vector
+	XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&SquareMatrices.Position));
+
+	// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
+	XMMATRIX worldMat = rotMat * translationMat;
+
+	// store cube1's world matrix
+	XMStoreFloat4x4(&SquareMatrices.WorldMat, worldMat);
+
+	// update constant buffer for cube1
+	// create the wvp matrix and store in constant buffer
+	XMMATRIX viewMat		= XMLoadFloat4x4(&CameraMatrices.CameraViewMat); // load view matrix
+	XMMATRIX projMat		= XMLoadFloat4x4(&CameraMatrices.CameraProjMat); // load projection matrix
+	XMMATRIX wvpMat			= XMLoadFloat4x4(&SquareMatrices.WorldMat) * viewMat * projMat; // create wvp matrix
+	XMMATRIX transposed		= XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, transposed); // store transposed wvp matrix in constant buffer
+
+	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	memcpy(CbvGPUAddress[CurrentFrameIdx], &CbvPerObject, sizeof(CbvPerObject));
 }
 
 void D3D12App::Destroy()
@@ -515,6 +583,9 @@ void D3D12App::InitializePerFrameResources()
 	CommandAllocators.resize(BACK_BUFFER_COUNT);
 	// Render Targets
 	RenderTargets.resize(BACK_BUFFER_COUNT);
+	//Constant Buffers
+	ConstantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
+	CbvGPUAddress.resize(BACK_BUFFER_COUNT);
 
 	// Loop
 	for (UINT i = 0; i < BACK_BUFFER_COUNT; ++i)
@@ -535,6 +606,29 @@ void D3D12App::InitializePerFrameResources()
 
 			// Offsets the rtv handle by descriptor size -> new_rtvHandle = rtvHandle + 1 * rtvDescriptorSize
 			RtvHandle.Offset(1, RtvIncrementDescriptorSize);
+		}
+
+		// CBV Upload heap
+		{
+			// create resource for cubes
+			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(1024 * 64);
+			ThrowIfFailed(Device->CreateCommittedResource(
+				&DX_HEAP_PROPERTY_UPLOAD,									// this heap will be used to upload the constant buffer data
+				D3D12_HEAP_FLAG_NONE,									// no flags
+				&UploadBufferDesc,										// size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
+				D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state
+				nullptr,												// we do not have use an optimized clear value for constant buffers
+				IID_PPV_ARGS(&ConstantBufferUploadHeaps[i])));
+			NAME_D3D12_OBJECT(ConstantBufferUploadHeaps[i], L"Constant Buffer Upload Resource Heap");
+			ZeroMemory(&CbvPerObject, sizeof(CbvPerObject));
+
+			CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
+			// map the resource heap to get a gpu virtual address to the beginning of the heap
+			ThrowIfFailed(ConstantBufferUploadHeaps[i]->Map(0, &readRange, reinterpret_cast<void**>(&CbvGPUAddress[i])));
+
+			// Because of the constant read alignment requirements, constant buffer views must be 256 bit aligned. Our buffers are smaller than 256 bits,
+			// so we need to add spacing between the two buffers, so that the second buffer starts at 256 bits from the beginning of the resource heap.
+			memcpy(CbvGPUAddress[i], &CbvPerObject, sizeof(CbvPerObject));											// cube1's constant buffer data
 		}
 	}
 }
@@ -588,17 +682,48 @@ void D3D12App::InitializePSO()
 	//InputLayoutDesc.NumElements = sizeof(InputElementDescs) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	//InputLayoutDesc.pInputElementDescs = InputElementDescs;
 
-	// Create an empty root signature.
+	//// Create an empty root signature.
+	//{
+	//	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+	//	RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	//	ComPtr<ID3DBlob> signature;
+	//	ComPtr<ID3DBlob> error;
+	//	ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	//	ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+	//}
+
+
 	{
+		// create root signature
+
+		// create a root descriptor, which explains where to find the data for this root parameter
+		D3D12_ROOT_DESCRIPTOR RootCBVDescriptor;
+		RootCBVDescriptor.RegisterSpace		= 0;
+		RootCBVDescriptor.ShaderRegister	= 0;
+
+		// create a root parameter and fill it out
+		D3D12_ROOT_PARAMETER  RootParameters[1]; // only one parameter right now
+		RootParameters[0].ParameterType		= D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+		RootParameters[0].Descriptor		= RootCBVDescriptor; // this is the root descriptor for this root parameter
+		RootParameters[0].ShaderVisibility	= D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		RootSignatureDesc.Init(_countof(RootParameters), // we have 1 root parameter
+			RootParameters, // a pointer to the beginning of our root parameters array
+			0,
+			nullptr,
+			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
 		ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
 		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 	}
-
 
 	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};

@@ -97,6 +97,13 @@ private:
 	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
 	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
 
+	// Constant Buffers
+	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
+	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+	ObjectMatrices										SquareMatrices;
+	CameraMatrices										CameraMatrices;
+	ConstantBufferPerObject								CbvPerObject;
+
 };
 
 #endif // D3D12_APP_H_INCLUDED

@@ -25,11 +25,18 @@ struct VS_OUTPUT
     float4 color: COLOR;
 };
 
+
+cbuffer ConstantBuffer : register(b0)
+{
+    float4x4 WorldViewProjectionMat4x4;
+};
+
 VS_OUTPUT main(VS_INPUT input)
 {
     VS_OUTPUT output;
-    output.pos = float4(input.pos, 1.0f);
-    output.color = input.color;
+    //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
+    output.pos      = mul(float4(input.pos, 1.f), WorldViewProjectionMat4x4); 
+    output.color    = input.color;
     return output;
 }
 
