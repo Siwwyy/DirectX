@@ -181,6 +181,10 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	, Camera(WindowWidth, WindowHeight)
 {
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
+
+	//Objects properties
+	//Cube.SetPosVector(XMFLOAT4(-1.8f, -0.8f, 1.f, 0.0f));
+	//Cube.Transform(XMFLOAT3(0.1f, 1.f, 1.f), {}, {});
 }
 
 void D3D12App::Initialize()
@@ -526,32 +530,32 @@ void D3D12App::Render()
 void D3D12App::Update(float DeltaTime)
 {
 	// Camera matrices
-	const auto CameraViewMat = Camera.GetViewMatrix();
-	const auto CameraProjMat = Camera.GetProjMatrix();
-	XMMATRIX ViewMat = XMLoadFloat4x4(&CameraViewMat); // load view matrix
-	XMMATRIX ProjMat = XMLoadFloat4x4(&CameraProjMat); // load projection matrix
+	const auto CameraViewMat	= Camera.GetViewMatrix();
+	const auto CameraProjMat	= Camera.GetProjMatrix();
+	XMMATRIX ViewMat			= XMLoadFloat4x4(&CameraViewMat); // load view matrix
+	XMMATRIX ProjMat			= XMLoadFloat4x4(&CameraProjMat); // load projection matrix
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
 	// create rotation matrices
-	XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
-	XMMATRIX rotYMat = XMMatrixRotationY(0.002f);
-	XMMATRIX rotZMat = XMMatrixRotationZ(0.003f);
+	XMMATRIX RotXMat = XMMatrixRotationX(0.0001f);
+	XMMATRIX RotYMat = XMMatrixRotationY(0.002f);
+	XMMATRIX RotZMat = XMMatrixRotationZ(0.003f);
 
-	// add rotation to cube1's rotation matrix and store it
-	XMMATRIX rotMat = XMLoadFloat4x4(&SquareMatrices.RotMat);// *rotYMat * rotZMat; // * rotXMat * rotYMat * rotZMat;
-	XMStoreFloat4x4(&SquareMatrices.RotMat, rotMat);
+	// add rotation to object's rotation matrix and store it
+	XMMATRIX RotMat = XMLoadFloat4x4(&SquareMatrices.RotMat);// *rotYMat * rotZMat; // * rotXMat * rotYMat * rotZMat;
+	XMStoreFloat4x4(&SquareMatrices.RotMat, RotMat);
 
-	// create translation matrix for cube 1 from cube 1's position vector
-	XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&SquareMatrices.Position));
+	// create translation matrix for object position vector
+	XMMATRIX TranslationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&SquareMatrices.Position));
 
-	// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-	XMMATRIX worldMat = rotMat * translationMat;
+	// create object's world matrix by first rotating the cube, then positioning the rotated cube
+	XMMATRIX WorldMat = RotMat * TranslationMat;
 
-	// store cube1's world matrix
-	XMStoreFloat4x4(&SquareMatrices.WorldMat, worldMat);
+	// store object's world matrix
+	XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMat);
 
-	// update constant buffer for cube1
+	// update constant buffer for object
 	// create the wvp matrix and store in constant buffer
 	XMMATRIX MVPMat				= XMLoadFloat4x4(&SquareMatrices.WorldMat) * ViewMat * ProjMat; // create wvp matrix
 	XMMATRIX Transposed			= XMMatrixTranspose(MVPMat); // must transpose wvp matrix for the gpu
@@ -563,25 +567,26 @@ void D3D12App::Update(float DeltaTime)
 
 	// Cube
 	// create rotation matrices
-	XMMATRIX rotXMatCube = XMMatrixRotationX(0.01f);
-	XMMATRIX rotYMatCube = XMMatrixRotationY(0.002f);
-	XMMATRIX rotZMatCube = XMMatrixRotationZ(0.003f);
+	//XMMATRIX RotXMatCube = XMMatrixRotationX(0.01f);
+	//XMMATRIX RotYMatCube = XMMatrixRotationY(0.002f);
+	//XMMATRIX RotZMatCube = XMMatrixRotationZ(0.003f);
 
-	// add rotation to cube1's rotation matrix and store it
-	const auto CubeRotator = Cube.GetRotationMatrix();
-	XMMATRIX rotMatCube = XMLoadFloat4x4(&CubeRotator) * rotXMat * rotYMat * rotZMat;
-	Cube.SetRotationMatrix(rotMatCube);
+	//// add rotation to cube1's rotation matrix and store it
+	//const auto CubeRotator	= Cube.GetRotationMatrix();
+	//XMMATRIX RotMatCube		= XMLoadFloat4x4(&CubeRotator) * RotXMatCube * RotYMatCube * RotZMatCube;
+	//Cube.SetRotationMatrix(RotMatCube);
 
-	// create translation matrix for cube 1 from cube 1's position vector
-	const auto CubePos = Cube.GetPosVector();
-	XMMATRIX translationMatCube = XMMatrixTranslationFromVector(XMLoadFloat4(&CubePos));
+	//// create translation matrix for cube 1 from cube 1's position vector
+	//const auto CubePos			= Cube.GetPosVector();
+	//XMMATRIX TranslationMatCube = XMMatrixTranslationFromVector(XMLoadFloat4(&CubePos));
 
-	// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-	XMMATRIX worldMatCube = rotMatCube * translationMatCube;
+	//// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
+	//XMMATRIX WorldMatCube = RotMatCube * TranslationMatCube;
 
-	// store cube1's world matrix
-	Cube.SetWorldMatrix(worldMatCube);
+	//// store cube1's world matrix
+	//Cube.SetWorldMatrix(WorldMatCube);
 
+	Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.01f, 0.002f, 0.003f));
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();

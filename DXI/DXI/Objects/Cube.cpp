@@ -74,8 +74,15 @@ constexpr UINT CubeNumIndices = CubeIndexBufferSize / sizeof(DWORD);
 
 Cube::Cube()
     : Primitive()
-    , NumIndices(CubeNumIndices)
+{
 
+}
+
+Cube::Cube(const DirectX::XMFLOAT4X4 InitWorldMat,
+            const DirectX::XMFLOAT4X4 InitRotMat,
+            const DirectX::XMFLOAT4 InitPosition,
+            const XMFLOAT4 InitScale)
+    : Primitive(InitWorldMat, InitRotMat, InitPosition, InitScale)
 {
 
 }
@@ -84,6 +91,9 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
 {
     using Helpers::ThrowIfFailed;
     HRESULT hr = Primitive::Init(Device, CommandList);
+
+    // Set neccessary values
+    SetNumIndices(CubeNumIndices);
 
     /***************************
     ****** VERTEX BUFFER ******

@@ -14,7 +14,11 @@ class Primitive
 public:
 
 	Primitive();
-	~Primitive()	= default;
+	Primitive(const DirectX::XMFLOAT4X4 InitWorldMat,
+				const DirectX::XMFLOAT4X4 InitRotMat,
+				const DirectX::XMFLOAT4 InitPosition,
+				const XMFLOAT4 InitScale);
+	~Primitive() = default;
 
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
@@ -33,6 +37,15 @@ public:
 		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
 	}
 
+	void SetNumIndices(const UINT NumIndices)
+	{
+		this->NumIndices = NumIndices;
+	}
+
+	void Transform(const XMFLOAT3 ScaleTransform		= XMFLOAT3(1.f, 1.f, 1.f),
+					const XMFLOAT3 RotateTransform		= XMFLOAT3(0.f, 0.f, 0.f),
+					const XMFLOAT3 TranslateTransform	= XMFLOAT3(0.f, 0.f, 0.f));
+
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
@@ -45,7 +58,10 @@ public:
 	{
 		return Matrices.RotMat;
 	}
-
+	_NODISCARD inline const auto GetNumIndices() const
+	{
+		return NumIndices;
+	}
 
 	// D3D12 Vertex data
 	ComPtr<DXResource>			VertexBufferUpload;
@@ -62,6 +78,8 @@ private:
 	// Matrices
 	ObjectMatrices				Matrices;
 
+	// Number of indices
+	UINT NumIndices;
 
 };
 

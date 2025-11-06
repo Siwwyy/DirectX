@@ -54,9 +54,18 @@
 	// ObjectMatrices Matrices
 	struct alignas(256) ObjectMatrices
 	{
+		ObjectMatrices() = default;
+		ObjectMatrices(const DirectX::XMFLOAT4X4 InitWorldMat,
+			const DirectX::XMFLOAT4X4 InitRotMat,
+			const DirectX::XMFLOAT4 InitPosition,
+			const DirectX::XMFLOAT4 InitScale);
+		~ObjectMatrices() = default;
+
+
 		DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
 		DirectX::XMFLOAT4X4 RotMat;				// this will keep track of our rotation for object
 		DirectX::XMFLOAT4	Position;			// position vector
+		DirectX::XMFLOAT4	Scale;				// position vector
 	};
 //}
 
