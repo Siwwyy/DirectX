@@ -105,7 +105,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         Helpers::VERTEX_HELPER VertexGPU(Device,
             CubeVertexBufferSize,
             DX_HEAP_PROPERTY_DEFAULT,
-            StateBefore,
+            D3D12_RESOURCE_STATE_COMMON,
             L"VertexGPU");
 
         // Upload Vertex
@@ -146,7 +146,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         Helpers::INDEX_HELPER IndexGPU(Device,
             CubeIndexBufferSize,
             DX_HEAP_PROPERTY_DEFAULT,
-            StateBefore,
+            D3D12_RESOURCE_STATE_COMMON,
             L"IndexGPU");
 
         // Upload Vertex

@@ -185,6 +185,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	//Objects properties
 	//Cube.SetPosVector(XMFLOAT4(-1.8f, -0.8f, 1.f, 0.0f));
 	//Cube.Transform(XMFLOAT3(0.1f, 1.f, 1.f), {}, {});
+	Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
 }
 
 void D3D12App::Initialize()
@@ -360,7 +361,7 @@ void D3D12App::Initialize()
 		Helpers::VERTEX_HELPER VertexGPU(Device.Get(),
 			VertexBufferSize,
 			DX_HEAP_PROPERTY_DEFAULT,
-			StateBefore,
+			D3D12_RESOURCE_STATE_COMMON,
 			L"VertexGPU");
 
 		// Upload Vertex
@@ -418,7 +419,7 @@ void D3D12App::Initialize()
 		Helpers::INDEX_HELPER IndexGPU(Device.Get(),
 			IndexBufferSize,
 			DX_HEAP_PROPERTY_DEFAULT,
-			StateBefore,
+			D3D12_RESOURCE_STATE_COMMON,
 			L"IndexGPU");
 
 		// Upload Vertex
@@ -584,9 +585,9 @@ void D3D12App::Update(float DeltaTime)
 	//XMMATRIX WorldMatCube = RotMatCube * TranslationMatCube;
 
 	//// store cube1's world matrix
-	//Cube.SetWorldMatrix(WorldMatCube);
-
-	Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.01f, 0.002f, 0.003f));
+	static float z_offset = 0.001f;
+	Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.f, 0.f, 0.f), { 0.f, 0.f, z_offset });
+	z_offset += 0.0001f;
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
@@ -698,8 +699,8 @@ void D3D12App::InitalizeShaders()
 		NULL, NULL
 	};
 
-	constexpr const wchar_t* VertexShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
+	constexpr const wchar_t* VertexShaderPath	= L"shaders//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath	= L"shaders//pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 #if DEBUG_MODE

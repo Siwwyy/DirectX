@@ -22,17 +22,17 @@ public:
 
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
-	void SetWorldMatrix(const XMMATRIX Matrix)
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
 	{
 		XMStoreFloat4x4(&Matrices.WorldMat, Matrix);
 	}
 
-	void SetPosVector(const XMFLOAT4 Vector)
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
 	{
 		Matrices.Position = Vector;
 	}
 
-	void SetRotationMatrix(const XMMATRIX Matrix)
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
 	{
 		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
 	}
@@ -62,6 +62,8 @@ public:
 	{
 		return NumIndices;
 	}
+
+	void PrintTransformPretty() const;
 
 	// D3D12 Vertex data
 	ComPtr<DXResource>			VertexBufferUpload;

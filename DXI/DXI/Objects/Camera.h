@@ -19,6 +19,19 @@ public:
 
 	Camera(UINT ScreenWidth, UINT ScreenHeight);
 
+	void SetPosVector(const XMFLOAT4 Vector)
+	{
+		// set starting camera state
+		CameraMatrices.CameraPosition = Vector;
+
+		// build view matrix
+		XMVECTOR Pos	= XMLoadFloat4(&CameraMatrices.CameraPosition);
+		XMVECTOR Targ	= XMLoadFloat4(&CameraMatrices.CameraTarget);
+		XMVECTOR Up		= XMLoadFloat4(&CameraMatrices.CameraUp);
+		XMMATRIX LookAt = XMMatrixLookAtLH(Pos, Targ, Up);
+		XMStoreFloat4x4(&CameraMatrices.CameraViewMat, LookAt);
+	}
+
 	_NODISCARD inline const auto GetViewMatrix() const
 	{
 		return CameraMatrices.CameraViewMat;

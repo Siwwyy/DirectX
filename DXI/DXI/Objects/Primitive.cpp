@@ -44,9 +44,12 @@ void Primitive::Transform(const XMFLOAT3 ScaleTransform,
 
 
     // Translating
-    const auto TranslateMatrix = XMMatrixTranslation(TranslateTransform.x, 
-                                                    TranslateTransform.y, 
-                                                    TranslateTransform.z);
+    Matrices.Position.x += TranslateTransform.x;
+    Matrices.Position.y += TranslateTransform.y;
+    Matrices.Position.z += TranslateTransform.z;
+    const auto TranslateMatrix = XMMatrixTranslation(Matrices.Position.x,
+                                                    Matrices.Position.y,
+                                                    Matrices.Position.z);
 
     // Combine matrices together
     const auto RotationMatrixCombined = XMLoadFloat4x4(&Matrices.RotMat) * RotationXMatrix * RotationYMatrix * RotationZMatrix;
@@ -54,4 +57,9 @@ void Primitive::Transform(const XMFLOAT3 ScaleTransform,
 
     const auto WorldMat = ScalingMatrix * RotationMatrixCombined * TranslateMatrix;
     SetWorldMatrix(WorldMat);
+}
+
+void Primitive::PrintTransformPretty() const
+{
+    DXLOG("Transform %f %f %f \n", Matrices.Position.x, Matrices.Position.y, Matrices.Position.z)
 }

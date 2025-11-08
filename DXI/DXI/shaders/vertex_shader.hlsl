@@ -1,44 +1,48 @@
 
 //Copyright, Damian Andrysiak 2024, All Rights Reserved.
 
-// #include "Common.hlsl"
-
-// PSInput VSMain(in VSInput input)
-// {
-//     PSInput result;
-
-//     result.position = float4(input.position, 1.f);
-//     result.color = input.color;
-
-//     return result;
-// }
-
-struct VS_INPUT
-{
-    float3 pos : POSITION;
-    float4 color: COLOR;
-};
-
-struct VS_OUTPUT
-{
-    float4 pos: SV_POSITION;
-    float4 color: COLOR;
-};
-
+#include "Common.hlsl"
 
 cbuffer ConstantBuffer : register(b0)
 {
     float4x4 WorldViewProjectionMat4x4;
 };
 
-VS_OUTPUT main(VS_INPUT input)
+PSInput main(VSInput input)
 {
-    VS_OUTPUT output;
+    PSInput output;
     //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
-    output.pos      = mul(float4(input.pos, 1.f), WorldViewProjectionMat4x4); 
+    output.position = mul(float4(input.position, 1.f), WorldViewProjectionMat4x4); 
     output.color    = input.color;
     return output;
 }
+
+// struct VS_INPUT
+// {
+//     float3 pos : POSITION;
+//     float4 color: COLOR;
+// };
+
+// struct VS_OUTPUT
+// {
+//     float4 pos: SV_POSITION;
+//     float4 color: COLOR;
+// };
+
+
+// cbuffer ConstantBuffer : register(b0)
+// {
+//     float4x4 WorldViewProjectionMat4x4;
+// };
+
+// VS_OUTPUT main(VS_INPUT input)
+// {
+//     VS_OUTPUT output;
+//     //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
+//     output.pos      = mul(float4(input.pos, 1.f), WorldViewProjectionMat4x4); 
+//     output.color    = input.color;
+//     return output;
+// }
 
 
 // // Vertex Shader Input struct
