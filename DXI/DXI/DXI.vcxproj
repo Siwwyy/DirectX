@@ -138,6 +138,7 @@
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
+    <ClCompile Include="Text.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
@@ -150,6 +151,7 @@
     <ClInclude Include="Objects\Cube.h" />
     <ClInclude Include="Objects\Primitive.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Text.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

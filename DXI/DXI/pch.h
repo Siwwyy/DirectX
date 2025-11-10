@@ -10,9 +10,11 @@
 //#pragma comment(lib, "D3DCompiler.lib")
 
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN    // Exclude rarely-used stuff from Windows headers.
 #define _CRT_SECURE_NO_WARNINGS
-#define WIN32_LEAN_AND_MEAN
 #define D3DX12_NO_STATE_OBJECT_HELPERS
+#endif
 #include <dxgi1_6.h>
 #include <DirectXMath.h>
 

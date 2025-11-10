@@ -22,30 +22,16 @@ public:
 
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.WorldMat, Matrix);
-	}
-
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
-	{
-		Matrices.Position = Vector;
-	}
-
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
-	}
-
 	void SetNumIndices(const UINT NumIndices)
 	{
 		this->NumIndices = NumIndices;
 	}
 
-	void Transform(const XMFLOAT3 ScaleTransform		= XMFLOAT3(1.f, 1.f, 1.f),
-					const XMFLOAT3 RotateTransform		= XMFLOAT3(0.f, 0.f, 0.f),
-					const XMFLOAT3 TranslateTransform	= XMFLOAT3(0.f, 0.f, 0.f));
-
+	// Main Transform of pritmitive
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM,
+				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE,
+				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE);
+	
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
@@ -76,6 +62,22 @@ public:
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
 private:
+
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
+	{
+		XMStoreFloat4x4(&Matrices.WorldMat, Matrix);
+	}
+
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
+	{
+		Matrices.Position = Vector;
+	}
+
+	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
+	{
+		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
+	}
+
 
 	// Matrices
 	ObjectMatrices				Matrices;

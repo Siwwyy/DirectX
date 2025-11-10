@@ -4,7 +4,9 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "D3D12Math.h"
+#include "Text.h"
 
+#include <string>
 
 // Namespaces
 using namespace Helpers;
@@ -471,7 +473,7 @@ void D3D12App::Initialize()
 	{
 		// set starting cubes position
 		// first cube
-		SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 0.0f, -4.0f);		// set object position
+		SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 4.0f, 0.0f);		// set object position
 		XMVECTOR PosVec = XMLoadFloat4(&SquareMatrices.Position);		// create xmvector for object position
 		auto TmpMat		= XMMatrixTranslationFromVector(PosVec);		// create translation matrix from object's position vector
 		XMStoreFloat4x4(&SquareMatrices.RotMat, XMMatrixIdentity());	// initialize object's rotation matrix to identity matrix
@@ -523,7 +525,17 @@ void D3D12App::Render()
 		CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
 	}
 
-
+#if 0
+	RenderText(CommandList.Get(), 
+		DsvHeap.Get(), 
+		CurrentFrameIdx, 
+		arialFont, 
+		std::wstring(L"FPS: ") + std::to_wstring(timer.fps), 
+		XMFLOAT2(0.02f, 0.01f),
+		XMFLOAT2(2.0f, 2.0f),
+		XMFLOAT2(0.0f, 0.0f),
+		XMFLOAT4(1.0f, 1.0f, 1.f, 1.f));
+#endif
 	//Always EndFrame last
 	EndFrame();
 }
@@ -567,27 +579,12 @@ void D3D12App::Update(float DeltaTime)
 
 
 	// Cube
-	// create rotation matrices
-	//XMMATRIX RotXMatCube = XMMatrixRotationX(0.01f);
-	//XMMATRIX RotYMatCube = XMMatrixRotationY(0.002f);
-	//XMMATRIX RotZMatCube = XMMatrixRotationZ(0.003f);
-
-	//// add rotation to cube1's rotation matrix and store it
-	//const auto CubeRotator	= Cube.GetRotationMatrix();
-	//XMMATRIX RotMatCube		= XMLoadFloat4x4(&CubeRotator) * RotXMatCube * RotYMatCube * RotZMatCube;
-	//Cube.SetRotationMatrix(RotMatCube);
-
-	//// create translation matrix for cube 1 from cube 1's position vector
-	//const auto CubePos			= Cube.GetPosVector();
-	//XMMATRIX TranslationMatCube = XMMatrixTranslationFromVector(XMLoadFloat4(&CubePos));
-
-	//// create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-	//XMMATRIX WorldMatCube = RotMatCube * TranslationMatCube;
 
 	//// store cube1's world matrix
 	static float z_offset = 0.001f;
-	Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.f, 0.f, 0.f), { 0.f, 0.f, z_offset });
-	z_offset += 0.0001f;
+	//Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.f, 0.f, 0.f), { 0.f, 0.f, z_offset });
+	Cube.Transform({ 0.f, 0.f, z_offset });
+	//z_offset += 0.0001f;
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
@@ -665,11 +662,13 @@ void D3D12App::InitializePerFrameResources()
 		}
 
 		// CBV Upload heap
-		{
+		{		
 			// create resource for cubes
-			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(1024 * 64);
+			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(CalculateConstantBufferByteSize(256), 
+				D3D12_RESOURCE_FLAG_NONE,
+				D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 			ThrowIfFailed(Device->CreateCommittedResource(
-				&DX_HEAP_PROPERTY_UPLOAD,									// this heap will be used to upload the constant buffer data
+				&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the constant buffer data
 				D3D12_HEAP_FLAG_NONE,									// no flags
 				&UploadBufferDesc,										// size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
 				D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state

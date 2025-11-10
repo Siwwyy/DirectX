@@ -17,12 +17,15 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	*/
 
 	// build projection and view matrix
-	const auto HalfFOV = 45.0f;
-	XMMATRIX ProjMat = XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 0.1f, 100.0f);
+	const auto HalfFOV	= 45.0f;
+	XMMATRIX ProjMat	= XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), 
+													static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 
+													0.01f, 
+													1000.0f);
 	XMStoreFloat4x4(&CameraMatrices.CameraProjMat, ProjMat);
 
 	// set starting camera state
-	CameraMatrices.CameraPosition	= XMFLOAT4(0.0f, 0.0f, -10.0f, 0.0f);
+	CameraMatrices.CameraPosition	= XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
 	CameraMatrices.CameraTarget		= XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	CameraMatrices.CameraUp			= XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
 

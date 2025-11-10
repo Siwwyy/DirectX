@@ -93,6 +93,10 @@ const CD3DX12_HEAP_PROPERTIES	DX_HEAP_PROPERTY_UPLOAD     = CD3DX12_HEAP_PROPERT
 const CD3DX12_HEAP_PROPERTIES	DX_HEAP_PROPERTY_READBACK   = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);	//Heap type readback
 const CD3DX12_HEAP_PROPERTIES	DX_HEAP_PROPERTY_CUSTOM     = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_CUSTOM);		//Heap type custom
 
+// TRANSFORMS
+#define DX_IDENTITY_SCALE       XMFLOAT3(1.f, 1.f, 1.f)
+#define DX_IDENTITY_ROTATE      XMFLOAT3(0.f, 0.f, 0.f)
+#define DX_IDENTITY_TRANSFORM   XMFLOAT3(0.f, 0.f, 0.f)
 
 
 /***************************
@@ -288,16 +292,13 @@ namespace Helpers
         }
 
         // Call this once per frame
-        auto GetFrameDelta()
+        double GetFrameDelta()
         {
             LARGE_INTEGER li;
             QueryPerformanceCounter(&li);
             frameDelta = double(li.QuadPart - lastFrameTime) / timerFrequency;
             if (frameDelta > 0)
-            {
                 fps = 1000 / frameDelta;
-            }
-                
             lastFrameTime = li.QuadPart;
             return frameDelta;
         }
@@ -351,10 +352,10 @@ namespace Helpers
 
 
     // Buffer Byte Size with alignment
-    constexpr UINT CalculateConstantBufferByteSize(UINT byteSize) noexcept
+    constexpr UINT CalculateConstantBufferByteSize(UINT ByteSize) noexcept
     {
         // Constant buffer size is required to be aligned.
-        return (byteSize + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+        return (ByteSize + (D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT - 1);
     }
 
 

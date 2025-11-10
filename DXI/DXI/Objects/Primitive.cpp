@@ -28,10 +28,12 @@ HRESULT Primitive::Init(DXDevice* Device, DXGraphicsCommandList* CommandList)
     return hr;
 }
 
-void Primitive::Transform(const XMFLOAT3 ScaleTransform,
+void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
-    const XMFLOAT3 TranslateTransform)
+    const XMFLOAT3 ScaleTransform)
 {
+    // NOTE! Scale should be first alwayas, then rotate and then translate
+
     // Scaling
     const auto ScalingMatrix = XMMatrixScaling(ScaleTransform.x,
                                                 ScaleTransform.y,
