@@ -200,6 +200,17 @@ D3D12_ROOT_DESCRIPTOR Helpers::CreateRootDescriptor(UINT RegisterSpace, UINT Sha
 	return temp; //RVO, no move needed (Probably)
 }
 
+D3D12_DESCRIPTOR_RANGE Helpers::CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE RangeType, UINT NumDescriptors, UINT BaseShaderRegister, UINT RegisterSpace, UINT OffsetInDescriptorsFromTableStart)
+{
+	D3D12_DESCRIPTOR_RANGE DescriptorRange;
+	DescriptorRange.RangeType							= RangeType;
+	DescriptorRange.NumDescriptors						= NumDescriptors;
+	DescriptorRange.BaseShaderRegister					= BaseShaderRegister;
+	DescriptorRange.RegisterSpace						= RegisterSpace;
+	DescriptorRange.OffsetInDescriptorsFromTableStart	= OffsetInDescriptorsFromTableStart;
+	return DescriptorRange;
+}
+
 D3D12_ROOT_DESCRIPTOR_TABLE Helpers::CreateRootDescriptorTable(UINT NumDescriptorRanges, const D3D12_DESCRIPTOR_RANGE * DescriptorRange)
 {
 	D3D12_ROOT_DESCRIPTOR_TABLE temp = {};
@@ -213,7 +224,7 @@ std::vector<D3D12_ROOT_PARAMETER> Helpers::CreateRootParameters(std::initializer
 	std::vector<D3D12_ROOT_PARAMETER> temp;
 	for (const Helpers::RootParamHelper& param : Params)
 	{
-		temp.push_back(param.CreateRootParameter());
+		temp.emplace_back(param.CreateRootParameter());
 	}
 	return temp; //initializer list<D3D12_ROOT_PARAMETER>
 }

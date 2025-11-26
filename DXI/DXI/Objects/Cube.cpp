@@ -1,42 +1,81 @@
 #include "Cube.h"
 
-Vertex VertexList[] =
+//Vertex VertexList[] =
+//{
+//    // front face
+//    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    {  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    {  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//    // right side face
+//    {  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    {  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//    // left side face
+//    { -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    { -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//    // back face
+//    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//    // top face
+//    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    { 0.5f,   0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    { 0.5f,   0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//
+//    // bottom face
+//    {  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
+//    { -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
+//    {  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
+//    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+//};
+
+TexVertex VertexList[] =
 {
     // front face
-    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    {  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    {  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    { -0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
+    {  0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+    { -0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+    {  0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
 
     // right side face
-    {  0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    {  0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    {  0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+    {  0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+    {  0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
 
     // left side face
-    { -0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    { -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    { -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+    { -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
 
     // back face
-    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    {  0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+    { -0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+    {  0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+    { -0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
 
     // top face
-    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    { 0.5f,   0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    { 0.5f,   0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    { -0.5f,  0.5f, -0.5f, 0.0f, 1.0f },
+    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+    {  0.5f,  0.5f, -0.5f, 1.0f, 1.0f },
+    { -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
 
     // bottom face
-    {  0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f },
-    { -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 1.0f },
-    {  0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
+    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f },
+    { -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+    {  0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+    { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
 };
 
 constexpr UINT CubeVertexBufferSize = sizeof(VertexList);
@@ -130,7 +169,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
 
         // Release the resources
-        VertexBufferView    = VertexGPU.CreateView(sizeof(Vertex), CubeVertexBufferSize);
+        VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), CubeVertexBufferSize);
         VertexBuffer        = VertexGPU.ReleaseResource();
         VertexBufferUpload  = VertexUploadToGPU.ReleaseResource();
     }

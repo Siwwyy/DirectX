@@ -45,7 +45,7 @@
 // logging to console | Curly brackets are for keeping MsgBuffer inside scope
 #define DXLOG(MESSAGE, ...)                                 \
         {                                                   \
-            char MsgBuffer[512]{};                          \
+            char MsgBuffer[1024]{};                         \
             sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);     \
             OutputDebugStringA(MsgBuffer);                  \
         }                                                   \
@@ -161,12 +161,13 @@ namespace Helpers
             temp.ShaderVisibility           = ShaderVisibility;
             temp.Constants                  = ActiveField.Constants;
             temp.Descriptor                 = ActiveField.Descriptor;
+            temp.Descriptor                 = ActiveField.Descriptor;
             temp.DescriptorTable            = ActiveField.DescriptorTable;
             return temp;
         }
 
     private:
-        struct /* NoName */
+        union /* NoName */
         {
             D3D12_ROOT_CONSTANTS        Constants;
             D3D12_ROOT_DESCRIPTOR       Descriptor;
@@ -324,6 +325,9 @@ namespace Helpers
 
     // Creates root descriptor
     [[nodiscard]] D3D12_ROOT_DESCRIPTOR					CreateRootDescriptor(UINT RegisterSpace, UINT ShaderRegister);
+
+    // Creates root descriptor
+    [[nodiscard]] D3D12_DESCRIPTOR_RANGE			    CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE RangeType, UINT NumDescriptors, UINT BaseShaderRegister, UINT RegisterSpace, UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 
     // Creates root descriptor
     [[nodiscard]] D3D12_ROOT_DESCRIPTOR_TABLE			CreateRootDescriptorTable(UINT NumDescriptorRanges, const D3D12_DESCRIPTOR_RANGE * DescriptorRange);
