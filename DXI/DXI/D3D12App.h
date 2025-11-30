@@ -74,7 +74,7 @@ private:
 
 	// D3D12 Frame Buffer Render Target
 	ComPtr<ID3D12DescriptorHeap>						RtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					RenderTargets{};
+	std::vector<ComPtr<ID3D12Resource>>					RenderTargets;
 	UINT												RtvIncrementDescriptorSize;
 
 	// D3D12 Depth Stencil
@@ -108,16 +108,16 @@ private:
 	ConstantBufferPerObject								CbvPerObject;
 
 	// TODO | Move it to separate file
-	ComPtr<DXResource> textureBuffer; // the resource heap containing our texture
+	ComPtr<DXResource> TextureBuffer; // the resource heap containing our texture
 
-	int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int& bytesPerRow);
+	int LoadImageDataFromFile(BYTE** ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
 
 	DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
 	WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
 	int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
 
-	ComPtr<ID3D12DescriptorHeap> mainDescriptorHeap;
-	ComPtr<DXResource> textureBufferUploadHeap;
+	ComPtr<ID3D12DescriptorHeap> MainDescriptorHeap;
+	ComPtr<DXResource> TextureBufferUploadHeap;
 
 };
 

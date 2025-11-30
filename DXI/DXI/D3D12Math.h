@@ -65,7 +65,7 @@
 		DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
 		DirectX::XMFLOAT4X4 RotMat;				// this will keep track of our rotation for object
 		DirectX::XMFLOAT4	Position;			// position vector
-		DirectX::XMFLOAT4	Scale;				// position vector
+		DirectX::XMFLOAT4	Scale;				// scale vector
 	};
 //}
 

@@ -157,6 +157,7 @@ namespace Helpers
         D3D12_ROOT_PARAMETER CreateRootParameter() const noexcept
         {
             D3D12_ROOT_PARAMETER temp       = {};
+            ZeroMemory(&temp, sizeof(temp));
             temp.ParameterType              = ParameterType;
             temp.ShaderVisibility           = ShaderVisibility;
             temp.Constants                  = ActiveField.Constants;
@@ -182,8 +183,9 @@ namespace Helpers
         static DXGI_SAMPLE_DESC CreateSampler(UINT count, UINT quality)
         {
             DXGI_SAMPLE_DESC temp;
-            temp.Count = count;
-            temp.Quality = quality;
+            ZeroMemory(&temp, sizeof(temp));
+            temp.Count      = count;
+            temp.Quality    = quality;
             return temp;
         }
     };

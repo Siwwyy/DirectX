@@ -16,7 +16,7 @@ using Helpers::CommandListDesc;
 Helpers::VERTEX_HELPER::VERTEX_HELPER(DXDevice * Device, const UINT VertexBufferSize, D3D12_HEAP_PROPERTIES HEAP_PROPERTY, D3D12_RESOURCE_STATES RESOURCE_STATE, LPCWSTR Name)
 {
 	// Create vertex buffer
-	const auto VertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(VertexBufferSize);
+	const auto VertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(VertexBufferSize); // TODO CALCULATE ALIGNMENT TO 64KB?? No, for placed resources, committed resources creates implicit heap
 	ThrowIfFailed(Device->CreateCommittedResource(
 		&HEAP_PROPERTY,								        // a default heap
 		D3D12_HEAP_FLAG_NONE,								// no flags | TODO MAKE FLAGS IN FUTURE
@@ -36,6 +36,7 @@ D3D12_VERTEX_BUFFER_VIEW Helpers::VERTEX_HELPER::CreateView(const UINT StrideInB
 		return D3D12_VERTEX_BUFFER_VIEW();
 	}
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
+	ZeroMemory(&VertexBufferView, sizeof(VertexBufferView));
 	VertexBufferView.BufferLocation = VertexBuffer->GetGPUVirtualAddress();
 	VertexBufferView.StrideInBytes	= StrideInBytes;
 	VertexBufferView.SizeInBytes	= SizeInBytes;
@@ -66,6 +67,7 @@ D3D12_INDEX_BUFFER_VIEW Helpers::INDEX_HELPER::CreateView(const UINT SizeInBytes
 	}
 	// create a index buffer view for the vertices. We get the GPU memory address to the index pointer using the GetGPUVirtualAddress() method later.
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
+	ZeroMemory(&IndexBufferView, sizeof(IndexBufferView));
 	IndexBufferView.BufferLocation	= IndexBuffer->GetGPUVirtualAddress();
 	IndexBufferView.Format			= IndexFormat; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
 	IndexBufferView.SizeInBytes		= SizeInBytes;
@@ -202,7 +204,7 @@ D3D12_ROOT_DESCRIPTOR Helpers::CreateRootDescriptor(UINT RegisterSpace, UINT Sha
 
 D3D12_DESCRIPTOR_RANGE Helpers::CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE RangeType, UINT NumDescriptors, UINT BaseShaderRegister, UINT RegisterSpace, UINT OffsetInDescriptorsFromTableStart)
 {
-	D3D12_DESCRIPTOR_RANGE DescriptorRange;
+	D3D12_DESCRIPTOR_RANGE DescriptorRange				= {};
 	DescriptorRange.RangeType							= RangeType;
 	DescriptorRange.NumDescriptors						= NumDescriptors;
 	DescriptorRange.BaseShaderRegister					= BaseShaderRegister;
@@ -213,9 +215,9 @@ D3D12_DESCRIPTOR_RANGE Helpers::CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYP
 
 D3D12_ROOT_DESCRIPTOR_TABLE Helpers::CreateRootDescriptorTable(UINT NumDescriptorRanges, const D3D12_DESCRIPTOR_RANGE * DescriptorRange)
 {
-	D3D12_ROOT_DESCRIPTOR_TABLE temp = {};
-	temp.NumDescriptorRanges = NumDescriptorRanges;
-	temp.pDescriptorRanges = DescriptorRange;
+	D3D12_ROOT_DESCRIPTOR_TABLE temp	= {};
+	temp.NumDescriptorRanges			= NumDescriptorRanges;
+	temp.pDescriptorRanges				= DescriptorRange;
 	return temp; //RVO, no move needed (Probably)
 }
 
