@@ -135,6 +135,7 @@
     <ClCompile Include="D3D12Helpers.cpp" />
     <ClCompile Include="D3D12Math.cpp" />
     <ClCompile Include="D3D12ShaderCompiler.cpp" />
+    <ClCompile Include="D3D12Texture.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="D3D12Helpers.h" />
     <ClInclude Include="D3D12Math.h" />
     <ClInclude Include="D3D12ShaderCompiler.h" />
+    <ClInclude Include="D3D12Texture.h" />
     <ClInclude Include="Objects\Camera.h" />
     <ClInclude Include="Objects\Cube.h" />
     <ClInclude Include="Objects\Primitive.h" />

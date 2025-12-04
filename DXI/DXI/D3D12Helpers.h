@@ -26,6 +26,10 @@
 
 
 // Disables copy ability of specified class
+#define DISABLE_BASE_CTOR(CLASS_NAME)                       \
+		CLASS_NAME() = delete;                              \
+
+// Disables copy ability of specified class
 #define DISABLE_COPY(CLASS_NAME)                            \
 		CLASS_NAME(const CLASS_NAME&) = delete;             \
 		CLASS_NAME& operator=(const CLASS_NAME&) = delete;  \

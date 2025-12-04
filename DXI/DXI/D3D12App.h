@@ -11,6 +11,7 @@
 #include "D3D12ShaderCompiler.h"
 #include "Objects/Camera.h"
 #include "Objects/Cube.h"
+#include "D3D12Texture.h"
 
 
 
@@ -107,17 +108,18 @@ private:
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
-	// TODO | Move it to separate file
-	ComPtr<DXResource> TextureBuffer; // the resource heap containing our texture
+	//// TODO | Move it to separate file
+	//ComPtr<DXResource> TextureBuffer; // the resource heap containing our texture
 
-	int LoadImageDataFromFile(BYTE** ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
+	//int LoadImageDataFromFile(BYTE** ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
 
-	DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
+	//DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	//WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
+	//int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
 
-	ComPtr<ID3D12DescriptorHeap> MainDescriptorHeap;
-	ComPtr<DXResource> TextureBufferUploadHeap;
+	//ComPtr<ID3D12DescriptorHeap> MainDescriptorHeap;
+	//ComPtr<DXResource> TextureBufferUploadHeap;
+	Texture Texture;
 
 };
 
