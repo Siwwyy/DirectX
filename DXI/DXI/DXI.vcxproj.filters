@@ -19,6 +19,18 @@
     <Filter Include="Source Files\Objects">
       <UniqueIdentifier>{c9d40fc0-8839-4ac5-a1b0-7897b5cb92bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderGraph">
+      <UniqueIdentifier>{159e79e1-5a42-4f6f-ad23-94dee3891fc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderGraph">
+      <UniqueIdentifier>{3411fe55-89d3-402b-b091-e0da1c119a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources">
+      <UniqueIdentifier>{b3888abd-8157-40e9-8464-4eef21db46f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{c1f3a990-6e2b-4adb-9516-1264d9a1bd3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
@@ -54,6 +66,15 @@
     <ClCompile Include="D3D12Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RenderGraph.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Buffer.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="JobLambda.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12App.h">
@@ -88,6 +109,15 @@
     </ClInclude>
     <ClInclude Include="D3D12Texture.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Buffer.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="JobLambda.h">
+      <Filter>RenderGraph</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -132,27 +132,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp" />
+    <ClCompile Include="D3D12Buffer.cpp" />
     <ClCompile Include="D3D12Helpers.cpp" />
     <ClCompile Include="D3D12Math.cpp" />
     <ClCompile Include="D3D12ShaderCompiler.cpp" />
     <ClCompile Include="D3D12Texture.cpp" />
+    <ClCompile Include="JobLambda.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
+    <ClCompile Include="RenderGraph.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12App.h" />
+    <ClInclude Include="D3D12Buffer.h" />
     <ClInclude Include="D3D12Helpers.h" />
     <ClInclude Include="D3D12Math.h" />
     <ClInclude Include="D3D12ShaderCompiler.h" />
     <ClInclude Include="D3D12Texture.h" />
+    <ClInclude Include="JobLambda.h" />
     <ClInclude Include="Objects\Camera.h" />
     <ClInclude Include="Objects\Cube.h" />
     <ClInclude Include="Objects\Primitive.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="RenderGraph.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>

@@ -20,7 +20,12 @@ class D3D12App
 {
 public:
 	D3D12App() = delete;
-	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
+	~D3D12App()
+
+	{
+		DXLOG("DESTRUCT")
+	}
+	//just do nothing, app takes care of deallocation with smart pointers
 
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 
@@ -74,13 +79,13 @@ private:
 	UINT												CurrentFrameIdx;
 
 	// D3D12 Frame Buffer Render Target
-	ComPtr<ID3D12DescriptorHeap>						RtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					RenderTargets;
+	ComPtr<DXDescriptorHeap>							RtvHeap;
+	std::vector<ComPtr<DXResource>>						RenderTargets;
 	UINT												RtvIncrementDescriptorSize;
 
 	// D3D12 Depth Stencil
-	ComPtr<ID3D12DescriptorHeap>						DsvHeap;
-	ComPtr<ID3D12Resource>								DepthStencil;
+	ComPtr<DXDescriptorHeap>							DsvHeap;
+	ComPtr<DXResource>									DepthStencil;
 	UINT												DsvIncrementDescriptorSize;
 
 	// Pipeline state and root signature
@@ -88,11 +93,11 @@ private:
 	ComPtr<ID3D12RootSignature>							RootSignature;
 
 	// D3D12 Vertex data
-	ComPtr<ID3D12Resource>								VertexBuffer;
+	ComPtr<DXResource>									VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW							VertexBufferView;
 
 	// D3D12 Index buffer data
-	ComPtr<ID3D12Resource>								IndexBuffer;
+	ComPtr<DXResource>									IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
 
 	// Shaders
@@ -108,17 +113,7 @@ private:
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
-	//// TODO | Move it to separate file
-	//ComPtr<DXResource> TextureBuffer; // the resource heap containing our texture
-
-	//int LoadImageDataFromFile(BYTE** ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
-
-	//DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	//WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	//int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
-
-	//ComPtr<ID3D12DescriptorHeap> MainDescriptorHeap;
-	//ComPtr<DXResource> TextureBufferUploadHeap;
+	// Texture class
 	Texture Texture;
 
 };

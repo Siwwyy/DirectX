@@ -73,7 +73,6 @@ SimpleSmartPointer<BYTE>&& Texture::Load(DXDevice * Device, DXGraphicsCommandLis
 	// Set Increment Descriptor size for TODO possible future multiple textures
 	IncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
-
 	// return | Temporary solution!!
 	return std::move(ImageData);
 }
