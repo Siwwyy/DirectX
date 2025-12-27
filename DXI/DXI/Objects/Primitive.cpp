@@ -1,6 +1,14 @@
 #include "Primitive.h"
 
+// Ctors
 Primitive::Primitive()
+    : VertexBufferUpload({})
+    , VertexBuffer({})
+    , VertexBufferView({})
+    , IndexBufferUpload({})
+    , IndexBuffer({})
+    , IndexBufferView({})
+    , NumIndices(0)
 {
     // set starting cubes position
     // first cube
@@ -16,12 +24,17 @@ Primitive::Primitive(const XMFLOAT4X4 InitWorldMat,
     const XMFLOAT4X4 InitRotMat,
     const XMFLOAT4 InitPosition,
     const XMFLOAT4 InitScale)
-    : Matrices(InitWorldMat, InitRotMat, InitPosition, InitScale)
-{
+    : VertexBufferUpload({})
+    , VertexBuffer({})
+    , VertexBufferView({})
+    , IndexBufferUpload({})
+    , IndexBuffer({})
+    , IndexBufferView({})
+    , NumIndices(0)
+    , Matrices(InitWorldMat, InitRotMat, InitPosition, InitScale)
+{ }
 
-}
-
-
+// Functions
 HRESULT Primitive::Init(DXDevice* Device, DXGraphicsCommandList* CommandList)
 {
     HRESULT hr = S_OK;

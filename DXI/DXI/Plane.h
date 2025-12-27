@@ -1,22 +1,22 @@
 //Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
-#ifndef D3D12_CUBE_H_INCLUDED
-#define D3D12_CUBE_H_INCLUDED
+#ifndef D3D12_PLANE_H_INCLUDED
+#define D3D12_PLANE_H_INCLUDED
 
-#include "Primitive.h"
+#include "Objects/Primitive.h"
 
-class Cube : public Primitive
+class Plane : public Primitive
 {
-	DISABLE_COPY(Cube)
+	DISABLE_COPY(Plane)
 
 public:
 
-	Cube();
-	Cube(const DirectX::XMFLOAT4X4 InitWorldMat,
+	Plane();
+	Plane(const DirectX::XMFLOAT4X4 InitWorldMat,
 			const DirectX::XMFLOAT4X4 InitRotMat,
 			const DirectX::XMFLOAT4 InitPosition,
 			const XMFLOAT4 InitScale);
-	~Cube() = default;
+	~Plane() = default;
 
 	// Init
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
@@ -26,4 +26,4 @@ private:
 };
 
 
-#endif // D3D12_CUBE_H_INCLUDED
+#endif // D3D12_PLANE_H_INCLUDED

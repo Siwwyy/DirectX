@@ -2,7 +2,7 @@
 
 
 // Texture class
-SimpleSmartPointer<BYTE>&& Texture::Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TextureName)
+void Texture::Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TexturePath, ComPtr<DXDescriptorHeap> & MainDescriptorHeap, UINT& IncrementDescriptorSize, const UINT TextureIdx, std::wstring TextureName)
 {
 	// Usings
 	using Helpers::ThrowIfFailed;
@@ -10,14 +10,16 @@ SimpleSmartPointer<BYTE>&& Texture::Load(DXDevice * Device, DXGraphicsCommandLis
 	D3D12_RESOURCE_DESC TextureDesc;
 	int ImageBytesPerRow = 0;
 	SimpleSmartPointer<BYTE> ImageData = nullptr;
-	int ImageSize = LoadImageDataFromFile(ImageData, TextureDesc, L"bryanzar.png", ImageBytesPerRow);
+	int ImageSize = LoadImageDataFromFile(ImageData, TextureDesc, TexturePath.c_str(), ImageBytesPerRow);
 
 	// create a default heap where the upload heap will copy its contents into (contents being the texture)
+	constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
+	constexpr auto StateAfter	= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	ThrowIfFailed(Device->CreateCommittedResource(
 		&DX_HEAP_PROPERTY_DEFAULT, // a default heap
 		D3D12_HEAP_FLAG_NONE, // no flags
 		&TextureDesc, // the description of our texture
-		D3D12_RESOURCE_STATE_COPY_DEST, // We will copy the texture from the upload heap to here, so we start it out in a copy dest state
+		StateBefore, // We will copy the texture from the upload heap to here, so we start it out in a copy dest state
 		nullptr, // used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&TextureBuffer)));
 	TextureBuffer->SetName(TextureName.c_str());
@@ -50,39 +52,34 @@ SimpleSmartPointer<BYTE>&& Texture::Load(DXDevice * Device, DXGraphicsCommandLis
 	UpdateSubresources(CommandList, TextureBuffer.Get(), TextureBufferUploadHeap.Get(), 0, 0, 1, &TextureData);
 
 	// transition the texture default heap to a pixel shader resource (we will be sampling from this heap in the pixel shader to get the color of pixels)
-	const auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	const auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), StateBefore, StateAfter);
 	CommandList->ResourceBarrier(1, &Transition);
 
 	// create the descriptor heap that will store our srv
-	constexpr auto DescriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
-	HeapDesc.NumDescriptors = 1;
-	HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	HeapDesc.Type = DescriptorHeapType;
-	ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&MainDescriptorHeap)));
-
-	// now we create a shader resource view (descriptor that points to the texture and describes it)
-	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
-	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	SrvDesc.Format = TextureDesc.Format;
-	SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	SrvDesc.Texture2D.MipLevels = 1;
-	Device->CreateShaderResourceView(TextureBuffer.Get(), &SrvDesc, MainDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
+	const auto DescriptorHeapType = MainDescriptorHeap->GetDesc().Type;
 
 	// Set Increment Descriptor size for TODO possible future multiple textures
 	IncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
-	// return | Temporary solution!!
-	return std::move(ImageData);
+	// Handle
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	Handle.Offset(TextureIdx, IncrementDescriptorSize);
+
+	// now we create a shader resource view (descriptor that points to the texture and describes it)
+	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	SrvDesc.Format					= TextureDesc.Format;
+	SrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
+	SrvDesc.Texture2D.MipLevels		= 1;
+	Device->CreateShaderResourceView(TextureBuffer.Get(), &SrvDesc, Handle);
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetTextureHandle(SIZE_T TextureIdx)
-{
-	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	// ptr = UINT64(INT64(ptr) + INT64(offsetInDescriptors) * INT64(descriptorIncrementSize));
-	return Handle.Offset(TextureIdx, IncrementDescriptorSize);
-}
+//D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetTextureHandle(SIZE_T TextureIdx)
+//{
+//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+//	// ptr = UINT64(INT64(ptr) + INT64(offsetInDescriptors) * INT64(descriptorIncrementSize));
+//	return Handle.Offset(TextureIdx, IncrementDescriptorSize);
+//}
 
 
 // Functions

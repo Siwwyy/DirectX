@@ -32,13 +32,10 @@ TexVertex CubeVertices[] =
 	//{ -0.5f, -0.5f, 0.5f , 1.0f, 0.0f, 0.0f, 1.0f}, // bottom left
 	//{  0.5f,  0.5f, 0.5f , 0.0f, 0.0f, 1.0f, 1.0f}, // top right
 
-	{ -0.5f,  0.5f, 0.5f , 0.0f, 1.0f }, // top left
-	{ 0.5f , -0.5f, 0.5f , 1.0f, 0.0f }, // bottom right
-	{ -0.5f, -0.5f, 0.5f , 0.0f, 0.0f }, // bottom left
-	{  0.5f,  0.5f, 0.5f , 1.0f, 1.0f } // top right
-
-
- 
+	{ -0.5f,  0.5f, 0.5f , 0.0f, 0.0f }, // top left
+	{ 0.5f , -0.5f, 0.5f , 1.0f, 1.0f }, // bottom right
+	{ -0.5f, -0.5f, 0.5f , 0.0f, 1.0f }, // bottom left
+	{  0.5f,  0.5f, 0.5f , 1.0f, 0.0f }  // top right
 };
 
 constexpr UINT VertexBufferSize = sizeof(CubeVertices);
@@ -97,9 +94,9 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 {
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
-	//Objects properties
-	//Cube.SetPosVector(XMFLOAT4(-1.8f, -0.8f, 1.f, 0.0f));
-	//Cube.Transform(XMFLOAT3(0.1f, 1.f, 1.f), {}, {});
+	// Objects properties, positions etc.
+	Cube.Transform(XMFLOAT3(-10.f, 0.f, 0.f));
+	Plane.Transform(XMFLOAT3(0.1f, 0.f, 0.f));
 	Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
 }
 
@@ -266,65 +263,6 @@ void D3D12App::Initialize()
 	DsvIncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 
-	/***************************
-	 ****** VERTEX BUFFER ******
-	 ***************************/
-
-	///////
-
-	/***************************
-	 ****** INDEX BUFFER *****
-	 ***************************/
-	//{
-	//	// GPU Vertex
-	//	constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
-	//	constexpr auto StateAfter	= D3D12_RESOURCE_STATE_INDEX_BUFFER;
-	//	Helpers::INDEX_HELPER IndexGPU(Device.Get(),
-	//		IndexBufferSize,
-	//		DX_HEAP_PROPERTY_DEFAULT,
-	//		D3D12_RESOURCE_STATE_COMMON,
-	//		L"IndexGPU");
-
-	//	// Upload Vertex
-	//	Helpers::INDEX_HELPER IndexUploadToGPU(Device.Get(),
-	//		IndexBufferSize,
-	//		DX_HEAP_PROPERTY_UPLOAD,
-	//		D3D12_RESOURCE_STATE_GENERIC_READ,
-	//		L"IndexUploadToGPU");
-
-	//	// store index buffer in upload heap
-	//	D3D12_SUBRESOURCE_DATA IndexData = {};
-	//	IndexData.pData			= reinterpret_cast<UINT8*>(Indices); // pointer to our index array
-	//	IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
-	//	IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
-
-	//	// Update Subresource
-	//	UpdateSubresources<1>(CommandList.Get(), IndexGPU.GetPointer(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexData);
-
-	//	// transition the vertex buffer data from copy destination state to vertex buffer state
-	//	const auto IndexCmdListBarrier = CD3DX12_RESOURCE_BARRIER::Transition(IndexGPU.GetPointer(), StateBefore, StateAfter);
-	//	CommandList->ResourceBarrier(1, &IndexCmdListBarrier);
-
-	//	// Release the resources
-	//	IndexBufferView = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
-	//	IndexBuffer		= IndexGPU.ReleaseResource();
-
-	//	{
-	//		// Submit necessary things from command list
-	//		// Execute command lists
-	//		ThrowIfFailed(CommandList->Close()); //close command list for execution
-	//		DXCommandList* CommandLists[] = { CommandList.Get() };
-	//		CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
-
-	//		// Move Fence / Wait for previous frame to end
-	//		WaitForPreviousFrame();
-
-	//		// Reset previously used command list and command allocator
-	//		ThrowIfFailed(CommandAllocators[CurrentFrameIdx]->Reset());
-	//		ThrowIfFailed(CommandList->Reset(CommandAllocators[CurrentFrameIdx].Get(), PipelineState.Get()));
-	//	}
-
-	//}
 
 	/////////
 
@@ -343,74 +281,12 @@ void D3D12App::Initialize()
 	}
 	/////////
 
-	///***************************
-	// *********** Cube **********
-	// ***************************/
-	//{
-	//	Cube.Init(Device.Get(), CommandList.Get());
-
-	//	{
-	//		// Submit necessary things from command list
-	//		// Execute command lists
-	//		ThrowIfFailed(CommandList->Close()); //close command list for execution
-	//		DXCommandList* CommandLists[] = { CommandList.Get() };
-	//		CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
-
-	//		// Move Fence / Wait for previous frame to end
-	//		WaitForPreviousFrame();
-
-	//		// Reset previously used command list and command allocator
-	//		ThrowIfFailed(CommandAllocators[CurrentFrameIdx]->Reset());
-	//		ThrowIfFailed(CommandList->Reset(CommandAllocators[CurrentFrameIdx].Get(), PipelineState.Get()));
-	//	}
-	//}
-
-	//// TEXTURING
-	//{
-	//	// TODO Remove pointer return
-	//	SimpleSmartPointer<BYTE> ImageData = Texture.Load(Device.Get(), CommandList.Get());
-
-	//	//{
-	//	//	// Submit necessary things from command list
-	//	//	// Execute command lists
-	//	//	ThrowIfFailed(CommandList->Close()); //close command list for execution
-	//	//	DXCommandList* CommandLists[] = { CommandList.Get() };
-	//	//	CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
-
-	//	//	// Move Fence / Wait for previous frame to end
-	//	//	WaitForPreviousFrame();
-	//	//}
-
-	//	{
-	//		// Submit necessary things from command list
-	//		// Execute command lists
-	//		ThrowIfFailed(CommandList->Close()); //close command list for execution
-	//		DXCommandList* CommandLists[] = { CommandList.Get() };
-	//		CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
-
-	//		// Move Fence / Wait for previous frame to end
-	//		WaitForPreviousFrame();
-
-	//		// Reset previously used command list and command allocator
-	//		ThrowIfFailed(CommandAllocators[CurrentFrameIdx]->Reset());
-	//		ThrowIfFailed(CommandList->Reset(CommandAllocators[CurrentFrameIdx].Get(), PipelineState.Get()));
-	//	}
-
-	//}
-
-
 
 
 	// Test
 	RenderGraph Graph(Device, CommandList);
 	{
-
-		//// Init
-		//Graph.InitializeDevice();
-		//Graph.InitializePerFrameResources();
-
-		// Buffer Creation
-		//auto Desc = BufferDesc::CreateBufferDesc(1, 256, BufferType::VertexBuffer, L"MyBufferFromGraph");
+		// Init
 
 		// Create resources
 		// Vertex Buffer
@@ -484,13 +360,29 @@ void D3D12App::Initialize()
 		});
 
 		/***************************
-		 *********** Cube **********
+		 **** TEXTURING & Cube *****
 		 ***************************/
+		constexpr auto DescriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
+		HeapDesc.NumDescriptors = 2;
+		HeapDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		HeapDesc.Type			= DescriptorHeapType;
+		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&MainDescriptorHeap)));
+
 		// AddPass
 		Graph.AddPass(TEXT("Cube Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{
-			Cube.Init(Device, CommandList);
-			SimpleSmartPointer<BYTE> ImageData = Texture.Load(Device, CommandList);
+			Cube.Init(Device,			CommandList);
+			Texture.Load(Device,		CommandList,	L"bryanzar.png",	MainDescriptorHeap, IncrementDescriptorSize, 0);
+			TextureMegane.Load(Device,	CommandList,	L"megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
+		});
+
+		/***************************
+		 ********** Plane **********
+		 ***************************/
+		Graph.AddPass(TEXT("Plane Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
+		{
+			Plane.Init(Device, CommandList);
 		});
 	}
 
@@ -516,21 +408,21 @@ void D3D12App::Render()
 	BeginFrame();
 
 	// Drawing
-
+	
 
 	// Texture
 	{
 		// set the descriptor heap
-		ID3D12DescriptorHeap* DescriptorHeaps[] = { Texture.GetDescriptorHeap()};
+		ID3D12DescriptorHeap* DescriptorHeaps[] = { MainDescriptorHeap.Get()};
 		CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
-
-		// set the descriptor table to the descriptor heap (parameter 1, as constant buffer root descriptor is parameter index 0)
-		CommandList->SetGraphicsRootDescriptorTable(1, Texture.GetTextureHandle());
 	}
 
 	//Square
 	{
 		// set objects's constant buffer
+		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		Handle.Offset(1, IncrementDescriptorSize);
+		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
 		CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&IndexBufferView);
@@ -539,10 +431,20 @@ void D3D12App::Render()
 
 	// Cube
 	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + ConstantBufferPerObjectSize);
 		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
+	}
+
+	// Plane
+	{
+		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
+		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
+		CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw cube
 	}
 
 
@@ -585,10 +487,10 @@ void D3D12App::Update(float DeltaTime)
 
 	// Cube
 
-	//// store cube1's world matrix
+	// store cube1's world matrix
 	static float z_offset = 0.001f;
 	//Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.f, 0.f, 0.f), { 0.f, 0.f, z_offset });
-	Cube.Transform({ 0.f, 0.f, z_offset });
+	//Cube.Transform({ 0.f, 0.f, z_offset });
 	//z_offset += 0.0001f;
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
@@ -599,6 +501,18 @@ void D3D12App::Update(float DeltaTime)
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + ConstantBufferPerObjectSize, &CbvPerObject, sizeof(CbvPerObject));
+
+	// store plane's world matrix
+	//Cube.Transform(XMFLOAT3(1.f, 1.f, 1.f), XMFLOAT3(0.f, 0.f, 0.f), { 0.f, 0.f, z_offset });
+	Plane.Transform({ 0.0, 0.0f, 0.0f });
+	// create the wvp matrix and store in constant buffer
+	const auto PlaneWorldMatrix = Plane.GetWorldMatrix();
+	XMMATRIX MVPMatPlane		= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
+	XMMATRIX TransposedPlane	= XMMatrixTranspose(MVPMatPlane); // must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, TransposedPlane); // store transposed wvp matrix in constant buffer
+
+	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 }
 
 void D3D12App::Destroy()
@@ -669,7 +583,7 @@ void D3D12App::InitializePerFrameResources()
 		// CBV Upload heap
 		{		
 			// create resource for cubes
-			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ConstantBufferPerObjectSize * 2); // HACK! TWO OBJECTS == 2x constant buffer which is per object!
+			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ConstantBufferPerObjectSize * 3); // HACK! TWO OBJECTS == 2x constant buffer which is per object!
 			ThrowIfFailed(Device->CreateCommittedResource(
 				&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the constant buffer data
 				D3D12_HEAP_FLAG_NONE,									// no flags

@@ -141,6 +141,7 @@
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
+    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="RenderGraph.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="Objects\Cube.h" />
     <ClInclude Include="Objects\Primitive.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Plane.h" />
     <ClInclude Include="RenderGraph.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />

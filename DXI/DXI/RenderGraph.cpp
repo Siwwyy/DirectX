@@ -157,15 +157,6 @@ void RenderGraph::TransitionBarrier(DXGraphicsCommandList * CommandList, BufferR
 
 void RenderGraph::Execute()
 {
-	//for (std::size_t i = 0; i < Buffers.size(); ++i)
-	//{
-	//	auto Resource	= Buffers[i].first;
-	//	auto Lambda		= Buffers[i].second;
-
-	//	// After that, resources in Resource should be accessible
-	//	Lambda->Execute(Device.Get(), CommandList.Get());
-	//}
-
 	for (std::size_t i = 0; i < Buffers.size(); ++i)
 	{
 		auto Resource	= Buffers[i];

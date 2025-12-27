@@ -5,14 +5,14 @@
 
 // TODO | Rethink those ifdefs...
 #if USE_TEXCOORD
-Texture2D t1    : register(t0);
+Texture2D t0    : register(t0);
 SamplerState s1 : register(s0);
 #endif
 
 float4 main(PSInput input) : SV_TARGET
 {
 #if USE_TEXCOORD
-    return t1.Sample(s1, input.tex_coord);
+    return t0.Sample(s1, input.tex_coord);
 #else
     return input.color;
 #endif

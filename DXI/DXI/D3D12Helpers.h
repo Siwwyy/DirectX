@@ -25,8 +25,8 @@
 #define NAME_D3D12_OBJECT_INDEXED(x, n, NAME) SetNameIndexed((x)[n].Get(), L#NAME, n)
 
 
-// Disables copy ability of specified class
-#define DISABLE_BASE_CTOR(CLASS_NAME)                       \
+// Disables base default constructor of class
+#define DISABLE_DEFAULT_CTOR(CLASS_NAME)                    \
 		CLASS_NAME() = delete;                              \
 
 // Disables copy ability of specified class
@@ -271,45 +271,45 @@ namespace Helpers
     };
 
 
-    // Timer
-    struct Timer
-    {
-        double timerFrequency = 0.0;
-        long long lastFrameTime = 0;
-        long long lastSecond = 0;
-        double frameDelta = 0;
-        int fps = 0;
+    //// Timer
+    //struct Timer
+    //{
+    //    double timerFrequency = 0.0;
+    //    long long lastFrameTime = 0;
+    //    long long lastSecond = 0;
+    //    double frameDelta = 0;
+    //    int fps = 0;
 
-        Timer()
-        {
-            LARGE_INTEGER li;
-            QueryPerformanceFrequency(&li);
+    //    Timer()
+    //    {
+    //        LARGE_INTEGER li;
+    //        QueryPerformanceFrequency(&li);
 
-            // seconds
-            //timerFrequency = double(li.QuadPart);
+    //        // seconds
+    //        //timerFrequency = double(li.QuadPart);
 
-            // milliseconds
-            timerFrequency = double(li.QuadPart) / 1000.0;
+    //        // milliseconds
+    //        timerFrequency = double(li.QuadPart) / 1000.0;
 
-            // microseconds
-            //timerFrequency = double(li.QuadPart) / 1000000.0;
+    //        // microseconds
+    //        //timerFrequency = double(li.QuadPart) / 1000000.0;
 
-            QueryPerformanceCounter(&li);
-            lastFrameTime = li.QuadPart;
-        }
+    //        QueryPerformanceCounter(&li);
+    //        lastFrameTime = li.QuadPart;
+    //    }
 
-        // Call this once per frame
-        double GetFrameDelta()
-        {
-            LARGE_INTEGER li;
-            QueryPerformanceCounter(&li);
-            frameDelta = double(li.QuadPart - lastFrameTime) / timerFrequency;
-            if (frameDelta > 0)
-                fps = 1000 / frameDelta;
-            lastFrameTime = li.QuadPart;
-            return frameDelta;
-        }
-    };
+    //    // Call this once per frame
+    //    double GetFrameDelta()
+    //    {
+    //        LARGE_INTEGER li;
+    //        QueryPerformanceCounter(&li);
+    //        frameDelta = double(li.QuadPart - lastFrameTime) / timerFrequency;
+    //        if (frameDelta > 0)
+    //            fps = 1000 / frameDelta;
+    //        lastFrameTime = li.QuadPart;
+    //        return frameDelta;
+    //    }
+    //};
 
     /***************************
 	 ******** FUNCTIONS ********

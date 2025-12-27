@@ -9,9 +9,12 @@
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
-#include "Objects/Camera.h"
-#include "Objects/Cube.h"
 #include "D3D12Texture.h"
+
+// Objects
+#include "Objects/Camera.h"
+#include "Plane.h"
+#include "Objects/Cube.h"
 
 
 
@@ -110,10 +113,16 @@ private:
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 	ObjectMatrices										SquareMatrices;
 	Cube												Cube;
+	Plane												Plane;
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
+	//
+	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
+	UINT						IncrementDescriptorSize;
+
 	// Texture class
+	Texture TextureMegane;
 	Texture Texture;
 
 };

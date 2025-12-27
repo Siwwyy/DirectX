@@ -39,7 +39,7 @@
 //    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 //};
 
-TexVertex VertexList[] =
+static TexVertex VertexList[] =
 {
     // front face
     { -0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
@@ -78,10 +78,10 @@ TexVertex VertexList[] =
     { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
 };
 
-constexpr UINT CubeVertexBufferSize = sizeof(VertexList);
+static constexpr UINT VertexBufferSize = sizeof(VertexList);
 
 // a quad (2 triangles)
-DWORD IndicesList[] =
+static DWORD IndicesList[] =
 {
     // front face
     0, 1, 2, // first triangle
@@ -108,24 +108,22 @@ DWORD IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-constexpr UINT CubeIndexBufferSize = sizeof(IndicesList);
-constexpr UINT CubeNumIndices = CubeIndexBufferSize / sizeof(DWORD);
+static constexpr UINT IndexBufferSize  = sizeof(IndicesList);
+static constexpr UINT CubeNumIndices   = IndexBufferSize / sizeof(DWORD);
 
+// Ctors
 Cube::Cube()
     : Primitive()
-{
-
-}
+{ }
 
 Cube::Cube(const DirectX::XMFLOAT4X4 InitWorldMat,
             const DirectX::XMFLOAT4X4 InitRotMat,
             const DirectX::XMFLOAT4 InitPosition,
             const XMFLOAT4 InitScale)
     : Primitive(InitWorldMat, InitRotMat, InitPosition, InitScale)
-{
+{ }
 
-}
-
+// Functions
 HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
 {
     using Helpers::ThrowIfFailed;
@@ -142,14 +140,14 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         constexpr auto StateAfter   = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
         // GPU Vertex
         Helpers::VERTEX_HELPER VertexGPU(Device,
-            CubeVertexBufferSize,
+            VertexBufferSize,
             DX_HEAP_PROPERTY_DEFAULT,
             D3D12_RESOURCE_STATE_COMMON,
             L"VertexGPU");
 
         // Upload Vertex
         Helpers::VERTEX_HELPER VertexUploadToGPU(Device,
-            CubeVertexBufferSize,
+            VertexBufferSize,
             DX_HEAP_PROPERTY_UPLOAD,
             D3D12_RESOURCE_STATE_GENERIC_READ,
             L"VertexUploadToGPU");
@@ -158,7 +156,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         // from the upload heap to the vertex buffer.
         D3D12_SUBRESOURCE_DATA VertexData = {};
         VertexData.pData        = reinterpret_cast<UINT8*>(VertexList);
-        VertexData.RowPitch     = CubeVertexBufferSize;
+        VertexData.RowPitch     = VertexBufferSize;
         VertexData.SlicePitch   = VertexData.RowPitch;
 
         // Update Subresource
@@ -169,7 +167,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
 
         // Release the resources
-        VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), CubeVertexBufferSize);
+        VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
         VertexBuffer        = VertexGPU.ReleaseResource();
         VertexBufferUpload  = VertexUploadToGPU.ReleaseResource();
     }
@@ -183,14 +181,14 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         constexpr auto StateBefore  = D3D12_RESOURCE_STATE_COPY_DEST;
         constexpr auto StateAfter   = D3D12_RESOURCE_STATE_INDEX_BUFFER;
         Helpers::INDEX_HELPER IndexGPU(Device,
-            CubeIndexBufferSize,
+            IndexBufferSize,
             DX_HEAP_PROPERTY_DEFAULT,
             D3D12_RESOURCE_STATE_COMMON,
             L"IndexGPU");
 
         // Upload Vertex
         Helpers::INDEX_HELPER IndexUploadToGPU(Device,
-            CubeIndexBufferSize,
+            IndexBufferSize,
             DX_HEAP_PROPERTY_UPLOAD,
             D3D12_RESOURCE_STATE_GENERIC_READ,
             L"IndexUploadToGPU");
@@ -198,7 +196,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         // store index buffer in upload heap
         D3D12_SUBRESOURCE_DATA IndexData = {};
         IndexData.pData         = reinterpret_cast<UINT8*>(IndicesList); // pointer to our index array
-        IndexData.RowPitch      = CubeIndexBufferSize;						 // size of all our index buffer
+        IndexData.RowPitch      = IndexBufferSize;						 // size of all our index buffer
         IndexData.SlicePitch    = IndexData.RowPitch;					 // also the size of our index buffer
 
         // Update Subresource
@@ -209,7 +207,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         CommandList->ResourceBarrier(1, &IndexCmdListBarrier);
 
         // Release the resources
-        IndexBufferView     = IndexGPU.CreateView(CubeIndexBufferSize, DXGI_FORMAT_R32_UINT);
+        IndexBufferView     = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
         IndexBuffer         = IndexGPU.ReleaseResource();
         IndexBufferUpload   = IndexUploadToGPU.ReleaseResource();
     }
