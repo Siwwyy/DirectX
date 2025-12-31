@@ -116,11 +116,10 @@ Cube::Cube()
     : Primitive()
 { }
 
-Cube::Cube(const DirectX::XMFLOAT4X4 InitWorldMat,
-            const DirectX::XMFLOAT4X4 InitRotMat,
-            const DirectX::XMFLOAT4 InitPosition,
-            const XMFLOAT4 InitScale)
-    : Primitive(InitWorldMat, InitRotMat, InitPosition, InitScale)
+Cube::Cube(const DirectX::XMFLOAT4 InitRot,
+           const DirectX::XMFLOAT4 InitPosition,
+           const XMFLOAT4 InitScale)
+    : Primitive(InitRot, InitPosition, InitScale)
 { }
 
 // Functions

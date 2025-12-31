@@ -17,11 +17,13 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	*/
 
 	// build projection and view matrix
-	const auto HalfFOV	= 45.0f;
+	const auto HalfFOV			= 45.0f;
+	constexpr const auto Near	= 0.01f;
+	constexpr const auto Far	= 1000.0f;
 	XMMATRIX ProjMat	= XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), 
 													static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 
-													0.01f, 
-													1000.0f);
+													Near, 
+													Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
 	XMStoreFloat4x4(&CameraMatrices.CameraProjMat, ProjMat);
 
 	// set starting camera state

@@ -14,31 +14,33 @@ class Primitive
 public:
 
 	Primitive();
-	Primitive(const DirectX::XMFLOAT4X4 InitWorldMat,
-				const DirectX::XMFLOAT4X4 InitRotMat,
-				const DirectX::XMFLOAT4 InitPosition,
-				const XMFLOAT4 InitScale);
+	Primitive(const DirectX::XMFLOAT4 InitRot,
+			  const DirectX::XMFLOAT4 InitPosition,
+			  const XMFLOAT4 InitScale);
 	~Primitive() = default;
 
+	// Init
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
+	// Setters
 	void SetNumIndices(const UINT NumIndices)
 	{
 		this->NumIndices = NumIndices;
 	}
 
 	// Main Transform of pritmitive
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM,
-				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE,
-				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE);
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM3,
+				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
+				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 	
+	// Getters
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
 	}
 	_NODISCARD inline const auto GetPosVector() const
 	{
-		return Matrices.Position;
+		return Matrices.PositionMat;
 	}
 	_NODISCARD inline const auto GetRotationMatrix() const
 	{
@@ -48,8 +50,6 @@ public:
 	{
 		return NumIndices;
 	}
-
-	void PrintTransformPretty() const;
 
 	// D3D12 Vertex data
 	ComPtr<DXResource>			VertexBufferUpload;
@@ -70,7 +70,8 @@ private:
 
 	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
 	{
-		Matrices.Position = Vector;
+		const auto PositionVec = DirectX::XMVectorSet(Vector.x, Vector.y, Vector.z, 1.f);
+		XMStoreFloat4x4(&Matrices.PositionMat, XMMatrixTranslationFromVector(PositionVec));
 	}
 
 	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)

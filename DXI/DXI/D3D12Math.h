@@ -53,18 +53,25 @@ struct alignas(256) CameraMatrices
 // ObjectMatrices Matrices
 struct alignas(256) ObjectMatrices
 {
-	ObjectMatrices() = default;
-	ObjectMatrices(const DirectX::XMFLOAT4X4 InitWorldMat,
-		const DirectX::XMFLOAT4X4 InitRotMat,
-		const DirectX::XMFLOAT4 InitPosition,
-		const DirectX::XMFLOAT4 InitScale);
+	ObjectMatrices();
+	ObjectMatrices(const DirectX::XMFLOAT4 InitRot,
+				   const DirectX::XMFLOAT4 InitPosition,
+				   const DirectX::XMFLOAT4 InitScale);
 	~ObjectMatrices() = default;
 
 
-	DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
+
+	// Membre variables
+	DirectX::XMFLOAT4X4	ScaleMat;			// scale matrix
 	DirectX::XMFLOAT4X4 RotMat;				// this will keep track of our rotation for object
-	DirectX::XMFLOAT4	Position;			// position vector
-	DirectX::XMFLOAT4	Scale;				// scale vector
+	DirectX::XMFLOAT4X4	PositionMat;		// position vector
+	DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
+	
+private:
+	// Init Function
+	void Init(const DirectX::XMFLOAT4 InitRot		= DX_IDENTITY_ROTATE4,
+			  const DirectX::XMFLOAT4 InitPosition	= DX_IDENTITY_TRANSFORM4,
+			  const DirectX::XMFLOAT4 InitScale		= DX_IDENTITY_SCALE4) noexcept;
 };
 
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");

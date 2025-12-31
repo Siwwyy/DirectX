@@ -9,19 +9,10 @@ Primitive::Primitive()
     , IndexBuffer({})
     , IndexBufferView({})
     , NumIndices(0)
-{
-    // set starting cubes position
-    // first cube
-    Matrices.Scale      = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);		                                                                            // set object scale
-    Matrices.Position   = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);		                                                                            // set object position
-    XMVECTOR PosVec     = XMLoadFloat4(&Matrices.Position);		                                                                            // create xmvector for object position
-    auto TmpMat         = XMMatrixScaling(Matrices.Scale.x, Matrices.Scale.y, Matrices.Scale.z) * XMMatrixTranslationFromVector(PosVec);	// create translation matrix from object's position vector
-    XMStoreFloat4x4(&Matrices.RotMat, XMMatrixIdentity());	                                                                                // initialize object's rotation matrix to identity matrix
-    XMStoreFloat4x4(&Matrices.WorldMat, TmpMat);				                                                                            // store object's world matrix
-}
+    , Matrices()
+{ }
 
-Primitive::Primitive(const XMFLOAT4X4 InitWorldMat,
-    const XMFLOAT4X4 InitRotMat,
+Primitive::Primitive(const XMFLOAT4 InitRot,
     const XMFLOAT4 InitPosition,
     const XMFLOAT4 InitScale)
     : VertexBufferUpload({})
@@ -31,7 +22,7 @@ Primitive::Primitive(const XMFLOAT4X4 InitWorldMat,
     , IndexBuffer({})
     , IndexBufferView({})
     , NumIndices(0)
-    , Matrices(InitWorldMat, InitRotMat, InitPosition, InitScale)
+    , Matrices(InitRot, InitPosition, InitScale)
 { }
 
 // Functions
@@ -51,6 +42,7 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const auto ScalingMatrix = XMMatrixScaling(ScaleTransform.x,
                                                 ScaleTransform.y,
                                                 ScaleTransform.z);
+    XMStoreFloat4x4(&Matrices.ScaleMat, ScalingMatrix);
 
     // Rotating
     const auto RotationXMatrix = XMMatrixRotationX(RotateTransform.x);
@@ -59,22 +51,15 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
 
 
     // Translating
-    Matrices.Position.x += TranslateTransform.x;
-    Matrices.Position.y += TranslateTransform.y;
-    Matrices.Position.z += TranslateTransform.z;
-    const auto TranslateMatrix = XMMatrixTranslation(Matrices.Position.x,
-                                                    Matrices.Position.y,
-                                                    Matrices.Position.z);
+    const auto TranslationOffset    = XMMatrixTranslationFromVector(DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f));
+    const auto TranslateMatrix      = XMLoadFloat4x4(&Matrices.PositionMat) * TranslationOffset;
+    XMStoreFloat4x4(&Matrices.PositionMat, TranslateMatrix);
 
     // Combine matrices together
     const auto RotationMatrixCombined = XMLoadFloat4x4(&Matrices.RotMat) * RotationXMatrix * RotationYMatrix * RotationZMatrix;
-    SetRotationMatrix(RotationMatrixCombined);
+    XMStoreFloat4x4(&Matrices.RotMat, RotationMatrixCombined);
 
+    //Create World Mat
     const auto WorldMat = ScalingMatrix * RotationMatrixCombined * TranslateMatrix;
-    SetWorldMatrix(WorldMat);
-}
-
-void Primitive::PrintTransformPretty() const
-{
-    DXLOG("Transform %f %f %f \n", Matrices.Position.x, Matrices.Position.y, Matrices.Position.z)
+    XMStoreFloat4x4(&Matrices.WorldMat, WorldMat);
 }
