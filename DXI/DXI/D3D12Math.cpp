@@ -25,15 +25,18 @@ void ObjectMatrices::Init(const DirectX::XMFLOAT4 InitRot,
     const auto RotationVec  = DirectX::XMVectorSet(InitRot.x, InitRot.y, InitRot.z, 1.f);
     const auto PositionVec  = DirectX::XMVectorSet(InitPosition.x, InitPosition.y, InitPosition.z, 1.f);
 
-    // Store
-    XMStoreFloat4x4(&ScaleMat,      XMMatrixScalingFromVector(ScaleVec));
-    XMStoreFloat4x4(&RotMat,        XMMatrixRotationRollPitchYawFromVector(RotationVec));	                                                                                // initialize object's rotation matrix to identity matrix
-    XMStoreFloat4x4(&PositionMat,   XMMatrixTranslationFromVector(PositionVec));// set object position
-
     // create xmvector for object world matrix
-    auto WorldMatrix = XMLoadFloat4x4(&ScaleMat) *
-                       XMLoadFloat4x4(&RotMat) *
-                       XMLoadFloat4x4(&PositionMat);
+    const auto ScaleMat         = XMMatrixScaling(InitScale.x, InitScale.y, InitScale.z);
+    const auto RotationMatX     = XMMatrixRotationX(InitRot.x);
+    const auto RotationMatY     = XMMatrixRotationY(InitRot.y);
+    const auto RotationMatZ     = XMMatrixRotationZ(InitRot.z);
+    const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
+    const auto PositionMat      = XMMatrixTranslation(InitPosition.x, InitPosition.y, InitPosition.z);
+    const auto WorldMatrix      = ScaleMat * RotationMatXYZ * PositionMat;
+    // Store
+    XMStoreFloat4(&this->ScaleVec,      ScaleVec);
+    XMStoreFloat4(&this->RotVec,        RotationVec);	                                                                                // initialize object's rotation matrix to identity matrix
+    XMStoreFloat4(&this->PositionVec,   PositionVec);
     // create translation matrix from object's position vector, rotation is identity                                                                                // initialize object's rotation matrix to identity matrix
     XMStoreFloat4x4(&WorldMat, WorldMatrix);
 }

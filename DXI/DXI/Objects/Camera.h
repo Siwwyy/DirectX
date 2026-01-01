@@ -14,11 +14,12 @@ class Camera
 
 public:
 
+	// Ctors
 	Camera()	= default;
+	Camera(UINT ScreenWidth, UINT ScreenHeight);
 	~Camera()	= default;
 
-	Camera(UINT ScreenWidth, UINT ScreenHeight);
-
+	// Setters
 	void SetPosVector(const XMFLOAT4 Vector)
 	{
 		// set starting camera state
@@ -32,6 +33,7 @@ public:
 		XMStoreFloat4x4(&CameraMatrices.CameraViewMat, LookAt);
 	}
 
+	// Getters
 	_NODISCARD inline const auto GetViewMatrix() const
 	{
 		return CameraMatrices.CameraViewMat;
@@ -42,8 +44,8 @@ public:
 	}
 
 private:
+	// Matrices
 	CameraMatrices	CameraMatrices;
 };
-
 
 #endif // D3D12_CAMERA_H_INCLUDED

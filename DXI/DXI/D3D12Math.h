@@ -59,12 +59,10 @@ struct alignas(256) ObjectMatrices
 				   const DirectX::XMFLOAT4 InitScale);
 	~ObjectMatrices() = default;
 
-
-
 	// Membre variables
-	DirectX::XMFLOAT4X4	ScaleMat;			// scale matrix
-	DirectX::XMFLOAT4X4 RotMat;				// this will keep track of our rotation for object
-	DirectX::XMFLOAT4X4	PositionMat;		// position vector
+	DirectX::XMFLOAT4	RotVec;				// this will keep track of our rotation for object
+	DirectX::XMFLOAT4	ScaleVec;			// scale vec
+	DirectX::XMFLOAT4	PositionVec;		// position vector
 	DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
 	
 private:

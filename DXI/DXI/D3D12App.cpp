@@ -99,7 +99,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
 
 	// Main ground plane
-	//Plane.Transform({ 0.0f, 0.0f, 0.0f });// , { 80.0f, 0.0f, 0.0f }, {2.f, 2.f, 1.f});
+	Plane.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
 }
 
 void D3D12App::Initialize()
@@ -278,34 +278,39 @@ void D3D12App::Initialize()
 	 ********* Matrices ********
 	 ***************************/
 	{
-		// set starting cubes position
-		// first cube
-		//SquareMatrices.Position = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);		// set object position
-		//XMVECTOR PosVec = XMLoadFloat4(&SquareMatrices.Position);		// create xmvector for object position
-		//auto TmpMat		= XMMatrixTranslationFromVector(PosVec);		// create translation matrix from object's position vector
-		//XMStoreFloat4x4(&SquareMatrices.RotMat, XMMatrixIdentity());	// initialize object's rotation matrix to identity matrix
-		//XMStoreFloat4x4(&SquareMatrices.WorldMat, TmpMat);				// store object's world matrix
-
+		// set starting square position
 		// set starting scale, rotation and position
-		const auto ScaleVec	   = DirectX::XMVectorSet(0.2f, 0.2f, 0.2f, 1.f);
-		const auto RotationVec = DirectX::XMVectorSet(0.f, 0.f, 0.f, 1.f);
-		const auto PositionVec = DirectX::XMVectorSet(0.f, 0.f, -0.3f, 1.f);
-
-		// Store
-		XMStoreFloat4x4(&SquareMatrices.ScaleMat,		XMMatrixScalingFromVector(ScaleVec));
-		XMStoreFloat4x4(&SquareMatrices.RotMat,			XMMatrixRotationRollPitchYawFromVector(RotationVec));	                                                                                // initialize object's rotation matrix to identity matrix
-		XMStoreFloat4x4(&SquareMatrices.PositionMat,	XMMatrixTranslationFromVector(PositionVec));// set object position
+		const XMFLOAT4 ScaleTransform		= { 0.2f, 0.2f, 0.2f, 1.f };
+		const XMFLOAT4 RotateTransform		= { 0.f, 0.f, 0.f, 1.f };
+		const XMFLOAT4 PositionOffsetVec	= { 0.f, 0.f, -0.3f, 1.f };
 
 		// create xmvector for object world matrix
-		auto WorldMatrix = XMLoadFloat4x4(&SquareMatrices.ScaleMat) *
-						   XMLoadFloat4x4(&SquareMatrices.RotMat) *
-						   XMLoadFloat4x4(&SquareMatrices.PositionMat);
-		// create translation matrix from object's position vector, rotation is identity                                                                                // initialize object's rotation matrix to identity matrix
+		const auto ScaleMat			= XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
+		const auto RotationMatX		= XMMatrixRotationX(RotateTransform.x);
+		const auto RotationMatY		= XMMatrixRotationY(RotateTransform.y);
+		const auto RotationMatZ		= XMMatrixRotationZ(RotateTransform.z);
+		const auto RotationMatXYZ	= RotationMatX * RotationMatY * RotationMatZ;
+
+		// Offset of translation
+		const auto PositionOld = SquareMatrices.PositionVec;
+		const auto PositionNew = XMLoadFloat4(&PositionOld) + XMLoadFloat4(&PositionOffsetVec);
+
+		// Store
+		SquareMatrices.ScaleVec = ScaleTransform;
+		SquareMatrices.RotVec	= RotateTransform;
+		XMStoreFloat4(&SquareMatrices.PositionVec, PositionNew);
+
+		// create translation matrix
+		const auto PositionMat = XMMatrixTranslation(
+			SquareMatrices.PositionVec.x, 
+			SquareMatrices.PositionVec.y, 
+			SquareMatrices.PositionVec.z);
+
+		// Create World Matrix, Scale * Rotation * Position
+		const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
 		XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMatrix);
 	}
 	/////////
-
-
 
 	// Test
 	RenderGraph Graph(Device, CommandList);
@@ -490,24 +495,35 @@ void D3D12App::Update(float DeltaTime)
 	XMMATRIX ProjMat			= XMLoadFloat4x4(&CameraProjMat); // load projection matrix
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
-	// add rotation to object's rotation matrix and store it
-	XMMATRIX RotMat = XMLoadFloat4x4(&SquareMatrices.RotMat);// *rotYMat * rotZMat; // * rotXMat * rotYMat * rotZMat;
-	XMStoreFloat4x4(&SquareMatrices.RotMat, RotMat);
 
-	// create translation matrix for object position vector
-	XMMATRIX TranslationMat = XMLoadFloat4x4(&SquareMatrices.PositionMat);
+	// create xmvector for object world matrix
+	const auto ScaleMat			= XMMatrixScaling(SquareMatrices.ScaleVec.x, SquareMatrices.ScaleVec.y, SquareMatrices.ScaleVec.z);
+	const auto RotationMatX		= XMMatrixRotationX(SquareMatrices.RotVec.x);
+	const auto RotationMatY		= XMMatrixRotationY(SquareMatrices.RotVec.y);
+	const auto RotationMatZ		= XMMatrixRotationZ(SquareMatrices.RotVec.z);
+	const auto RotationMatXYZ	= RotationMatX * RotationMatY * RotationMatZ;
 
-	// create object's world matrix by first rotating the cube, then positioning the rotated cube
-	XMMATRIX WorldMat = XMLoadFloat4x4(&SquareMatrices.ScaleMat) * RotMat * TranslationMat;
+	// Offset of translation
+	const auto PositionOld = SquareMatrices.PositionVec;
+	const auto PositionNew = XMLoadFloat4(&PositionOld) + DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f); // no movement yet
 
-	// store object's world matrix
-	XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMat);
+	// create translation matrix      
+	XMStoreFloat4(&SquareMatrices.PositionVec, PositionNew);                                                                        // initialize object's rotation matrix to identity matrix
+	const auto PositionMat = XMMatrixTranslation(
+		SquareMatrices.PositionVec.x,
+		SquareMatrices.PositionVec.y,
+		SquareMatrices.PositionVec.z);
+
+	// Create World Matrix, Scale * Rotation * Position
+	const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
+	XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMatrix);
+
 
 	// update constant buffer for object
 	// create the wvp matrix and store in constant buffer
 	XMMATRIX MVPMat				= XMLoadFloat4x4(&SquareMatrices.WorldMat) * ViewMat * ProjMat; // create wvp matrix
-	XMMATRIX Transposed			= XMMatrixTranspose(MVPMat); // must transpose wvp matrix for the gpu
-	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, Transposed); // store transposed wvp matrix in constant buffer
+	XMMATRIX Transposed			= XMMatrixTranspose(MVPMat);									// must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, Transposed);						// store transposed wvp matrix in constant buffer
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
@@ -516,8 +532,10 @@ void D3D12App::Update(float DeltaTime)
 	// Cube
 
 	// store cube1's world matrix
-	static float z_offset = 0.001f;
-	Cube.Transform({ 0.f, 0.f, z_offset }, { 0.01f, 0.0f, 0.0f });
+	static float z_offset		= 0.001f;
+	static float z_rot_offset	= 0.001f;
+	z_rot_offset += 0.01f;
+	Cube.Transform({ 0.f, 0.f, z_offset }, { z_rot_offset, 0.0f, 0.0f });
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
@@ -529,7 +547,7 @@ void D3D12App::Update(float DeltaTime)
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 
 	// store plane's world matrix
-	//Plane.Transform({ 0.0, 0.0f, 0.0f });
+	/*Plane.Transform({ 0.0, 0.0f, 0.0f }, { -0.05f, 0.0f, 0.0f });*/
 	// create the wvp matrix and store in constant buffer
 	const auto PlaneWorldMatrix = Plane.GetWorldMatrix();
 	XMMATRIX MVPMatPlane		= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat;	// create wvp matrix

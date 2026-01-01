@@ -40,11 +40,11 @@ public:
 	}
 	_NODISCARD inline const auto GetPosVector() const
 	{
-		return Matrices.PositionMat;
+		return Matrices.PositionVec;
 	}
 	_NODISCARD inline const auto GetRotationMatrix() const
 	{
-		return Matrices.RotMat;
+		return Matrices.RotVec;
 	}
 	_NODISCARD inline const auto GetNumIndices() const
 	{
@@ -63,21 +63,21 @@ public:
 
 private:
 
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.WorldMat, Matrix);
-	}
+	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
+	//{
+	//	XMStoreFloat4x4(&Matrices.WorldVec, Matrix);
+	//}
 
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
-	{
-		const auto PositionVec = DirectX::XMVectorSet(Vector.x, Vector.y, Vector.z, 1.f);
-		XMStoreFloat4x4(&Matrices.PositionMat, XMMatrixTranslationFromVector(PositionVec));
-	}
+	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
+	//{
+	//	const auto PositionVec = DirectX::XMVectorSet(Vector.x, Vector.y, Vector.z, 1.f);
+	//	XMStoreFloat4x4(&Matrices.PositionVec, XMMatrixTranslationFromVector(PositionVec));
+	//}
 
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
-	}
+	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
+	//{
+	//	XMStoreFloat4x4(&Matrices.RotVec, Matrix);
+	//}
 
 
 	// Matrices
@@ -85,8 +85,6 @@ private:
 
 	// Number of indices
 	UINT NumIndices;
-
 };
-
 
 #endif // D3D12_PRIMITIVE_H_INCLUDED

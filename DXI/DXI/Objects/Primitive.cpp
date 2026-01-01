@@ -38,28 +38,31 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
 {
     // NOTE! Scale should be first alwayas, then rotate and then translate
 
-    // Scaling
-    const auto ScalingMatrix = XMMatrixScaling(ScaleTransform.x,
-                                                ScaleTransform.y,
-                                                ScaleTransform.z);
-    XMStoreFloat4x4(&Matrices.ScaleMat, ScalingMatrix);
+    // set starting scale, rotation and position
+    const auto ScaleVec             = DirectX::XMVectorSet(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z, 1.f);
+    const auto RotationVec          = DirectX::XMVectorSet(RotateTransform.x, RotateTransform.y, RotateTransform.z, 1.f);
+    const auto PositionOffsetVec    = DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f);
 
-    // Rotating
-    const auto RotationXMatrix = XMMatrixRotationX(RotateTransform.x);
-    const auto RotationYMatrix = XMMatrixRotationY(RotateTransform.y);
-    const auto RotationZMatrix = XMMatrixRotationZ(RotateTransform.z);
+    // create xmvector for object world matrix
+    const auto ScaleMat             = XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
+    const auto RotationMatX         = XMMatrixRotationX(RotateTransform.x);
+    const auto RotationMatY         = XMMatrixRotationY(RotateTransform.y);
+    const auto RotationMatZ         = XMMatrixRotationZ(RotateTransform.z);
+    const auto RotationMatXYZ       = RotationMatX * RotationMatY * RotationMatZ;
 
+    // Offset of translation
+    const auto PositionOld          = XMLoadFloat4(&Matrices.PositionVec);
+    const auto PositionNew          = PositionOld + PositionOffsetVec;
+    
+    // Store
+    XMStoreFloat4(&Matrices.ScaleVec,       ScaleVec);
+    XMStoreFloat4(&Matrices.RotVec,         RotationVec);
+    XMStoreFloat4(&Matrices.PositionVec,    PositionNew);
 
-    // Translating
-    const auto TranslationOffset    = XMMatrixTranslationFromVector(DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f));
-    const auto TranslateMatrix      = XMLoadFloat4x4(&Matrices.PositionMat) * TranslationOffset;
-    XMStoreFloat4x4(&Matrices.PositionMat, TranslateMatrix);
-
-    // Combine matrices together
-    const auto RotationMatrixCombined = XMLoadFloat4x4(&Matrices.RotMat) * RotationXMatrix * RotationYMatrix * RotationZMatrix;
-    XMStoreFloat4x4(&Matrices.RotMat, RotationMatrixCombined);
-
-    //Create World Mat
-    const auto WorldMat = ScalingMatrix * RotationMatrixCombined * TranslateMatrix;
-    XMStoreFloat4x4(&Matrices.WorldMat, WorldMat);
+    // create translation matrix                                                                               // initialize object's rotation matrix to identity matrix
+    const auto PositionMat = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
+    
+    // Create World Matrix, Scale * Rotation * Position
+    const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
+    XMStoreFloat4x4(&Matrices.WorldMat, WorldMatrix);
 }
