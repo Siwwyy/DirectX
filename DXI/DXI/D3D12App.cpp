@@ -95,8 +95,9 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
 	// Objects properties, positions etc.
-	Cube.Transform(XMFLOAT3(-1.f, 0.5f, 0.f));
 	Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
+	//Cube.Transform(XMFLOAT3(0.f, 0.0f, 0.f));
+	Cube.Transform({ 0.0f, 0.1f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 1.f });
 
 	// Main ground plane
 	Plane.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
@@ -121,6 +122,10 @@ void D3D12App::Initialize()
 			DxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 		}
 	}
+
+	//Check support for SSE2
+	DXASSERT(XMVerifyCPUSupport(), "Verify Support of DirectXMath!");
+
 #endif // DEBUG_MODE
 
 	//Create dxgi factory
@@ -452,21 +457,22 @@ void D3D12App::Render()
 		CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
 	}
 
-	//Square
-	{
-		// set objects's constant buffer
-		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		Handle.Offset(1, IncrementDescriptorSize);
-		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&IndexBufferView);
-		CommandList->DrawIndexedInstanced(NumIndices, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
-	}
+	////Square
+	//{
+	//	// set objects's constant buffer
+	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//	Handle.Offset(1, IncrementDescriptorSize);
+	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
+	//	CommandList->IASetVertexBuffers(0, 1, &VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	//	CommandList->IASetIndexBuffer(&IndexBufferView);
+	//	CommandList->DrawIndexedInstanced(NumIndices, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
+	//}
 
 	// Cube
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		Handle.Offset(1, IncrementDescriptorSize);
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
 		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
@@ -476,6 +482,8 @@ void D3D12App::Render()
 
 	// Plane
 	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
 		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
@@ -532,10 +540,10 @@ void D3D12App::Update(float DeltaTime)
 	// Cube
 
 	// store cube1's world matrix
-	static float z_offset		= 0.001f;
-	static float z_rot_offset	= 0.001f;
-	z_rot_offset += 0.01f;
-	Cube.Transform({ 0.f, 0.f, z_offset }, { z_rot_offset, 0.0f, 0.0f });
+	static float z_offset		= 0.01f;
+	static float x_rot_offset	= 0.01f;
+	//x_rot_offset += 0.01f;
+	Cube.Transform(DX_IDENTITY_TRANSFORM3, { x_rot_offset, x_rot_offset, 370.0f });
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
