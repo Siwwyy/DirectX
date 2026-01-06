@@ -86,7 +86,7 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
     // create translation matrix                                                                               // initialize object's rotation matrix to identity matrix
-    const auto PositionMat = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
+    const auto PositionMat      = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
     
     // Create World Matrix, Scale * Rotation * Position
     const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
