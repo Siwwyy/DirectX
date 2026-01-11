@@ -46,8 +46,9 @@ struct alignas(256) CameraMatrices
 	DirectX::XMFLOAT4X4 ViewMat;			// this will store our view matrix
 
 	DirectX::XMFLOAT4	Position;			// Position of the camera.
-	DirectX::XMFLOAT4	Direction;			// Direction of the camera.
-	DirectX::XMFLOAT4	Up;					// Up direction of the camera, typically < 0.0f, 1.0f, 0.0f >.
+	DirectX::XMFLOAT4	Direction;			// N | Direction of the camera.
+	DirectX::XMFLOAT4	Up;					// V | Up direction of the camera, typically < 0.0f, 1.0f, 0.0f >.
+	DirectX::XMFLOAT4	Right;				// U | Right vector of camera
 };
 
 static_assert((sizeof(CameraMatrices) % 256) == 0, "CameraMatrices size must be aligned to 256-bytes boudary");

@@ -1,4 +1,4 @@
-
+﻿
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
 #ifndef D3D12_HELPERS_H_INCLUDED
@@ -43,7 +43,7 @@
 #define DISABLE_COPY_MOVE(CLASS_NAME) DISABLE_COPY(CLASS_NAME) DISABLE_MOVE(CLASS_NAME) 
 
 
-// assert with splitted condition and message inside
+// assert with splitted condition and message inside | Asserts when Condition is True!
 #define DXASSERT(CONDITION, MESSAGE) assert((CONDITION) && (MESSAGE))
 
 // logging to console | Curly brackets are for keeping MsgBuffer inside scope
@@ -572,6 +572,21 @@ namespace Helpers
         return ComPtr<T>(new T(_STD forward<Types>(args)...));
     }
 
+    // Converts Degrees to Radians
+    // Radians = Degrees × (π/180)
+    _NODISCARD constexpr inline float ToRadians(const float Degrees) noexcept
+    {
+        constexpr float PI = 3.14159265358979323846;
+        return Degrees * (PI / 180.f);
+    }
+
+    // Converts Radians to Degress
+    // Degrees = Radians × (180/π)
+    _NODISCARD constexpr inline float ToDegrees(const float Radians) noexcept
+    {
+        constexpr float PI = 3.14159265358979323846;
+        return Radians * (180.f / PI);
+    }
 }
 
 #endif //D3D12_HELPER_H_INCLUDED

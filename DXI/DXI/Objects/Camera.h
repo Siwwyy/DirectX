@@ -45,8 +45,10 @@ public:
 	_NODISCARD inline const auto GetViewMatrix()
 	{
 		return XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-				XMLoadFloat4(&CameraMatrices.Direction),					// Dir/LookAt
-				XMLoadFloat4(&CameraMatrices.Up));							// Up
+								XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
+								XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Up)));							// Up
+
+		//return XMLoadFloat4x4(&CameraMatrices.ViewMat);
 	}
 	_NODISCARD inline const auto GetProjMatrix() const
 	{
@@ -55,6 +57,9 @@ public:
 
 private:
 
+	void ConstructViewMatrix(const XMFLOAT4 Pos, 
+							const XMFLOAT4 Dir,
+							const XMFLOAT4 Up);
 	struct KeysPressed
 	{
 		bool w;
@@ -71,8 +76,8 @@ private:
 	//
 	float m_yaw;							// Relative to the +z axis.
 	float m_pitch;							// Relative to the xz plane.
-	float m_moveSpeed = 1.f;				// Speed at which the camera moves, in units per second.
-	float m_turnSpeed = 1.f;				// Speed at which the camera turns, in radians per second.
+	float m_moveSpeed;						// Speed at which the camera moves, in units per second.
+	float m_turnSpeed;						// Speed at which the camera turns, in radians per second.
 
 	// Matrices
 	CameraMatrices	CameraMatrices;

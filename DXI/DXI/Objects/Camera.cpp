@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+static constexpr bool LHCameraCoordinateSystem = true;
+
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	: m_yaw(0.0f)
 	, m_pitch(0.0f)
@@ -32,10 +34,95 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 															Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
 	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
 
-	// set starting camera state
+	//// set starting camera state
 	CameraMatrices.Position		= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
 	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 	CameraMatrices.Up			= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+
+	const auto LHMatrix = XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+							XMLoadFloat4(&CameraMatrices.Direction),					// Dir/LookAt
+							XMLoadFloat4(&CameraMatrices.Up));							// Up
+
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
+
+	//// Position Vector
+	//CameraMatrices.Position			= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
+
+	//// Direction Vector
+	//const auto CameraTarget			= XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+	//const auto CameraDirection		= XMLoadFloat4(&CameraMatrices.Position) - XMLoadFloat4(&CameraTarget);
+	//XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(CameraDirection));
+	//// If we use Left-Handed Coordinate System, we must negate Camera Direction
+	//if constexpr (LHCameraCoordinateSystem)
+	//{
+	//	XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(XMVectorNegate(CameraDirection)));
+	//}
+
+
+	//// Right Vector
+	//const auto CameraUp				= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	//const auto CameraRight			= XMVector3Cross(XMLoadFloat4(&CameraUp), XMLoadFloat4(&CameraMatrices.Direction));
+	//XMStoreFloat4(&CameraMatrices.Right, XMVector4Normalize(CameraRight));
+
+	//// Up Vector
+	//XMStoreFloat4(&CameraMatrices.Up, XMVector3Cross(XMLoadFloat4(&CameraMatrices.Direction), XMLoadFloat4(&CameraMatrices.Right)));
+
+	//XMFLOAT4X4 ViewMatrix			= {};
+	//// First Row
+	//ViewMatrix.m[0][0]				= CameraMatrices.Right.x;
+	//ViewMatrix.m[0][1]				= CameraMatrices.Right.y;
+	//ViewMatrix.m[0][2]				= CameraMatrices.Right.z;
+	//ViewMatrix.m[0][3]				= 0;
+
+	//// Second Row
+	//ViewMatrix.m[1][0]				= CameraMatrices.Up.x;
+	//ViewMatrix.m[1][1]				= CameraMatrices.Up.y;
+	//ViewMatrix.m[1][2]				= CameraMatrices.Up.z;
+	//ViewMatrix.m[1][3]				= 0;
+
+	//// Third Row
+	//ViewMatrix.m[2][0]				= CameraMatrices.Direction.x;
+	//ViewMatrix.m[2][1]				= CameraMatrices.Direction.y;
+	//ViewMatrix.m[2][2]				= CameraMatrices.Direction.z;
+	//ViewMatrix.m[2][3]				= 0;
+
+	//// Fourth Row
+	//ViewMatrix.m[3][0]				= 0;
+	//ViewMatrix.m[3][1]				= 0;
+	//ViewMatrix.m[3][2]				= 0;
+	//ViewMatrix.m[3][3]				= 1;
+
+	//XMFLOAT4X4 TranslationMatrix = {};
+	//// First Row
+	//TranslationMatrix.m[0][0] = 1;
+	//TranslationMatrix.m[0][1] = 0;
+	//TranslationMatrix.m[0][2] = 0;
+	//TranslationMatrix.m[0][3] = -1.f * CameraMatrices.Position.x;
+
+	//// Second Row
+	//TranslationMatrix.m[1][0] = 0;
+	//TranslationMatrix.m[1][1] = 1;
+	//TranslationMatrix.m[1][2] = 0;
+	//TranslationMatrix.m[1][3] = -1.f * CameraMatrices.Position.y;
+
+	//// Third Row
+	//TranslationMatrix.m[2][0] = 0;
+	//TranslationMatrix.m[2][1] = 0;
+	//TranslationMatrix.m[2][2] = 1;
+	//TranslationMatrix.m[2][3] = -1.f * CameraMatrices.Position.z;
+
+	//// Fourth Row
+	//TranslationMatrix.m[3][0] = 0;
+	//TranslationMatrix.m[3][1] = 0;
+	//TranslationMatrix.m[3][2] = 0;
+	//TranslationMatrix.m[3][3] = 1;
+
+	//// Store ViewMat
+	//XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat4x4(&ViewMatrix) * XMLoadFloat4x4(&TranslationMatrix)));
+	//const auto CompareMat = XMLoadFloat4x4(&CameraMatrices.ViewMat);
+	//const auto Result = XMLoadFloat4x4(&CameraMatrices.ViewMat) - ABC;
+	//const auto Result2 = XMLoadFloat4x4(&CameraMatrices.ViewMat) - ABC;
+	//ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
 }
 
 void Camera::Reset()
@@ -46,20 +133,32 @@ void Camera::Reset()
 }
 
 void Camera::Update(float ElapsedSeconds) noexcept
-{
+{	
 	// Calculate the move vector in camera space.
 	XMFLOAT3 move(0, 0, 0);
-	XMFLOAT3 rot(0, 0, 0);
+	XMFLOAT3 rot(0, 0, 0); //yaw, pitch, roll
 
+	//////////////////////////////////////////////////////////////
+	// New
+	//////////////////////////////////////////////////////////////
 	if (KeysPressed.a)
+	{
 		move.x -= 1.0f;
+	}
 	if (KeysPressed.d)
+	{
 		move.x += 1.0f;
+	}
 	if (KeysPressed.w)
+	{
 		move.z += 1.0f;
+	}
 	if (KeysPressed.s)
+	{
 		move.z -= 1.0f;
+	}
 
+	// Normalization
 	if (fabs(move.x) > 0.1f && fabs(move.z) > 0.1f)
 	{
 		XMVECTOR vector = XMVector3Normalize(XMLoadFloat3(&move));
@@ -67,31 +166,75 @@ void Camera::Update(float ElapsedSeconds) noexcept
 		move.z = XMVectorGetZ(vector);
 	}
 
-	float moveInterval		= m_moveSpeed * ElapsedSeconds;
-	float rotateInterval	= m_turnSpeed * ElapsedSeconds;
+	//
+	float MoveInterval = m_moveSpeed * ElapsedSeconds;
+	// Move Left, Right, Backward, Forward
+	CameraMatrices.Position.x += move.x * MoveInterval;
+	CameraMatrices.Position.z += move.z * MoveInterval;
+	//////////////////////////////////////////////////////////////
 
-	if (KeysPressed.left)
-		rot.x -= rotateInterval;	//yaw
-	if (KeysPressed.right)
-		rot.x += rotateInterval;	//yaw
-	if (KeysPressed.up)
-		rot.y += rotateInterval;	//pitch
-	if (KeysPressed.down)
-		rot.y -= rotateInterval;	//pitch
+	DXLOG("X %f | Z %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z)
 
-	// Prevent looking too far up or down.
-	m_pitch = min(m_pitch, XM_PIDIV4);
-	m_pitch = max(-XM_PIDIV4, m_pitch);
+	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
 
-	// Move Left, Right, Up, Down
-	CameraMatrices.Position.x += move.x * moveInterval;
-	CameraMatrices.Position.z += move.z * moveInterval;
-	XMMatrixRotationAxis();
+	//if (KeysPressed.a)
+	//	move.x -= 1.0f;
+	//if (KeysPressed.d)
+	//	move.x += 1.0f;
+	//if (KeysPressed.w)
+	//	move.z += 1.0f;
+	//if (KeysPressed.s)
+	//	move.z -= 1.0f;
 
-	// Roll Pitch Yaw rotation
-	CameraMatrices.Direction.x += rot.x;	// Pitch
-	CameraMatrices.Direction.y += rot.y;	// Yaw
-	//CameraMatrices.Direction.z += m_pitch;	// Roll
+	//if (fabs(move.x) > 0.1f && fabs(move.z) > 0.1f)
+	//{
+	//	XMVECTOR vector = XMVector3Normalize(XMLoadFloat3(&move));
+	//	move.x = XMVectorGetX(vector);
+	//	move.z = XMVectorGetZ(vector);
+	//}
+
+	//float moveInterval		= m_moveSpeed * ElapsedSeconds;
+	//float rotateInterval	= m_turnSpeed * ElapsedSeconds;
+
+	//if (KeysPressed.left)
+	//	rot.x -= 1.0f;	//yaw
+	//if (KeysPressed.right)
+	//	rot.x += 1.0f;	//yaw
+	//if (KeysPressed.up)
+	//	rot.y += 1.0f;	//pitch
+	//if (KeysPressed.down)
+	//	rot.y -= 1.0f;	//pitch
+
+	//// Prevent looking too far up or down.
+	//m_pitch = min(m_pitch, XM_PIDIV4);
+	//m_pitch = max(-XM_PIDIV4, m_pitch);
+
+	//// Move Left, Right, Up, Down
+	//CameraMatrices.Position.x += move.x * moveInterval;
+	//CameraMatrices.Position.z += move.z * moveInterval;
+
+
+
+
+	//// Convert to radians
+	//rot.x = ToRadians(rot.x);
+	//rot.y = ToRadians(rot.y);
+	//rot.z = ToRadians(rot.z);
+
+	//// Roll Pitch Yaw rotation
+	////CameraMatrices.Direction.x += cosf(rot.x * (3.14 / 180.f)) * cosf(rot.y * (3.14 / 180.f)) * rotateInterval;			// Yaw
+	////CameraMatrices.Direction.z += sinf(rot.x * (3.14 / 180.f)) * cosf(rot.y * (3.14 / 180.f)) * rotateInterval;		// Yaw
+	////CameraMatrices.Direction.y += sinf(rot.y * (3.14 / 180.f));											// Pitch
+
+	////XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Direction)));
+	//ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+
+
+	//const auto LHMatrix = XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+	//	XMLoadFloat4(&CameraMatrices.Direction),					// Dir/LookAt
+	//	XMLoadFloat4(&CameraMatrices.Up));							// Up
+
+	//XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
 }
 
 void Camera::OnKeyDown(WPARAM key)
@@ -157,4 +300,207 @@ void Camera::OnKeyUp(WPARAM key)
 		KeysPressed.down = false;
 		break;
 	}
+}
+
+// overload "<<"
+std::ostream& XM_CALLCONV operator<<(std::ostream& os, FXMVECTOR v)
+{
+	XMFLOAT4 dest;
+	XMStoreFloat4(&dest, v);
+
+	os << "(" << dest.x << ", " << dest.y << ", " << dest.z << ", " << dest.w << ")";
+	return os;
+}
+
+std::ostream& XM_CALLCONV operator<<(std::ostream& os, FXMMATRIX m)
+{
+	for (int x = 0; x < 4; ++x)
+	{
+		os << XMVectorGetX(m.r[x]) << "\t";
+		os << XMVectorGetY(m.r[x]) << "\t";
+		os << XMVectorGetZ(m.r[x]) << "\t";
+		os << XMVectorGetW(m.r[x]) << "\t";
+		os << std::endl;
+	}
+
+	return os;
+}
+
+void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const XMFLOAT4 Up)
+{
+	// U V N
+	// U -> Right vector
+	// N -> Direction/Target vector
+	// V -> Up vector
+	auto U = XMFLOAT4{};
+	auto V = XMFLOAT4{};
+	auto N = XMFLOAT4{};
+
+	// Normalize
+	XMStoreFloat4(&N, XMVector3Normalize(XMLoadFloat4(&Dir)));
+	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&Up)));
+
+	// If we use Left-Handed Coordinate System, we must negate Camera Direction
+	if constexpr (LHCameraCoordinateSystem)
+	{
+		XMStoreFloat4(&N, XMVectorNegate(XMLoadFloat4(&N)));
+	}
+
+	// Calculate right vector
+	XMStoreFloat4(&U, XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N)));
+
+	////
+	// Init Translation Matrix
+	XMFLOAT4X4 TranslationMatrix = {};
+	// -1* x/y/z because of inverting matrix, simpler to construct than inverting
+	// First Row
+	TranslationMatrix.m[0][0] = 1;
+	TranslationMatrix.m[0][1] = 0;
+	TranslationMatrix.m[0][2] = 0;
+	TranslationMatrix.m[0][3] = -1.f * CameraMatrices.Position.x;
+
+	// Second Row
+	TranslationMatrix.m[1][0] = 0;
+	TranslationMatrix.m[1][1] = 1;
+	TranslationMatrix.m[1][2] = 0;
+	TranslationMatrix.m[1][3] = -1.f * CameraMatrices.Position.y;
+
+	// Third Row
+	TranslationMatrix.m[2][0] = 0;
+	TranslationMatrix.m[2][1] = 0;
+	TranslationMatrix.m[2][2] = 1;
+	TranslationMatrix.m[2][3] = -1.f * CameraMatrices.Position.z;
+
+	// Fourth Row
+	TranslationMatrix.m[3][0] = 0;
+	TranslationMatrix.m[3][1] = 0;
+	TranslationMatrix.m[3][2] = 0;
+	TranslationMatrix.m[3][3] = 1;
+
+	////
+	// Camera Matrix
+	XMFLOAT4X4 CameraMatrix = {};
+	// First Row
+	CameraMatrix.m[0][0] = U.x;
+	CameraMatrix.m[1][0] = U.y;
+	CameraMatrix.m[2][0] = U.z;
+	CameraMatrix.m[3][0] = 0;
+
+	// Second Row
+	CameraMatrix.m[0][1] = V.x;
+	CameraMatrix.m[1][1] = V.y;
+	CameraMatrix.m[2][1] = V.z;
+	CameraMatrix.m[3][1] = 0;
+
+	// Third Row
+	CameraMatrix.m[0][2] = N.x;
+	CameraMatrix.m[1][2] = N.y;
+	CameraMatrix.m[2][2] = N.z;
+	CameraMatrix.m[3][2] = 0;
+
+	// Fourth Row
+	CameraMatrix.m[0][3] = 0;
+	CameraMatrix.m[1][3] = 0;
+	CameraMatrix.m[2][3] = 0;
+	CameraMatrix.m[3][3] = 1;
+
+	// Above, we created Camera Coordinate System Matrix, now, we can inverse it, i.e., Transpose
+	// Because vectors are unit length and orthogonal i.e., linearily independent, but double check!
+	// Calculate Determinant of 3x3 matrix which consists of three vectors: U,V,C
+	XMFLOAT3X3 UVNMat;
+
+	// First Row
+	UVNMat.m[0][0] = U.x;
+	UVNMat.m[0][1] = U.y;
+	UVNMat.m[0][2] = U.z;
+
+	// Second Row
+	UVNMat.m[1][0] = V.x;
+	UVNMat.m[1][1] = V.y;
+	UVNMat.m[1][2] = V.z;
+
+	// Third Row
+	UVNMat.m[2][0] = N.x;
+	UVNMat.m[2][1] = N.y;
+	UVNMat.m[2][2] = N.z;
+
+	// Check determinant
+	DXASSERT(XMVector3Equal(DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f), XMMatrixDeterminant((XMLoadFloat3x3(&UVNMat)))) == 0, "Determinant is zero! Linear dependent vectors");
+
+
+	//// Position Vector
+	//CameraMatrices.Position = Pos;
+
+	//// Direction Vector
+	//const auto CameraTarget = Dir;
+	//const auto CameraDirection = XMLoadFloat4(&CameraMatrices.Position) - XMLoadFloat4(&CameraTarget);
+	//XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(CameraDirection));
+	//// If we use Left-Handed Coordinate System, we must negate Camera Direction
+	//if constexpr (LHCameraCoordinateSystem)
+	//{
+	//	XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(XMVectorNegate(CameraDirection)));
+	//}
+
+
+	//// Right Vector
+	//const auto CameraUp = Up;
+	//const auto CameraRight = XMVector3Cross(XMLoadFloat4(&CameraUp), XMLoadFloat4(&CameraMatrices.Direction));
+	//XMStoreFloat4(&CameraMatrices.Right, XMVector4Normalize(CameraRight));
+
+	//// Up Vector
+	//XMStoreFloat4(&CameraMatrices.Up, XMVector3Cross(XMLoadFloat4(&CameraMatrices.Direction), XMLoadFloat4(&CameraMatrices.Right)));
+
+	//XMFLOAT4X4 ViewMatrix = {};
+	//// First Row
+	//ViewMatrix.m[0][0] = CameraMatrices.Right.x;
+	//ViewMatrix.m[0][1] = CameraMatrices.Right.y;
+	//ViewMatrix.m[0][2] = CameraMatrices.Right.z;
+	//ViewMatrix.m[0][3] = 0;
+
+	//// Second Row
+	//ViewMatrix.m[1][0] = CameraMatrices.Up.x;
+	//ViewMatrix.m[1][1] = CameraMatrices.Up.y;
+	//ViewMatrix.m[1][2] = CameraMatrices.Up.z;
+	//ViewMatrix.m[1][3] = 0;
+
+	//// Third Row
+	//ViewMatrix.m[2][0] = CameraMatrices.Direction.x;
+	//ViewMatrix.m[2][1] = CameraMatrices.Direction.y;
+	//ViewMatrix.m[2][2] = CameraMatrices.Direction.z;
+	//ViewMatrix.m[2][3] = 0;
+
+	//// Fourth Row
+	//ViewMatrix.m[3][0] = 0;
+	//ViewMatrix.m[3][1] = 0;
+	//ViewMatrix.m[3][2] = 0;
+	//ViewMatrix.m[3][3] = 1;
+
+	//XMFLOAT4X4 TranslationMatrix = {};
+	//// -1* x/y/z because of inverting matrix, simpler to construct than inverting
+	//// First Row
+	//TranslationMatrix.m[0][0] = 1;
+	//TranslationMatrix.m[0][1] = 0;
+	//TranslationMatrix.m[0][2] = 0;
+	//TranslationMatrix.m[0][3] = -1.f * CameraMatrices.Position.x;
+
+	//// Second Row
+	//TranslationMatrix.m[1][0] = 0;
+	//TranslationMatrix.m[1][1] = 1;
+	//TranslationMatrix.m[1][2] = 0;
+	//TranslationMatrix.m[1][3] = -1.f * CameraMatrices.Position.y;
+
+	//// Third Row
+	//TranslationMatrix.m[2][0] = 0;
+	//TranslationMatrix.m[2][1] = 0;
+	//TranslationMatrix.m[2][2] = 1;
+	//TranslationMatrix.m[2][3] = -1.f * CameraMatrices.Position.z;
+
+	//// Fourth Row
+	//TranslationMatrix.m[3][0] = 0;
+	//TranslationMatrix.m[3][1] = 0;
+	//TranslationMatrix.m[3][2] = 0;
+	//TranslationMatrix.m[3][3] = 1;
+
+	//// Store ViewMat
+	//XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat4x4(&ViewMatrix) * XMLoadFloat4x4(&TranslationMatrix)));
 }

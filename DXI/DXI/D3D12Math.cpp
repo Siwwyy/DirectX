@@ -27,12 +27,12 @@ void ObjectMatrices::Init(const DirectX::XMFLOAT4 InitRot,
 
     // create xmvector for object world matrix
     const auto ScaleMat         = XMMatrixScaling(InitScale.x, InitScale.y, InitScale.z);
-    const auto RotationMatX     = XMMatrixRotationX(InitRot.x);
-    const auto RotationMatY     = XMMatrixRotationY(InitRot.y);
-    const auto RotationMatZ     = XMMatrixRotationZ(InitRot.z);
+    const auto RotationMatX     = XMMatrixRotationX(Helpers::ToRadians(InitRot.x));
+    const auto RotationMatY     = XMMatrixRotationY(Helpers::ToRadians(InitRot.y));
+    const auto RotationMatZ     = XMMatrixRotationZ(Helpers::ToRadians(InitRot.z));
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
     const auto PositionMat      = XMMatrixTranslation(InitPosition.x, InitPosition.y, InitPosition.z);
-    const auto WorldMatrix      = ScaleMat * RotationMatXYZ * PositionMat;
+    const auto WorldMatrix      = ScaleMat * RotationMatXYZ * PositionMat; // TODO | Rethink if it should not go in reverse order like f(g(z(x))) <==> Pos(Rot(Scale(x)))
     // Store
     XMStoreFloat4(&this->ScaleVec,      ScaleVec);
     XMStoreFloat4(&this->RotVec,        RotationVec);	                                                                                // initialize object's rotation matrix to identity matrix
