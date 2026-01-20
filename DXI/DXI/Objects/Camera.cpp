@@ -173,10 +173,23 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	CameraMatrices.Position.z += move.z * MoveInterval;
 	//////////////////////////////////////////////////////////////
 
-	DXLOG("X %f | Z %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z)
+	// Rotation
 
-	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+	if (KeysPressed.left)
+		rot.y += 1.0f;	//yaw
+	if (KeysPressed.right)
+		rot.y -= 1.0f;	//yaw
+	if (KeysPressed.up)
+		rot.x += 1.0f;	//pitch
+	if (KeysPressed.down)
+		rot.x -= 1.0f;	//pitch
 
+
+	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, CameraMatrices.Up, XMFLOAT4(rot.x, rot.y, 0.0f, 0.0f));
+
+
+	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
+	//DXLOG("RoX %f | Z %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z)
 	//if (KeysPressed.a)
 	//	move.x -= 1.0f;
 	//if (KeysPressed.d)
@@ -326,7 +339,7 @@ std::ostream& XM_CALLCONV operator<<(std::ostream& os, FXMMATRIX m)
 	return os;
 }
 
-void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const XMFLOAT4 Up)
+void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const XMFLOAT4 Up, const XMFLOAT4 RotXYZW)
 {
 	// U V N
 	// U -> Right vector
@@ -348,6 +361,128 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 
 	// Calculate right vector
 	XMStoreFloat4(&U, XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N)));
+
+	// Rotation
+	// RotX | Pitch
+	auto RotateAroundXAxis = [](float ThetaRadians)
+	{
+		XMFLOAT4X4 RotX = {};
+		RotX.m[0][0] = 1;
+		RotX.m[0][1] = 0;
+		RotX.m[0][2] = 0;
+		RotX.m[0][3] = 0;
+
+		// Second Row
+		RotX.m[1][0] = 0;
+		RotX.m[1][1] = cosf(ThetaRadians);
+		RotX.m[1][2] = -1.f * sinf(ThetaRadians);
+		RotX.m[1][3] = 0;
+
+		// Third Row
+		RotX.m[2][0] = 0;
+		RotX.m[2][1] = sinf(ThetaRadians);
+		RotX.m[2][2] = cosf(ThetaRadians);
+		RotX.m[2][3] = 0;
+
+		// Fourth Row
+		RotX.m[3][0] = 0;
+		RotX.m[3][1] = 0;
+		RotX.m[3][2] = 0;
+		RotX.m[3][3] = 0;
+
+		return RotX;
+	};
+
+	// RotY | Yaw
+	auto RotateAroundYAxis = [](float ThetaRadians)
+	{
+		XMFLOAT4X4 RotY = {};
+		// First Row
+		RotY.m[0][0] = cosf(ThetaRadians);
+		RotY.m[0][1] = 0;
+		RotY.m[0][2] = sinf(ThetaRadians);
+		RotY.m[0][3] = 0;
+
+		// Second Row
+		RotY.m[1][0] = 0;
+		RotY.m[1][1] = 1;
+		RotY.m[1][2] = 0;
+		RotY.m[1][3] = 0;
+
+		// Third Row
+		RotY.m[2][0] = -1.f * sinf(ThetaRadians);
+		RotY.m[2][1] = 0;
+		RotY.m[2][2] = cosf(ThetaRadians);
+		RotY.m[2][3] = 0;
+
+		// Fourth Row
+		RotY.m[3][0] = 0;
+		RotY.m[3][1] = 0;
+		RotY.m[3][2] = 0;
+		RotY.m[3][3] = 0;
+
+		return RotY;
+	};
+
+
+	// RotZ | Roll
+	auto RotateAroundZAxis = [](float ThetaRadians)
+	{
+		XMFLOAT4X4 RotZ = {};
+		// First Row
+		RotZ.m[0][0] = cosf(ThetaRadians);
+		RotZ.m[0][1] = -1.f * sinf(ThetaRadians);
+		RotZ.m[0][2] = 0;
+		RotZ.m[0][3] = 0;
+
+		// Second Row
+		RotZ.m[1][0] = sinf(ThetaRadians);
+		RotZ.m[1][1] = cosf(ThetaRadians);
+		RotZ.m[1][2] = 0;
+		RotZ.m[1][3] = 0;
+
+		// Third Row
+		RotZ.m[2][0] = 0;
+		RotZ.m[2][1] = 0;
+		RotZ.m[2][2] = 1;
+		RotZ.m[2][3] = 0;
+
+		// Fourth Row
+		RotZ.m[3][0] = 0;
+		RotZ.m[3][1] = 0;
+		RotZ.m[3][2] = 0;
+		RotZ.m[3][3] = 0;
+
+		return RotZ;
+	};
+
+
+	// Rotate around Yaw Y, we rotate Z axis
+	//const auto RotatorY = RotateAroundYAxis(Helpers::ToRadians(RotXYZW.y));
+	const auto RotatorX = RotateAroundXAxis(Helpers::ToRadians(RotXYZW.x));
+	const auto RotatorY = RotateAroundYAxis(Helpers::ToRadians(RotXYZW.y));
+	const auto RotatorZ = RotateAroundZAxis(Helpers::ToRadians(0));
+	XMFLOAT4 Nz = {};
+	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&N), XMLoadFloat4x4(&RotatorY)));
+	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorY)));
+	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorY)));
+
+	// Rotate around Yaw Y, we rotate X axis
+
+	XMFLOAT4 Ux = U;
+	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&U), XMLoadFloat4x4(&RotatorX)));
+	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorY)));
+	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorZ)));
+
+	// Rotate around Yaw Y, we rotate X axis
+	XMFLOAT4 Vy = {};
+	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&V), XMLoadFloat4x4(&RotatorX)));
+	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorY)));
+	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorZ)));
+
+
+	XMStoreFloat4(&CameraMatrices.Direction, XMVector3Normalize(XMLoadFloat4(&Nz)));
+	XMStoreFloat4(&CameraMatrices.Up, XMVector3Normalize(XMLoadFloat4(&Vy)));
 
 	////
 	// Init Translation Matrix
@@ -381,21 +516,21 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	// Camera Matrix
 	XMFLOAT4X4 CameraMatrix = {};
 	// First Row
-	CameraMatrix.m[0][0] = U.x;
-	CameraMatrix.m[1][0] = U.y;
-	CameraMatrix.m[2][0] = U.z;
+	CameraMatrix.m[0][0] = Ux.x;
+	CameraMatrix.m[1][0] = Ux.y;
+	CameraMatrix.m[2][0] = Ux.z;
 	CameraMatrix.m[3][0] = 0;
 
 	// Second Row
-	CameraMatrix.m[0][1] = V.x;
-	CameraMatrix.m[1][1] = V.y;
-	CameraMatrix.m[2][1] = V.z;
+	CameraMatrix.m[0][1] = Vy.x;
+	CameraMatrix.m[1][1] = Vy.y;
+	CameraMatrix.m[2][1] = Vy.z;
 	CameraMatrix.m[3][1] = 0;
 
 	// Third Row
-	CameraMatrix.m[0][2] = N.x;
-	CameraMatrix.m[1][2] = N.y;
-	CameraMatrix.m[2][2] = N.z;
+	CameraMatrix.m[0][2] = Nz.x;
+	CameraMatrix.m[1][2] = Nz.y;
+	CameraMatrix.m[2][2] = Nz.z;
 	CameraMatrix.m[3][2] = 0;
 
 	// Fourth Row
@@ -410,23 +545,26 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	XMFLOAT3X3 UVNMat;
 
 	// First Row
-	UVNMat.m[0][0] = U.x;
-	UVNMat.m[0][1] = U.y;
-	UVNMat.m[0][2] = U.z;
+	UVNMat.m[0][0] = Ux.x;
+	UVNMat.m[0][1] = Ux.y;
+	UVNMat.m[0][2] = Ux.z;
 
 	// Second Row
-	UVNMat.m[1][0] = V.x;
-	UVNMat.m[1][1] = V.y;
-	UVNMat.m[1][2] = V.z;
+	UVNMat.m[1][0] = Vy.x;
+	UVNMat.m[1][1] = Vy.y;
+	UVNMat.m[1][2] = Vy.z;
 
 	// Third Row
-	UVNMat.m[2][0] = N.x;
-	UVNMat.m[2][1] = N.y;
-	UVNMat.m[2][2] = N.z;
+	UVNMat.m[2][0] = Nz.x;
+	UVNMat.m[2][1] = Nz.y;
+	UVNMat.m[2][2] = Nz.z;
 
 	// Check determinant
 	DXASSERT(XMVector3Equal(DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f), XMMatrixDeterminant((XMLoadFloat3x3(&UVNMat)))) == 0, "Determinant is zero! Linear dependent vectors");
 
+
+	// Create View Matrix
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat3x3(&UVNMat) * XMLoadFloat4x4(&TranslationMatrix)));
 
 	//// Position Vector
 	//CameraMatrices.Position = Pos;

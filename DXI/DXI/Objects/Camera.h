@@ -59,7 +59,8 @@ private:
 
 	void ConstructViewMatrix(const XMFLOAT4 Pos, 
 							const XMFLOAT4 Dir,
-							const XMFLOAT4 Up);
+							const XMFLOAT4 Up, 
+							const XMFLOAT4 RotXYZW);
 	struct KeysPressed
 	{
 		bool w;
