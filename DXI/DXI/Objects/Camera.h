@@ -44,11 +44,11 @@ public:
 	// Getters
 	_NODISCARD inline const auto GetViewMatrix()
 	{
-		return XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-								XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
-								XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Up)));							// Up
+		//return XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
+		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Up)));							// Up
 
-		//return XMLoadFloat4x4(&CameraMatrices.ViewMat);
+		return XMLoadFloat4x4(&CameraMatrices.ViewMat);
 	}
 	_NODISCARD inline const auto GetProjMatrix() const
 	{

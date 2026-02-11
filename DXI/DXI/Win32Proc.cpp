@@ -115,6 +115,7 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	case WM_DESTROY:
 	{
+		//dx12App->Destroy();
 		PostQuitMessage(0);
 	}
 	return 0;

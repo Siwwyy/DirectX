@@ -38,10 +38,11 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	CameraMatrices.Position		= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
 	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 	CameraMatrices.Up			= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
+	CameraMatrices.Right		= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 
-	const auto LHMatrix = XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-							XMLoadFloat4(&CameraMatrices.Direction),					// Dir/LookAt
-							XMLoadFloat4(&CameraMatrices.Up));							// Up
+	const auto LHMatrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+											XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Forward
+											XMLoadFloat4(&CameraMatrices.Up));			// Up
 
 	XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
 
@@ -143,19 +144,27 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	//////////////////////////////////////////////////////////////
 	if (KeysPressed.a)
 	{
+		DXLOG("KeysPressed.a\n")
 		move.x -= 1.0f;
+		//KeysPressed.a = false;
 	}
 	if (KeysPressed.d)
 	{
+		DXLOG("KeysPressed.d\n")
 		move.x += 1.0f;
+		//KeysPressed.d = false;
 	}
 	if (KeysPressed.w)
 	{
+		DXLOG("KeysPressed.w\n")
 		move.z += 1.0f;
+		//KeysPressed.w = false;
 	}
 	if (KeysPressed.s)
 	{
+		DXLOG("KeysPressed.s\n")
 		move.z -= 1.0f;
+		//KeysPressed.s = false;
 	}
 
 	// Normalization
@@ -163,29 +172,34 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	{
 		XMVECTOR vector = XMVector3Normalize(XMLoadFloat3(&move));
 		move.x = XMVectorGetX(vector);
+		move.y = XMVectorGetY(vector);
 		move.z = XMVectorGetZ(vector);
 	}
 
 	//
 	float MoveInterval = m_moveSpeed * ElapsedSeconds;
 	// Move Left, Right, Backward, Forward
-	CameraMatrices.Position.x += move.x * MoveInterval;
-	CameraMatrices.Position.z += move.z * MoveInterval;
+	//position += (direction.z * forwardVector + direction.x * rightVector)	* translationSpeed
+	const auto ForwardVectorMoved	= XMVectorScale(XMLoadFloat4(&CameraMatrices.Direction),			move.z);			// direction.z * forwardVector 
+	const auto RightVectorMoved		= XMVectorScale(XMLoadFloat4(&CameraMatrices.Right),				move.x);			// direction.x * rightVector
+	const auto Result				= XMVectorScale(XMVectorAdd(ForwardVectorMoved, RightVectorMoved),	MoveInterval);		// (fwd_moved + rgh_moved) * translationSpeed ==> result
+	const auto FinalPos				= XMVectorAdd(XMLoadFloat4(&CameraMatrices.Position), Result);		
+	XMStoreFloat4(&CameraMatrices.Position, FinalPos);
+	//CameraMatrices.Position =  * ;
 	//////////////////////////////////////////////////////////////
-
 	// Rotation
 
 	if (KeysPressed.left)
-		rot.y += 1.0f;	//yaw
-	if (KeysPressed.right)
 		rot.y -= 1.0f;	//yaw
+	if (KeysPressed.right)
+		rot.y += 1.0f;	//yaw
 	if (KeysPressed.up)
-		rot.x += 1.0f;	//pitch
-	if (KeysPressed.down)
 		rot.x -= 1.0f;	//pitch
+	if (KeysPressed.down)
+		rot.x += 1.0f;	//pitch
 
 
-	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, CameraMatrices.Up, XMFLOAT4(rot.x, rot.y, 0.0f, 0.0f));
+	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, CameraMatrices.Up, XMFLOAT4(Helpers::ToRadians(rot.x), Helpers::ToRadians(rot.y), 0.0f, 0.0f));
 
 
 	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
@@ -243,11 +257,11 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	//ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
 
 
-	//const auto LHMatrix = XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-	//	XMLoadFloat4(&CameraMatrices.Direction),					// Dir/LookAt
-	//	XMLoadFloat4(&CameraMatrices.Up));							// Up
+	const auto LHMatrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+											XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt
+											XMLoadFloat4(&CameraMatrices.Up));			// Up
 
-	//XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
 }
 
 void Camera::OnKeyDown(WPARAM key)
@@ -353,11 +367,11 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	XMStoreFloat4(&N, XMVector3Normalize(XMLoadFloat4(&Dir)));
 	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&Up)));
 
-	// If we use Left-Handed Coordinate System, we must negate Camera Direction
-	if constexpr (LHCameraCoordinateSystem)
-	{
-		XMStoreFloat4(&N, XMVectorNegate(XMLoadFloat4(&N)));
-	}
+	//// If we use Left-Handed Coordinate System, we must negate Camera Direction
+	//if constexpr (LHCameraCoordinateSystem)
+	//{
+	//	XMStoreFloat4(&N, XMVectorNegate(XMLoadFloat4(&N)));
+	//}
 
 	// Calculate right vector
 	XMStoreFloat4(&U, XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N)));
@@ -388,7 +402,7 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 		RotX.m[3][0] = 0;
 		RotX.m[3][1] = 0;
 		RotX.m[3][2] = 0;
-		RotX.m[3][3] = 0;
+		RotX.m[3][3] = 1;
 
 		return RotX;
 	};
@@ -419,7 +433,7 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 		RotY.m[3][0] = 0;
 		RotY.m[3][1] = 0;
 		RotY.m[3][2] = 0;
-		RotY.m[3][3] = 0;
+		RotY.m[3][3] = 1;
 
 		return RotY;
 	};
@@ -451,7 +465,7 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 		RotZ.m[3][0] = 0;
 		RotZ.m[3][1] = 0;
 		RotZ.m[3][2] = 0;
-		RotZ.m[3][3] = 0;
+		RotZ.m[3][3] = 1;
 
 		return RotZ;
 	};
@@ -459,31 +473,45 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 
 	// Rotate around Yaw Y, we rotate Z axis
 	//const auto RotatorY = RotateAroundYAxis(Helpers::ToRadians(RotXYZW.y));
-	const auto RotatorX = RotateAroundXAxis(Helpers::ToRadians(RotXYZW.x));
-	const auto RotatorY = RotateAroundYAxis(Helpers::ToRadians(RotXYZW.y));
-	const auto RotatorZ = RotateAroundZAxis(Helpers::ToRadians(0));
-	XMFLOAT4 Nz = {};
-	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&N), XMLoadFloat4x4(&RotatorY)));
-	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorY)));
-	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorY)));
+	//const auto RotatorX = RotateAroundXAxis(Helpers::ToRadians(RotXYZW.x));
+	//const auto RotatorY = RotateAroundYAxis(Helpers::ToRadians(RotXYZW.y));
+	//const auto RotatorZ = RotateAroundZAxis(Helpers::ToRadians(0));			// no need to rotate around roll
+
+
+	//const auto RotatorX = XMMatrixRotationX(Helpers::ToRadians(RotXYZW.x));
+	//const auto RotatorY = XMMatrixRotationY(Helpers::ToRadians(RotXYZW.y));
+	//const auto RotatorZ = XMMatrixRotationZ(Helpers::ToRadians(0));			// no need to rotate around roll
+
+
+	const auto RotationMatXYZ = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat4(&RotXYZW));
+	
+	XMFLOAT4 Nz = N;
+	XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), RotationMatXYZ));
+	//XMVector4Transform(XMLoadFloat4(&Nz), RotationMatXYZ));
+	//XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorX)));
+	//XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorY)));
+	//XMStoreFloat4(&Nz, XMVector4Transform(XMLoadFloat4(&Nz), XMLoadFloat4x4(&RotatorZ)));
 
 	// Rotate around Yaw Y, we rotate X axis
-
 	XMFLOAT4 Ux = U;
-	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&U), XMLoadFloat4x4(&RotatorX)));
-	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorY)));
-	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorZ)));
+	XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), RotationMatXYZ));
+	//XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), RotationMatXYZ));
+	//XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorX)));
+	//XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorY)));
+	//XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), XMLoadFloat4x4(&RotatorZ)));
 
 	// Rotate around Yaw Y, we rotate X axis
-	XMFLOAT4 Vy = {};
-	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&V), XMLoadFloat4x4(&RotatorX)));
-	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorY)));
-	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorZ)));
+	XMFLOAT4 Vy = V;
+	XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), RotationMatXYZ));
+	//XMStoreFloat4(&Ux, XMVector4Transform(XMLoadFloat4(&Ux), RotationMatXYZ));
+	//XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorX)));
+	//XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorY)));
+	//XMStoreFloat4(&Vy, XMVector4Transform(XMLoadFloat4(&Vy), XMLoadFloat4x4(&RotatorZ)));
 
-
-	XMStoreFloat4(&CameraMatrices.Direction, XMVector3Normalize(XMLoadFloat4(&Nz)));
-	XMStoreFloat4(&CameraMatrices.Up, XMVector3Normalize(XMLoadFloat4(&Vy)));
-
+	XMStoreFloat4(&CameraMatrices.Direction,	XMVector3Normalize(XMLoadFloat4(&Nz)));
+	XMStoreFloat4(&CameraMatrices.Up,			XMVector3Normalize(XMLoadFloat4(&Vy)));
+	XMStoreFloat4(&CameraMatrices.Right,		XMVector3Normalize(XMLoadFloat4(&Ux)));
+	return;
 	////
 	// Init Translation Matrix
 	XMFLOAT4X4 TranslationMatrix = {};
@@ -560,11 +588,11 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	UVNMat.m[2][2] = Nz.z;
 
 	// Check determinant
-	DXASSERT(XMVector3Equal(DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f), XMMatrixDeterminant((XMLoadFloat3x3(&UVNMat)))) == 0, "Determinant is zero! Linear dependent vectors");
+	//DXASSERT(XMVector3Equal(DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f), XMMatrixDeterminant((XMLoadFloat3x3(&UVNMat)))) == 0, "Determinant is zero! Linear dependent vectors");
 
 
 	// Create View Matrix
-	XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat3x3(&UVNMat) * XMLoadFloat4x4(&TranslationMatrix)));
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat4x4(&CameraMatrix) * XMLoadFloat4x4(&TranslationMatrix)));
 
 	//// Position Vector
 	//CameraMatrices.Position = Pos;
