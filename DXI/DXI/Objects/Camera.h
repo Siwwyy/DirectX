@@ -45,7 +45,7 @@ public:
 	_NODISCARD inline const auto GetViewMatrix()
 	{
 		//return XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
+		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Position) + XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
 		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Up)));							// Up
 
 		return XMLoadFloat4x4(&CameraMatrices.ViewMat);
