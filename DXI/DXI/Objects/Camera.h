@@ -27,20 +27,6 @@ public:
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 
-	//// Setters
-	//void SetPosVector(const XMFLOAT4 Vector)
-	//{
-	//	// set starting camera state
-	//	CameraMatrices.Position = Vector;
-
-	//	// build view matrix
-	//	XMVECTOR Pos	= XMLoadFloat4(&CameraMatrices.Position);
-	//	XMVECTOR Targ	= XMLoadFloat4(&CameraMatrices.Direction);
-	//	XMVECTOR Up		= XMLoadFloat4(&CameraMatrices.Up);
-	//	XMMATRIX LookAt = XMMatrixLookAtLH(Pos, Targ, Up);
-	//	XMStoreFloat4x4(&CameraMatrices.ViewMat, LookAt);
-	//}
-
 	// Getters
 	_NODISCARD inline const auto GetViewMatrix()
 	{
@@ -75,10 +61,10 @@ private:
 	};
 
 	//
-	float m_yaw;							// Relative to the +z axis.
-	float m_pitch;							// Relative to the xz plane.
-	float m_moveSpeed;						// Speed at which the camera moves, in units per second.
-	float m_turnSpeed;						// Speed at which the camera turns, in radians per second.
+	float Yaw;								// Relative to the y plane.
+	float Pitch;							// Relative to the xz plane.
+	float MoveSpeed;						// Speed at which the camera moves, in units per second.
+	float TurnSpeed;						// Speed at which the camera turns, in radians per second.
 
 	// Matrices
 	CameraMatrices	CameraMatrices;
