@@ -200,11 +200,18 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	//DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
 	//DXLOG("RoX %f | Z %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z)
 
-	const auto LHMatrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-											XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
-											XMLoadFloat4(&CameraMatrices.Up));			// Up
+	auto Matrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+									XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
+									XMLoadFloat4(&CameraMatrices.Up));			// Up
+	if constexpr (!LHCameraCoordinateSystem)
+	{
+		Matrix = XMMatrixLookToRH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+									XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
+									XMLoadFloat4(&CameraMatrices.Up));			// Up
+	}
 
-	XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
+	// Store View Mat
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, Matrix);
 }
 
 void Camera::OnKeyDown(WPARAM key)
@@ -235,9 +242,9 @@ void Camera::OnKeyDown(WPARAM key)
 	case VK_DOWN:
 		KeysPressed.down = true;
 		break;
-	case VK_ESCAPE:
-		Reset();
-		break;
+	//case VK_ESCAPE:
+	//	Reset();
+	//	break;
 	}
 }
 
