@@ -95,7 +95,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
 	// Objects properties, positions etc.
-	Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
+	//Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
 	//Cube.Transform(XMFLOAT3(0.f, 0.0f, 0.f));
 	Cube.Transform({ 0.0f, 0.1f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 1.f });
 
@@ -496,11 +496,23 @@ void D3D12App::Render()
 
 void D3D12App::Update(float DeltaTime)
 {
+	// Other Updates
+	step_timer.Tick(NULL);
+	if (CurrentFrameIdx % 509)
+	{
+		// Update window text with FPS value.
+		wchar_t fps[64];
+		swprintf_s(fps, L"%ufps", step_timer.GetFramesPerSecond());
+		//SetCustomWindowText(fps);
+		std::wstring WindowText		= L"My Window | FPS: ";
+		std::wstring WindowText2	= fps;
+		SetWindowText(Win32Proc::GetHwnd(), (WindowText + WindowText2).c_str());
+	}
+
 	// Camera matrices
-	const auto CameraViewMat	= Camera.GetViewMatrix();
-	const auto CameraProjMat	= Camera.GetProjMatrix();
-	XMMATRIX ViewMat			= XMLoadFloat4x4(&CameraViewMat); // load view matrix
-	XMMATRIX ProjMat			= XMLoadFloat4x4(&CameraProjMat); // load projection matrix
+	Camera.Update(static_cast<float>(step_timer.GetElapsedSeconds()));
+	const auto ViewMat	= Camera.GetViewMatrix();
+	const auto ProjMat	= Camera.GetProjMatrix();
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
@@ -540,10 +552,9 @@ void D3D12App::Update(float DeltaTime)
 	// Cube
 
 	// store cube1's world matrix
-	static float z_offset		= 0.01f;
-	static float x_rot_offset	= 0.01f;
-	//x_rot_offset += 0.01f;
-	Cube.Transform(DX_IDENTITY_TRANSFORM3, { x_rot_offset, x_rot_offset, 370.0f });
+	static float z_offset		= 0.0001f;
+	static float x_rot_offset	= 0.001f;
+	Cube.Transform(DX_IDENTITY_TRANSFORM3, { x_rot_offset, x_rot_offset, 0.0f });
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
 	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
@@ -555,7 +566,6 @@ void D3D12App::Update(float DeltaTime)
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 
 	// store plane's world matrix
-	/*Plane.Transform({ 0.0, 0.0f, 0.0f }, { -0.05f, 0.0f, 0.0f });*/
 	// create the wvp matrix and store in constant buffer
 	const auto PlaneWorldMatrix = Plane.GetWorldMatrix();
 	XMMATRIX MVPMatPlane		= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat;	// create wvp matrix
@@ -588,6 +598,16 @@ void D3D12App::Destroy()
 		));
 	}
 #endif // DEBUG_MODE
+}
+
+void D3D12App::OnKeyDown(UINT8 key)
+{
+	Camera.OnKeyDown(key);
+}
+
+void D3D12App::OnKeyUp(UINT8 key)
+{
+	Camera.OnKeyUp(key);
 }
 
 void D3D12App::InitializePerFrameResources()

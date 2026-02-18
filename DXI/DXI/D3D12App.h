@@ -1,5 +1,5 @@
 
-//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+//Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
 #ifndef D3D12_APP_H_INCLUDED
 #define D3D12_APP_H_INCLUDED
@@ -17,20 +17,16 @@
 #include "Objects/Cube.h"
 
 
-
 //APP
 class D3D12App
 {
 public:
-	D3D12App() = delete;
-	~D3D12App()
 
-	{
-		DXLOG("DESTRUCT")
-	}
-	//just do nothing, app takes care of deallocation with smart pointers
-
+	D3D12App()	= delete;
+	// Ctors & DCtors
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
+	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
+	
 
 	// Getters
 	[[nodiscard]] UINT											GetWindowWidth() const { return WindowWidth; }
@@ -43,6 +39,10 @@ public:
 	void Render();
 	void Update(float DeltaTime);
 	void Destroy();
+
+	// Movement of camera
+	void OnKeyDown(UINT8 key);
+	void OnKeyUp(UINT8 key);
 
 private:
 
@@ -124,6 +124,10 @@ private:
 	// Texture class
 	Texture TextureMegane;
 	Texture Texture;
+
+	// Timer
+	//Helpers::Timer timer;
+	Helpers::StepTimer step_timer;
 
 };
 

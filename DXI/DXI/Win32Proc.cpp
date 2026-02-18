@@ -69,6 +69,7 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	CurrentApp* dx12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	//DXASSERT(dx12App == nullptr, "Can not retrieve app pointer");
 
 	// create an instance of timer
 	//Helpers::Timer timer;
@@ -86,30 +87,16 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	// WM_KEYDOWN
 	case WM_KEYDOWN:
 	{
-		switch (wParam)
-		{
-		case VK_UP:
-		{
-			// Process the UP ARROW key.
-		}
-		return 0;
-
-		case VK_DOWN:
-		{
-			// Process the UP ARROW key.
-
-		}
-		return 0;
-		default: return 0;
-		}
+		dx12App->OnKeyDown(static_cast<UINT8>(wParam));
 	}
 	return 0;
-	// !WM_KEYDOWN
-	
+
+	//WM KEYUP
 	case WM_KEYUP:
 	{
-
+		dx12App->OnKeyUp(static_cast<UINT8>(wParam));
 	}
+
 	return 0;
 
 	case WM_MOUSEMOVE:
@@ -128,6 +115,7 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	case WM_DESTROY:
 	{
+		//dx12App->Destroy();
 		PostQuitMessage(0);
 	}
 	return 0;
@@ -136,4 +124,4 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	}
 	// Handle any messages.
 	return DefWindowProc(hWnd, message, wParam, lParam);
-	}
+}

@@ -19,33 +19,59 @@ public:
 	Camera(UINT ScreenWidth, UINT ScreenHeight);
 	~Camera()	= default;
 
-	// Setters
-	void SetPosVector(const XMFLOAT4 Vector)
-	{
-		// set starting camera state
-		CameraMatrices.CameraPosition = Vector;
+	// Logic
+	void Reset();
+	void Update(float ElapsedSeconds) noexcept;
 
-		// build view matrix
-		XMVECTOR Pos	= XMLoadFloat4(&CameraMatrices.CameraPosition);
-		XMVECTOR Targ	= XMLoadFloat4(&CameraMatrices.CameraTarget);
-		XMVECTOR Up		= XMLoadFloat4(&CameraMatrices.CameraUp);
-		XMMATRIX LookAt = XMMatrixLookAtLH(Pos, Targ, Up);
-		XMStoreFloat4x4(&CameraMatrices.CameraViewMat, LookAt);
-	}
+	// Movement
+	void OnKeyDown(WPARAM key);
+	void OnKeyUp(WPARAM key);
 
 	// Getters
-	_NODISCARD inline const auto GetViewMatrix() const
+	_NODISCARD inline const auto GetViewMatrix()
 	{
-		return CameraMatrices.CameraViewMat;
+		//return XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Position) + XMLoadFloat4(&CameraMatrices.Direction)),					// Dir/LookAt
+		//						XMVector4Normalize(XMLoadFloat4(&CameraMatrices.Up)));							// Up
+
+		return XMLoadFloat4x4(&CameraMatrices.ViewMat);
 	}
 	_NODISCARD inline const auto GetProjMatrix() const
 	{
-		return CameraMatrices.CameraProjMat;
+		return XMLoadFloat4x4(&CameraMatrices.ProjMat);						// Proj mat
 	}
 
 private:
+
+	void ConstructViewMatrix(const XMFLOAT4 Pos, 
+							const XMFLOAT4 Dir,
+							const XMFLOAT4 Up, 
+							const XMFLOAT4 RotXYZW);
+	struct KeysPressed
+	{
+		bool w;
+		bool a;
+		bool s;
+		bool d;
+
+		bool left;
+		bool right;
+		bool up;
+		bool down;
+	};
+
+	//
+	float Yaw;								// Relative to the y plane.
+	float Pitch;							// Relative to the xz plane.
+	float MoveSpeed;						// Speed at which the camera moves, in units per second.
+	float TurnSpeed;						// Speed at which the camera turns, in radians per second.
+
 	// Matrices
 	CameraMatrices	CameraMatrices;
+
+	// Keys
+	KeysPressed KeysPressed;
+
 };
 
 #endif // D3D12_CAMERA_H_INCLUDED

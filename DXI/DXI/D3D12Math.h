@@ -42,13 +42,18 @@ constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObjec
 // Camera matrices
 struct alignas(256) CameraMatrices
 {
-	DirectX::XMFLOAT4X4 CameraProjMat;			// this will store our projection matrix
-	DirectX::XMFLOAT4X4 CameraViewMat;			// this will store our view matrix
+	DirectX::XMFLOAT4X4 ProjMat;			// this will store our projection matrix
+	DirectX::XMFLOAT4X4 ViewMat;			// this will store our view matrix
 
-	DirectX::XMFLOAT4	CameraPosition;			// this is our cameras position vector
-	DirectX::XMFLOAT4	CameraTarget;			// a vector describing the point in space our camera is looking at
-	DirectX::XMFLOAT4	CameraUp;				// the worlds up vector
+	DirectX::XMFLOAT4	Position;			// Position of the camera.
+	DirectX::XMFLOAT4	Direction;			// N | Direction of the camera.
+	DirectX::XMFLOAT4	Up;					// V | Up direction of the camera, typically < 0.0f, 1.0f, 0.0f >.
+	DirectX::XMFLOAT4	Right;				// U | Right vector of camera
 };
+
+static_assert((sizeof(CameraMatrices) % 256) == 0, "CameraMatrices size must be aligned to 256-bytes boudary");
+constexpr auto CameraMatricesSize		= sizeof(CameraMatrices);
+constexpr auto CameraMatricesAlignment	= alignof(CameraMatrices);
 
 // ObjectMatrices Matrices
 struct alignas(256) ObjectMatrices
