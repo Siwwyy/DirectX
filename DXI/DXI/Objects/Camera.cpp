@@ -1,9 +1,10 @@
 #include "Camera.h"
 
+// Global Constants
 static constexpr bool LHCameraCoordinateSystem = true;
 
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
-	: Yaw(0.0f)
+	: Yaw(90.0f)
 	, Pitch(0.0f)
 	, MoveSpeed(5.0f)
 	, TurnSpeed(XM_PIDIV2)
@@ -40,101 +41,32 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	CameraMatrices.Up			= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	CameraMatrices.Right		= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 
-	const auto LHMatrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
-											XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Forward/Target
-											XMLoadFloat4(&CameraMatrices.Up));			// Up
+	// Create Matrix LH or RH
+	auto Matrix = XMMatrixLookToLH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+									XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
+									XMLoadFloat4(&CameraMatrices.Up));			// Up
+	if constexpr (!LHCameraCoordinateSystem)
+	{
+		Matrix = XMMatrixLookToRH(XMLoadFloat4(&CameraMatrices.Position),		//	Pos
+									XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
+									XMLoadFloat4(&CameraMatrices.Up));			// Up
+	}
 
-	XMStoreFloat4x4(&CameraMatrices.ViewMat, LHMatrix);
-
-	//// Position Vector
-	//CameraMatrices.Position			= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
-
-	//// Direction Vector
-	//const auto CameraTarget			= XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	//const auto CameraDirection		= XMLoadFloat4(&CameraMatrices.Position) - XMLoadFloat4(&CameraTarget);
-	//XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(CameraDirection));
-	//// If we use Left-Handed Coordinate System, we must negate Camera Direction
-	//if constexpr (LHCameraCoordinateSystem)
-	//{
-	//	XMStoreFloat4(&CameraMatrices.Direction, XMVector4Normalize(XMVectorNegate(CameraDirection)));
-	//}
-
-
-	//// Right Vector
-	//const auto CameraUp				= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	//const auto CameraRight			= XMVector3Cross(XMLoadFloat4(&CameraUp), XMLoadFloat4(&CameraMatrices.Direction));
-	//XMStoreFloat4(&CameraMatrices.Right, XMVector4Normalize(CameraRight));
-
-	//// Up Vector
-	//XMStoreFloat4(&CameraMatrices.Up, XMVector3Cross(XMLoadFloat4(&CameraMatrices.Direction), XMLoadFloat4(&CameraMatrices.Right)));
-
-	//XMFLOAT4X4 ViewMatrix			= {};
-	//// First Row
-	//ViewMatrix.m[0][0]				= CameraMatrices.Right.x;
-	//ViewMatrix.m[0][1]				= CameraMatrices.Right.y;
-	//ViewMatrix.m[0][2]				= CameraMatrices.Right.z;
-	//ViewMatrix.m[0][3]				= 0;
-
-	//// Second Row
-	//ViewMatrix.m[1][0]				= CameraMatrices.Up.x;
-	//ViewMatrix.m[1][1]				= CameraMatrices.Up.y;
-	//ViewMatrix.m[1][2]				= CameraMatrices.Up.z;
-	//ViewMatrix.m[1][3]				= 0;
-
-	//// Third Row
-	//ViewMatrix.m[2][0]				= CameraMatrices.Direction.x;
-	//ViewMatrix.m[2][1]				= CameraMatrices.Direction.y;
-	//ViewMatrix.m[2][2]				= CameraMatrices.Direction.z;
-	//ViewMatrix.m[2][3]				= 0;
-
-	//// Fourth Row
-	//ViewMatrix.m[3][0]				= 0;
-	//ViewMatrix.m[3][1]				= 0;
-	//ViewMatrix.m[3][2]				= 0;
-	//ViewMatrix.m[3][3]				= 1;
-
-	//XMFLOAT4X4 TranslationMatrix = {};
-	//// First Row
-	//TranslationMatrix.m[0][0] = 1;
-	//TranslationMatrix.m[0][1] = 0;
-	//TranslationMatrix.m[0][2] = 0;
-	//TranslationMatrix.m[0][3] = -1.f * CameraMatrices.Position.x;
-
-	//// Second Row
-	//TranslationMatrix.m[1][0] = 0;
-	//TranslationMatrix.m[1][1] = 1;
-	//TranslationMatrix.m[1][2] = 0;
-	//TranslationMatrix.m[1][3] = -1.f * CameraMatrices.Position.y;
-
-	//// Third Row
-	//TranslationMatrix.m[2][0] = 0;
-	//TranslationMatrix.m[2][1] = 0;
-	//TranslationMatrix.m[2][2] = 1;
-	//TranslationMatrix.m[2][3] = -1.f * CameraMatrices.Position.z;
-
-	//// Fourth Row
-	//TranslationMatrix.m[3][0] = 0;
-	//TranslationMatrix.m[3][1] = 0;
-	//TranslationMatrix.m[3][2] = 0;
-	//TranslationMatrix.m[3][3] = 1;
-
-	//// Store ViewMat
-	//XMStoreFloat4x4(&CameraMatrices.ViewMat, XMMatrixTranspose(XMLoadFloat4x4(&ViewMatrix) * XMLoadFloat4x4(&TranslationMatrix)));
-	//const auto CompareMat = XMLoadFloat4x4(&CameraMatrices.ViewMat);
-	//const auto Result = XMLoadFloat4x4(&CameraMatrices.ViewMat) - ABC;
-	//const auto Result2 = XMLoadFloat4x4(&CameraMatrices.ViewMat) - ABC;
-	//ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+	// Store View Mat
+	XMStoreFloat4x4(&CameraMatrices.ViewMat, Matrix);
 }
 
 void Camera::Reset()
 {
-	Yaw		= 0.0f;
+	Yaw			= 0.0f;
 	Pitch		= 0.0f;
 	KeysPressed = {};
 }
 
 void Camera::Update(float ElapsedSeconds) noexcept
 {	
+	// TODO REFACTOR IT AT SOMETIME IN FUTURE
+
 	// Calculate the move vector in camera space.
 	const float MoveInterval	= MoveSpeed * ElapsedSeconds;
 	const auto MovementVector	= XMVectorSet(MoveInterval, MoveInterval, MoveInterval, 1.f);
@@ -194,12 +126,41 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	//////////////////////////////////////////////////////////////
 
 	// View Matrix contruction
-	ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, CameraMatrices.Up, XMFLOAT4(Helpers::ToRadians(Pitch), Helpers::ToRadians(Yaw), 0.0f, 0.0f));
+	//ConstructViewMatrix(CameraMatrices.Position, CameraMatrices.Direction, CameraMatrices.Up, XMFLOAT4(Helpers::ToRadians(Pitch), Helpers::ToRadians(Yaw), 0.0f, 0.0f));
 
+	// U V N
+	// U -> Right vector
+	// N -> Direction/Target vector
+	// V -> Up vector
+	auto U = XMFLOAT4{};
+	auto V = XMFLOAT4{};
+	auto N = XMFLOAT4{};
 
-	//DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
-	//DXLOG("RoX %f | Z %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z)
+	const XMFLOAT4 RotXYZW = XMFLOAT4(Helpers::ToRadians(Pitch), Helpers::ToRadians(Yaw), 0.0f, 0.0f);
 
+	// Normalize
+	XMStoreFloat4(&N, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Direction)));
+	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Up)));
+
+	// Calculate right vector
+	XMStoreFloat4(&U, XMVector3Normalize(XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N))));
+
+	// Rotate direction vector
+	N.x = cosf(RotXYZW.y) * cosf(RotXYZW.x);
+	N.y = sinf(RotXYZW.x);
+	N.z = sinf(RotXYZW.y) * cosf(RotXYZW.x);
+
+	// Store NVU vectors
+	XMStoreFloat4(&CameraMatrices.Direction, XMLoadFloat4(&N));
+	XMStoreFloat4(&CameraMatrices.Up, XMLoadFloat4(&V));
+	XMStoreFloat4(&CameraMatrices.Right, XMLoadFloat4(&U));
+
+#if 1
+	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
+	DXLOG("Rot X %f | Y %f\n", Pitch, Yaw)
+#endif
+
+	// Create Matrix LH or RH
 	auto Matrix = XMMatrixLookToLH(	XMLoadFloat4(&CameraMatrices.Position),		//	Pos
 									XMLoadFloat4(&CameraMatrices.Direction),	// Dir/LookAt/Target
 									XMLoadFloat4(&CameraMatrices.Up));			// Up
@@ -338,6 +299,7 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	XMStoreFloat4(&CameraMatrices.Right,		XMLoadFloat4(&U));
 
 	return;
+#if 0 // TODO TO MAKE OWN VIEW MATRIX WORKING
 	// Rotation
 	// RotX | Pitch
 	auto RotateAroundXAxis = [](float ThetaRadians)
@@ -514,4 +476,6 @@ void Camera::ConstructViewMatrix(const XMFLOAT4 Pos, const XMFLOAT4 Dir, const X
 	const auto Result = XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&CameraMatrix), XMLoadFloat4x4(&TranslationMatrix)));
 	//const auto Result = XMMatrixTranspose(* );
 	XMStoreFloat4x4(&CameraMatrices.ViewMat, Result);
+
+#endif
 }
