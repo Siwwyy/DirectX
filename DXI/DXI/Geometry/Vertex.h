@@ -45,17 +45,28 @@ struct VertexPosition
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position data from the provided byte array at the specified offset.
+	/// Extracts position data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPosition structure populated with deserialized data.</returns>
-	static VertexPosition DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPosition DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPosition Vertex;
-		DXASSERT(Offset + sizeof(DirectX::XMFLOAT4) <= Data.size(), L"Offset exceeds buffer size for VertexPosition deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],	sizeof(DirectX::XMFLOAT4));
+		DXASSERT(sizeof(DirectX::XMFLOAT4) <= Data.size(), L"Insufficient buffer size for VertexPosition deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],	sizeof(DirectX::XMFLOAT4));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPosition));
+		std::memcpy(&Data[0],	&Position,	sizeof(DirectX::XMFLOAT4));
+		return Data;
 	}
 };
 
@@ -74,18 +85,30 @@ struct VertexPositionNormal
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position and normal data from the provided byte array at the specified offset.
+	/// Extracts position and normal data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPositionNormal structure populated with deserialized data.</returns>
-	static VertexPositionNormal DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPositionNormal DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPositionNormal Vertex;
-		DXASSERT(Offset + sizeof(VertexPositionNormal) <= Data.size(), L"Offset exceeds buffer size for VertexPositionNormal deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],								sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.Normal,		&Data[Offset + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
+		DXASSERT(sizeof(VertexPositionNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionNormal deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],							sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.Normal,		&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position and normal data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionNormal));
+		std::memcpy(&Data[0],							&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],	&Normal,	sizeof(DirectX::XMFLOAT4));
+		return Data;
 	}
 };
 
@@ -104,18 +127,30 @@ struct VertexPositionColor
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position and color data from the provided byte array at the specified offset.
+	/// Extracts position and color data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPositionColor structure populated with deserialized data.</returns>
-	static VertexPositionColor DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPositionColor DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPositionColor Vertex;
-		DXASSERT(Offset + sizeof(VertexPositionColor) <= Data.size(), L"Offset exceeds buffer size for VertexPositionColor deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],								sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.Color,		&Data[Offset + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
+		DXASSERT(sizeof(VertexPositionColor) <= Data.size(), L"Insufficient buffer size for VertexPositionColor deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],							sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.Color,		&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position and color data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionColor));
+		std::memcpy(&Data[0],							&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],	&Color,		sizeof(DirectX::XMFLOAT4));
+		return Data;
 	}
 };
 
@@ -137,19 +172,32 @@ struct VertexPositionColorNormal
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position, color, and normal data from the provided byte array at the specified offset.
+	/// Extracts position, color, and normal data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPositionColorNormal structure populated with deserialized data.</returns>
-	static VertexPositionColorNormal DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPositionColorNormal DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPositionColorNormal Vertex;
-		DXASSERT(Offset + sizeof(VertexPositionColorNormal) <= Data.size(), L"Offset exceeds buffer size for VertexPositionColorNormal deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],															sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.Color,		&Data[Offset + sizeof(DirectX::XMFLOAT4)],								sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.Normal,		&Data[Offset + sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
+		DXASSERT(sizeof(VertexPositionColorNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionColorNormal deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],														sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.Color,		&Data[sizeof(DirectX::XMFLOAT4)],								sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.Normal,		&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position, color, and normal data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionColorNormal));
+		std::memcpy(&Data[0],														&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],								&Color,		sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT4)],	&Normal,	sizeof(DirectX::XMFLOAT4));
+		return Data;
 	}
 };
 
@@ -168,18 +216,30 @@ struct VertexPositionTexcoord
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position and texture coordinate data from the provided byte array at the specified offset.
+	/// Extracts position and texture coordinate data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPositionTexcoord structure populated with deserialized data.</returns>
-	static VertexPositionTexcoord DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPositionTexcoord DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPositionTexcoord Vertex;
-		DXASSERT(Offset + sizeof(VertexPositionTexcoord) <= Data.size(), L"Offset exceeds buffer size for VertexPositionTexcoord deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],								sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.TexCoord,	&Data[Offset + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT2));
+		DXASSERT(sizeof(VertexPositionTexcoord) <= Data.size(), L"Insufficient buffer size for VertexPositionTexcoord deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],							sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.TexCoord,	&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT2));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position and texture coordinate data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionTexcoord));
+		std::memcpy(&Data[0],							&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],	&TexCoord,	sizeof(DirectX::XMFLOAT2));
+		return Data;
 	}
 };
 
@@ -201,32 +261,47 @@ struct VertexPositionTexcoordNormal
 
 	/// <summary>
 	/// Deserializes vertex data from a byte buffer.
-	/// Extracts position, texture coordinate, and normal data from the provided byte array at the specified offset.
+	/// Extracts position, texture coordinate, and normal data from the provided byte array.
 	/// </summary>
 	/// <param name="Data">Vector containing serialized vertex data.</param>
-	/// <param name="Offset">Starting offset in the byte buffer (default: 0).</param>
 	/// <returns>VertexPositionTexcoordNormal structure populated with deserialized data.</returns>
-	static VertexPositionTexcoordNormal DeserializeFromBytes(const std::vector<BYTE>& Data, size_t Offset = 0)
+	static VertexPositionTexcoordNormal DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		VertexPositionTexcoordNormal Vertex;
-		DXASSERT(Offset + sizeof(VertexPositionTexcoordNormal) <= Data.size(), L"Offset exceeds buffer size for VertexPositionTexcoordNormal deserialization");
-		std::memcpy(&Vertex.Position,	&Data[Offset],															sizeof(DirectX::XMFLOAT4));
-		std::memcpy(&Vertex.TexCoord,	&Data[Offset + sizeof(DirectX::XMFLOAT4)],								sizeof(DirectX::XMFLOAT2));
-		std::memcpy(&Vertex.Normal,		&Data[Offset + sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],	sizeof(DirectX::XMFLOAT4));
+		DXASSERT(sizeof(VertexPositionTexcoordNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionTexcoordNormal deserialization");
+		std::memcpy(&Vertex.Position,	&Data[0],														sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Vertex.TexCoord,	&Data[sizeof(DirectX::XMFLOAT4)],								sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Vertex.Normal,		&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],	sizeof(DirectX::XMFLOAT4));
 		return Vertex;
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position, texture coordinate, and normal data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionTexcoordNormal));
+		std::memcpy(&Data[0],														&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],								&TexCoord,	sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],	&Normal,	sizeof(DirectX::XMFLOAT4));
+		return Data;
 	}
 };
 
-// Array mapping VertexType enumeration values to their corresponding vertex structure sizes.
+/// <summary>
+/// Array mapping VertexType enumeration values to their corresponding vertex structure sizes.
+/// Used for memory allocation and validation during vertex buffer operations.
+/// </summary>
 const uint64_t VertexTypeSizes[] = {
-	sizeof(VertexPosition),					// VertexType::Position
-	sizeof(VertexPositionNormal),			// VertexType::PositionNormal
-	sizeof(VertexPositionColor),			// VertexType::PositionColor
-	sizeof(VertexPositionColorNormal),		// VertexType::PositionColorNormal
-	sizeof(VertexPositionTexcoord),			// VertexType::PositionTexcoord
-	sizeof(VertexPositionTexcoordNormal)	// VertexType::PositionTexcoordNormal
+	sizeof(VertexPosition),					/// VertexType::Position
+	sizeof(VertexPositionNormal),			/// VertexType::PositionNormal
+	sizeof(VertexPositionColor),			/// VertexType::PositionColor
+	sizeof(VertexPositionColorNormal),		/// VertexType::PositionColorNormal
+	sizeof(VertexPositionTexcoord),			/// VertexType::PositionTexcoord
+	sizeof(VertexPositionTexcoordNormal)	/// VertexType::PositionTexcoordNormal
 };
-
 
 /// <summary>
 /// Vertex descriptor class for managing vertex type information.
