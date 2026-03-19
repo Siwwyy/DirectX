@@ -4,9 +4,10 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "D3D12Math.h"
+#include "RenderGraph.h"
 
 #include <string>
-#include "RenderGraph.h"
+#include <pix3.h>
 
 // Namespaces
 using namespace Helpers;
@@ -95,8 +96,6 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
 	// Objects properties, positions etc.
-	//Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
-	//Cube.Transform(XMFLOAT3(0.f, 0.0f, 0.f));
 	Cube.Transform({ 0.0f, 0.1f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 1.f });
 
 	// Main ground plane
@@ -105,6 +104,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 
 void D3D12App::Initialize()
 {
+	HMODULE module = LoadLibrary(L"WinPixEventRuntime.dll");
 	// Initialize factory
 	UINT DxgiFactoryFlags = 0;
 
@@ -444,6 +444,7 @@ void D3D12App::Initialize()
 
 void D3D12App::Render()
 {
+
 	//Always BeginFrame first
 	BeginFrame();
 
@@ -481,6 +482,7 @@ void D3D12App::Render()
 	}
 
 	// Plane
+	PIXBeginEvent(CommandList.Get(), 0, L"Post-processing");
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
@@ -489,6 +491,7 @@ void D3D12App::Render()
 		CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw plane
 	}
+	PIXEndEvent(CommandList.Get());
 
 	//Always EndFrame last
 	EndFrame();

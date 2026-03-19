@@ -24,6 +24,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cassert>
+#include <cstdint>
 #include <wrl/client.h>
 
 #include "d3dx12.h"

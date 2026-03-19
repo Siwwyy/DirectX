@@ -11,8 +11,12 @@ SamplerState s1 : register(s0);
 
 float4 main(PSInput input) : SV_TARGET
 {
+    float3 light_color = float3(1,1,0);
+    float ambient_strength = 0.7;
+    float3 ambient = ambient_strength * light_color;
+
 #if USE_TEXCOORD
-    return t0.Sample(s1, input.tex_coord);
+    return float4(ambient, 1.0) * t0.Sample(s1, input.tex_coord);
 #else
     return input.color;
 #endif

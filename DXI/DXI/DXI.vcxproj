@@ -137,6 +137,7 @@
     <ClCompile Include="D3D12Math.cpp" />
     <ClCompile Include="D3D12ShaderCompiler.cpp" />
     <ClCompile Include="D3D12Texture.cpp" />
+    <ClCompile Include="Geometry\Vertex.cpp" />
     <ClCompile Include="JobLambda.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="D3D12Math.h" />
     <ClInclude Include="D3D12ShaderCompiler.h" />
     <ClInclude Include="D3D12Texture.h" />
+    <ClInclude Include="Geometry\Vertex.h" />
     <ClInclude Include="JobLambda.h" />
     <ClInclude Include="Objects\Camera.h" />
     <ClInclude Include="Objects\Cube.h" />
@@ -164,7 +166,17 @@
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets" Condition="Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets'))" />
+  </Target>
 </Project>

@@ -28,6 +28,17 @@ struct TexVertex
 	DirectX::XMFLOAT2 texcoord;
 };
 
+//
+//struct DXPosition
+//{
+//	DirectX::XMFLOAT4 Position;
+//};	
+//
+//struct DXColor
+//{
+//	DirectX::XMFLOAT4 Color;
+//};
+
 
 // Make sure Constant buffer is aligned to 256 bytes boundary
 // https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment

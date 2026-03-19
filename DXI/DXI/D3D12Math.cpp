@@ -33,6 +33,7 @@ void ObjectMatrices::Init(const DirectX::XMFLOAT4 InitRot,
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
     const auto PositionMat      = XMMatrixTranslation(InitPosition.x, InitPosition.y, InitPosition.z);
     const auto WorldMatrix      = ScaleMat * RotationMatXYZ * PositionMat; // TODO | Rethink if it should not go in reverse order like f(g(z(x))) <==> Pos(Rot(Scale(x)))
+
     // Store
     XMStoreFloat4(&this->ScaleVec,      ScaleVec);
     XMStoreFloat4(&this->RotVec,        RotationVec);	                                                                                // initialize object's rotation matrix to identity matrix
