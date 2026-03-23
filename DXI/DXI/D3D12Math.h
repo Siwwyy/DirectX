@@ -69,6 +69,7 @@ std::array<TexNormalVertex, N> MakeTexNormalVertexFromTexVertex(const TexVertex 
 		const DirectX::XMVECTOR VertexPos2 = DirectX::XMVectorSet(Vertex2.position.x, Vertex2.position.y, Vertex2.position.z, 0.0f);
 
 		// Calculate normal using cross product of two edges of the triangle (assuming vertices are defined in a consistent winding order) see per Primitive Vertex List and Indices List
+		// see https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/shading-normals.html
 		const DirectX::XMVECTOR Edge1	= DirectX::XMVectorSubtract(VertexPos1, VertexPos0);
 		const DirectX::XMVECTOR Edge2	= DirectX::XMVectorSubtract(VertexPos2, VertexPos0);
 		const DirectX::XMVECTOR Normal	= DirectX::XMVector3Normalize(DirectX::XMVector3Cross(Edge1, Edge2));
