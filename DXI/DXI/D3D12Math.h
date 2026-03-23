@@ -50,9 +50,9 @@ struct TexNormalVertex
 template<size_t N, size_t M>
 std::array<TexNormalVertex, N> MakeTexNormalVertexFromTexVertex(const TexVertex (&TexVertexArray)[N], const DWORD (&IndicesList)[M])
 {
-	constexpr size_t NumVertices = N; // Number of vertices in the input array
-	constexpr size_t NumVerticesPerTriangle = 3; // Number of vertices in the input array
-	constexpr size_t NumTriangles = M / NumVerticesPerTriangle; // Assuming each triangle is defined by 3 indices
+	constexpr size_t NumVertices			= N;	// Number of vertices in the input array
+	constexpr size_t NumVerticesPerTriangle = 3;	// Number of vertices in triangle (everytime its 3, but who knows?)
+	constexpr size_t NumTriangles			= M / NumVerticesPerTriangle; // Assuming each triangle is defined by 3 indices
 	std::array<TexNormalVertex, N> out{};
 
 	for(size_t i = 0; i < NumTriangles; ++i)
