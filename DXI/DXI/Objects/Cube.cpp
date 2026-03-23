@@ -78,7 +78,6 @@ static TexVertex VertexList[] =
     { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
 };
 
-static constexpr UINT VertexBufferSize = sizeof(VertexList);
 
 // a quad (2 triangles)
 static DWORD IndicesList[] =
@@ -108,8 +107,12 @@ static DWORD IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-static constexpr UINT IndexBufferSize  = sizeof(IndicesList);
-static constexpr UINT CubeNumIndices   = IndexBufferSize / sizeof(DWORD);
+static const auto TexNormalVertex       = MakeTexNormalVertexFromTexVertex(VertexList, IndicesList);
+
+static constexpr UINT VertexBufferSize  = sizeof(VertexList);
+
+static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
+static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
 
 // Ctors
 Cube::Cube()

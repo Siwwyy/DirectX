@@ -1,7 +1,7 @@
 #include "Plane.h"
 
 // Vertices/Index buffers etc.
-static TexVertex VertexList[] =
+static constexpr TexVertex VertexList[] =
 {
 
 	//{ -0.5f,  0.5f, 0.5f , 1.0f, 1.0f, 1.0f, 1.0f}, // top left
@@ -15,9 +15,7 @@ static TexVertex VertexList[] =
 	{  0.5f,  0.5f, 0.5f , 1.0f, 0.0f }  // top right
 };
 
-static constexpr UINT VertexBufferSize = sizeof(VertexList);
-
-static DWORD IndicesList[] =
+static constexpr DWORD IndicesList[] =
 {
 	//// front face
 	//0, 1, 2, // first triangle
@@ -52,8 +50,13 @@ static DWORD IndicesList[] =
 	///////////////////////////////
 };
 
-static constexpr UINT IndexBufferSize  = sizeof(IndicesList);
-static constexpr UINT PlaneNumIndices  = IndexBufferSize / sizeof(DWORD);
+
+
+static const auto TexNormalVertex               = MakeTexNormalVertexFromTexVertex(VertexList, IndicesList);
+static constexpr const UINT VertexBufferSize    = sizeof(VertexList);
+static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
+static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(DWORD);
+
 
 // Ctors
 Plane::Plane()
@@ -98,7 +101,7 @@ HRESULT Plane::Init(DXDevice* Device, DXGraphicsCommandList * CommandList)
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the vertex buffer.
         D3D12_SUBRESOURCE_DATA VertexData = {};
-        VertexData.pData = reinterpret_cast<UINT8*>(VertexList);
+        VertexData.pData = reinterpret_cast<const void*>(VertexList);
         VertexData.RowPitch = VertexBufferSize;
         VertexData.SlicePitch = VertexData.RowPitch;
 
@@ -138,7 +141,7 @@ HRESULT Plane::Init(DXDevice* Device, DXGraphicsCommandList * CommandList)
 
         // store index buffer in upload heap
         D3D12_SUBRESOURCE_DATA IndexData = {};
-        IndexData.pData = reinterpret_cast<UINT8*>(IndicesList); // pointer to our index array
+        IndexData.pData = reinterpret_cast<const void*>(IndicesList); // pointer to our index array
         IndexData.RowPitch = IndexBufferSize;						 // size of all our index buffer
         IndexData.SlicePitch = IndexData.RowPitch;					 // also the size of our index buffer
 
