@@ -6,6 +6,7 @@
 #include "../pch.h"
 #include "../D3D12Helpers.h"
 #include "../D3D12Math.h"
+#include "../Geometry/Vertex.h"
 
 class Primitive
 {
@@ -52,9 +53,7 @@ public:
 	}
 
 	// D3D12 Vertex data
-	ComPtr<DXResource>			VertexBufferUpload;
-	ComPtr<DXResource>			VertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;
+	VertexFactory				VertexFactory;
 
 	// D3D12 Index buffer data
 	ComPtr<DXResource>			IndexBufferUpload;

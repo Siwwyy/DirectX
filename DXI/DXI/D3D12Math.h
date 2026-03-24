@@ -7,9 +7,9 @@
 #include <array> // for fixed-size array helpers
 
 // Vertex attributes
-struct Vertex
+struct Vertex1
 {
-	constexpr Vertex(float x, float y, float z, float r, float g, float b, float a)
+	constexpr Vertex1(float x, float y, float z, float r, float g, float b, float a)
 		: position(x, y, z)
 		, color(r, g, b, a) {}
 
@@ -48,7 +48,7 @@ struct TexNormalVertex
 // Currently sets normals to (0,0,0) as a placeholder; replace normal computation as needed.
 // Function calculates Face Normals for each triangle.
 template<size_t N, size_t M>
-std::array<TexNormalVertex, N> MakeTexNormalVertexFromTexVertex(const TexVertex (&TexVertexArray)[N], const DWORD (&IndicesList)[M])
+std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexArray)[N], const DWORD (&IndicesList)[M])
 {
 	constexpr size_t NumVertices			= N;	// Number of vertices in the input array
 	constexpr size_t NumVerticesPerTriangle = 3;	// Number of vertices in triangle (everytime its 3, but who knows?)

@@ -1,7 +1,8 @@
 #include "Plane.h"
 
+
 // Vertices/Index buffers etc.
-static constexpr TexVertex VertexList[] =
+static const VertexPositionTexCoord VertexList[] =
 {
 
 	//{ -0.5f,  0.5f, 0.5f , 1.0f, 1.0f, 1.0f, 1.0f}, // top left
@@ -52,8 +53,12 @@ static constexpr DWORD IndicesList[] =
 
 
 
-static const auto TexNormalVertex               = MakeTexNormalVertexFromTexVertex(VertexList, IndicesList);
-static constexpr const UINT VertexBufferSize    = sizeof(VertexList);
+static const auto TexNormalVertexList           = ComputeFaceNormal< VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
+//static constexpr const UINT VertexBufferSize    = sizeof(VertexList);
+//static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
+//static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(DWORD);
+
+static constexpr const UINT VertexBufferSize    = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
 static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(DWORD);
 
@@ -78,45 +83,60 @@ HRESULT Plane::Init(DXDevice* Device, DXGraphicsCommandList * CommandList)
     // Set neccessary values
     SetNumIndices(PlaneNumIndices);
 
-    /***************************
-    ****** VERTEX BUFFER ******
-    ***************************/
+
+    //***************************
+    //****** VERTEX BUFFER ******
+    //***************************/
+
     {
-        constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-        constexpr auto StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-        // GPU Vertex
-        Helpers::VERTEX_HELPER VertexGPU(Device,
-            VertexBufferSize,
-            DX_HEAP_PROPERTY_DEFAULT,
-            D3D12_RESOURCE_STATE_COMMON,
-            L"VertexGPU");
+		VertexPositionTexCoordNormal VertexPTNList[std::size(VertexList)]{};
 
-        // Upload Vertex
-        Helpers::VERTEX_HELPER VertexUploadToGPU(Device,
-            VertexBufferSize,
-            DX_HEAP_PROPERTY_UPLOAD,
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            L"VertexUploadToGPU");
+        VertexInitData VertexInitData;
+		VertexInitData.Type             = VertexType::PositionTexcoordNormal;
+		VertexInitData.VertexBufferSize = VertexBufferSize;
 
-        // Copy data to the intermediate upload heap and then schedule a copy 
-        // from the upload heap to the vertex buffer.
-        D3D12_SUBRESOURCE_DATA VertexData = {};
-        VertexData.pData = reinterpret_cast<const void*>(VertexList);
-        VertexData.RowPitch = VertexBufferSize;
-        VertexData.SlicePitch = VertexData.RowPitch;
-
-        // Update Subresource
-        UpdateSubresources(CommandList, VertexGPU.GetPointer(), VertexUploadToGPU.GetPointer(), 0, 0, 1, &VertexData);
-
-        // transition the vertex buffer data from copy destination state to vertex buffer state
-        const auto VertexCmdListBarrier = CD3DX12_RESOURCE_BARRIER::Transition(VertexGPU.GetPointer(), StateBefore, StateAfter);
-        CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
-
-        // Release the resources
-        VertexBufferView = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
-        VertexBuffer = VertexGPU.ReleaseResource();
-        VertexBufferUpload = VertexUploadToGPU.ReleaseResource();
+		//VertexFactory.Init(Device, CommandList, TexNormalVertexList, VertexBufferSize);
     }
+
+    ///***************************
+    //****** VERTEX BUFFER ******
+    //***************************/
+    //{
+    //    constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+    //    constexpr auto StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+    //    // GPU Vertex
+    //    Helpers::VERTEX_HELPER VertexGPU(Device,
+    //        VertexBufferSize,
+    //        DX_HEAP_PROPERTY_DEFAULT,
+    //        D3D12_RESOURCE_STATE_COMMON,
+    //        L"VertexGPU");
+
+    //    // Upload Vertex
+    //    Helpers::VERTEX_HELPER VertexUploadToGPU(Device,
+    //        VertexBufferSize,
+    //        DX_HEAP_PROPERTY_UPLOAD,
+    //        D3D12_RESOURCE_STATE_GENERIC_READ,
+    //        L"VertexUploadToGPU");
+
+    //    // Copy data to the intermediate upload heap and then schedule a copy 
+    //    // from the upload heap to the vertex buffer.
+    //    D3D12_SUBRESOURCE_DATA VertexData = {};
+    //    VertexData.pData = reinterpret_cast<const void*>(VertexList);
+    //    VertexData.RowPitch = VertexBufferSize;
+    //    VertexData.SlicePitch = VertexData.RowPitch;
+
+    //    // Update Subresource
+    //    UpdateSubresources(CommandList, VertexGPU.GetPointer(), VertexUploadToGPU.GetPointer(), 0, 0, 1, &VertexData);
+
+    //    // transition the vertex buffer data from copy destination state to vertex buffer state
+    //    const auto VertexCmdListBarrier = CD3DX12_RESOURCE_BARRIER::Transition(VertexGPU.GetPointer(), StateBefore, StateAfter);
+    //    CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
+
+    //    // Release the resources
+    //    VertexBufferView = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
+    //    VertexBuffer = VertexGPU.ReleaseResource();
+    //    VertexBufferUpload = VertexUploadToGPU.ReleaseResource();
+    //}
 
 
     /***************************

@@ -9,6 +9,7 @@ struct VSInput
 #else
     float4 color        : COLOR;
 #endif
+    float3 normal       : NORMAL;
 };
 
 // Pixel Shader input (and output of Vertex/Mesh shader)
@@ -20,4 +21,5 @@ struct PSInput
 #else
     float4 color        : COLOR;
 #endif
+    float3 normal       : NORMAL;
 };

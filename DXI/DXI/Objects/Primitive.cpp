@@ -2,9 +2,7 @@
 
 // Ctors
 Primitive::Primitive()
-    : VertexBufferUpload({})
-    , VertexBuffer({})
-    , VertexBufferView({})
+    : VertexFactory({})
     , IndexBufferUpload({})
     , IndexBuffer({})
     , IndexBufferView({})
@@ -15,15 +13,14 @@ Primitive::Primitive()
 Primitive::Primitive(const XMFLOAT4 InitRot,
     const XMFLOAT4 InitPosition,
     const XMFLOAT4 InitScale)
-    : VertexBufferUpload({})
-    , VertexBuffer({})
-    , VertexBufferView({})
+    : VertexFactory({})
     , IndexBufferUpload({})
     , IndexBuffer({})
     , IndexBufferView({})
     , NumIndices(0)
     , Matrices(InitRot, InitPosition, InitScale)
 { }
+
 
 // Functions
 HRESULT Primitive::Init(DXDevice* Device, DXGraphicsCommandList* CommandList)
@@ -85,7 +82,8 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const auto RotationMatZ     = XMMatrixRotationZ(Matrices.RotVec.z);
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
-    // create translation matrix                                                                               // initialize object's rotation matrix to identity matrix
+    // create translation matrix                                                                           
+    // initialize object's rotation matrix to identity matrix
     const auto PositionMat      = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
     
     // Create World Matrix, Scale * Rotation * Position

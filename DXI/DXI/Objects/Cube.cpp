@@ -107,12 +107,16 @@ static DWORD IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-static const auto TexNormalVertex       = MakeTexNormalVertexFromTexVertex(VertexList, IndicesList);
+//static const auto TexNormalVertexList   = CreateFaceNormal(VertexList, IndicesList);
 
 static constexpr UINT VertexBufferSize  = sizeof(VertexList);
 
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
 static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
+
+//static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
+//static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
+//static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
 
 // Ctors
 Cube::Cube()
@@ -157,7 +161,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the vertex buffer.
         D3D12_SUBRESOURCE_DATA VertexData = {};
-        VertexData.pData        = reinterpret_cast<UINT8*>(VertexList);
+        VertexData.pData        = reinterpret_cast<const void*>(VertexList);
         VertexData.RowPitch     = VertexBufferSize;
         VertexData.SlicePitch   = VertexData.RowPitch;
 
@@ -169,9 +173,9 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
 
         // Release the resources
-        VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
-        VertexBuffer        = VertexGPU.ReleaseResource();
-        VertexBufferUpload  = VertexUploadToGPU.ReleaseResource();
+        //VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
+        //VertexBuffer        = VertexGPU.ReleaseResource();
+        //VertexBufferUpload  = VertexUploadToGPU.ReleaseResource();
     }
 
 
@@ -197,7 +201,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
 
         // store index buffer in upload heap
         D3D12_SUBRESOURCE_DATA IndexData = {};
-        IndexData.pData         = reinterpret_cast<UINT8*>(IndicesList); // pointer to our index array
+        IndexData.pData         = reinterpret_cast<const void*>(IndicesList); // pointer to our index array
         IndexData.RowPitch      = IndexBufferSize;						 // size of all our index buffer
         IndexData.SlicePitch    = IndexData.RowPitch;					 // also the size of our index buffer
 

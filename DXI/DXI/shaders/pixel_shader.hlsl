@@ -16,7 +16,8 @@ float4 main(PSInput input) : SV_TARGET
     float3 ambient = ambient_strength * light_color;
 
 #if USE_TEXCOORD
-    return float4(ambient, 1.0) * t0.Sample(s1, input.tex_coord);
+    // return float4(ambient, 1.0) * t0.Sample(s1, input.tex_coord);
+    return float4(input.normal, 1.0);
 #else
     return input.color;
 #endif

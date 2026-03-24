@@ -21,8 +21,6 @@ public:
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
 private:
-
 };
-
 
 #endif // D3D12_PLANE_H_INCLUDED

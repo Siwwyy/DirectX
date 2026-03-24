@@ -18,5 +18,6 @@ PSInput main(VSInput input)
 #else
     output.color        = input.color;
 #endif
+    output.normal       = input.normal;
     return output;
 }
