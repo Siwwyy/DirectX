@@ -24,10 +24,10 @@ enum class VertexType : uint32_t
 	PositionColorNormal,
 
 	/// Position with texture coordinates (XMFLOAT4 + XMFLOAT2)
-	PositionTexcoord,
+	PositionTexCoord,
 
 	/// Position with texture coordinates and normal (XMFLOAT4 + XMFLOAT2 + XMFLOAT4)
-	PositionTexcoordNormal,
+	PositionTexCoordNormal,
 
 	/// Total number of vertex type options
 	VertexTypeCount

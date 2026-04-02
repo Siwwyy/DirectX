@@ -324,7 +324,7 @@ void D3D12App::Initialize()
 
 		// Create resources
 		// Vertex Buffer
-		auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT, D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
+		auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
 		auto VertexDescCPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"VertexBufferCPU");
 		auto VertexBufferGPU	= Graph.CreateBuffer(VertexDescGPU);
 		auto VertexBufferCPU	= Graph.CreateBuffer(VertexDescCPU);
@@ -471,27 +471,29 @@ void D3D12App::Render()
 	//}
 
 	// Cube
-	{
-		//CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		//Handle.Offset(1, IncrementDescriptorSize);
-		//CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		//CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
-		//CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		//CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
-		//CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
-	}
-
-	// Plane
-	PIXBeginEvent(CommandList.Get(), 0, L"Post-processing");
+	PIXBeginEvent(CommandList.Get(), 0, L"Cube Rendering");
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		Handle.Offset(1, IncrementDescriptorSize);
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
-		CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw plane
+		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
+		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
+		CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
 	}
 	PIXEndEvent(CommandList.Get());
+
+	//// Plane
+	//PIXBeginEvent(CommandList.Get(), 0, L"Plane Rendering");
+	//{
+	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
+	//	CommandList->IASetVertexBuffers(0, 1, &Plane.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	//	CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
+	//	CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw plane
+	//}
+	//PIXEndEvent(CommandList.Get());
 
 	//Always EndFrame last
 	EndFrame();
@@ -555,8 +557,11 @@ void D3D12App::Update(float DeltaTime)
 	// Cube
 
 	// store cube1's world matrix
-	static float z_offset		= 0.0001f;
-	static float x_rot_offset	= 0.001f;
+	//static float z_offset		= 0.0001f;
+	//static float x_rot_offset	= 0.001f;
+	static float z_offset		= 0.0000f;
+	static float x_rot_offset	= 0.000f;
+
 	Cube.Transform(DX_IDENTITY_TRANSFORM3, { x_rot_offset, x_rot_offset, 0.0f });
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
@@ -743,9 +748,9 @@ void D3D12App::InitializePSO()
 
 	D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 

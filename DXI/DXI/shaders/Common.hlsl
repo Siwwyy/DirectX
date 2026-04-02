@@ -3,13 +3,13 @@
 // Vertex Shader input
 struct VSInput
 {
-    float3 position     : POSITION;
+    float4 position     : POSITION;
 #if USE_TEXCOORD
     float2 tex_coord    : TEXCOORD;
 #else
     float4 color        : COLOR;
 #endif
-    float3 normal       : NORMAL;
+    nointerpolation float3 normal       : NORMAL;
 };
 
 // Pixel Shader input (and output of Vertex/Mesh shader)

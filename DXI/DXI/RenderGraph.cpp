@@ -1,4 +1,5 @@
 #include "RenderGraph.h"
+#include <pix3.h>
 
 // Usings
 using Helpers::ThrowIfFailed;
@@ -166,7 +167,9 @@ void RenderGraph::Execute()
 	for (std::size_t i = 0; i < Passes.size(); ++i)
 	{
 		auto Lambda = Passes[i];
+		//PIXBeginEvent(CommandList.Get(), 0, Lambda->JobName.c_str());
 		Lambda->Execute(Device.Get(), CommandList.Get());
+		//PIXEndEvent(CommandList.Get());
 	}
 
 	// Submit everything to GPU after collecting resources etc.

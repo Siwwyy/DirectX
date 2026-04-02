@@ -12,7 +12,7 @@ PSInput main(VSInput input)
 {
     PSInput output;
     //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
-    output.position     = mul(float4(input.position, 1.f), WorldViewProjectionMat4x4); 
+    output.position     = mul(input.position, WorldViewProjectionMat4x4); 
 #if USE_TEXCOORD
     output.tex_coord    = input.tex_coord;
 #else

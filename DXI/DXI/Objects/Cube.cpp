@@ -39,7 +39,46 @@
 //    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f },
 //};
 
-static TexVertex VertexList[] =
+//static TexVertex VertexList[] =
+//{
+//    // front face
+//    { -0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
+//    {  0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+//    { -0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+//    {  0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+//
+//    // right side face
+//    {  0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+//    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+//    {  0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+//    {  0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
+//
+//    // left side face
+//    { -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+//    { -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+//    { -0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+//    { -0.5f,  0.5f, -0.5f, 1.0f, 0.0f },
+//
+//    // back face
+//    {  0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+//    { -0.5f, -0.5f,  0.5f, 1.0f, 1.0f },
+//    {  0.5f, -0.5f,  0.5f, 0.0f, 1.0f },
+//    { -0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+//
+//    // top face
+//    { -0.5f,  0.5f, -0.5f, 0.0f, 1.0f },
+//    {  0.5f,  0.5f,  0.5f, 1.0f, 0.0f },
+//    {  0.5f,  0.5f, -0.5f, 1.0f, 1.0f },
+//    { -0.5f,  0.5f,  0.5f, 0.0f, 0.0f },
+//
+//    // bottom face
+//    {  0.5f, -0.5f,  0.5f, 0.0f, 0.0f },
+//    { -0.5f, -0.5f, -0.5f, 1.0f, 1.0f },
+//    {  0.5f, -0.5f, -0.5f, 0.0f, 1.0f },
+//    { -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
+//};
+
+static VertexPositionTexCoord VertexList[] =
 {
     // front face
     { -0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
@@ -107,16 +146,15 @@ static DWORD IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-//static const auto TexNormalVertexList   = CreateFaceNormal(VertexList, IndicesList);
 
-static constexpr UINT VertexBufferSize  = sizeof(VertexList);
-
-static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
-static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
-
-//static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
+//static constexpr UINT VertexBufferSize  = sizeof(VertexList);
 //static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
 //static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
+
+static const auto TexNormalVertexList   = ComputeFaceNormal< VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
+static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
+static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
+static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
 
 // Ctors
 Cube::Cube()
@@ -161,7 +199,7 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the vertex buffer.
         D3D12_SUBRESOURCE_DATA VertexData = {};
-        VertexData.pData        = reinterpret_cast<const void*>(VertexList);
+        VertexData.pData        = reinterpret_cast<const void*>(TexNormalVertexList.data());
         VertexData.RowPitch     = VertexBufferSize;
         VertexData.SlicePitch   = VertexData.RowPitch;
 
@@ -173,9 +211,9 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
         CommandList->ResourceBarrier(1, &VertexCmdListBarrier);
 
         // Release the resources
-        //VertexBufferView    = VertexGPU.CreateView(sizeof(TexVertex), VertexBufferSize);
-        //VertexBuffer        = VertexGPU.ReleaseResource();
-        //VertexBufferUpload  = VertexUploadToGPU.ReleaseResource();
+        VertexFactory.VertexBufferView      = VertexGPU.CreateView(VertexTypeSizes[static_cast<size_t>(VertexType::PositionTexCoordNormal)], VertexBufferSize);
+        VertexFactory.VertexBuffer          = VertexGPU.ReleaseResource();
+        VertexFactory.VertexBufferUpload    = VertexUploadToGPU.ReleaseResource();
     }
 
 
