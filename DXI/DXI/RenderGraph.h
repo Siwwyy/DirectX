@@ -34,8 +34,7 @@ public:
 	~RenderGraph() = default;
 
 	//Initializers functions
-	void InitializeDevice();
-	void InitializePerFrameResources();
+	void InitializeFrameResources();
 
 	// Sync point
 	void WaitForPreviousFrame();
@@ -75,17 +74,14 @@ public:
 	// Execute
 	void Execute();
 
-private:
+
+	void BeginFrame();
+	void EndFrame();
 
 	// Constants / Misc
 	const UINT											BACK_BUFFER_COUNT				= 3;
 	const D3D12_COMMAND_LIST_TYPE						COMMAND_LIST_TYPE				= D3D12_COMMAND_LIST_TYPE_DIRECT;
 	const D3D_FEATURE_LEVEL								D3D12_FEATURE_LEVEL				= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
-
-
-	// D3D12 Window Properties
-	CD3DX12_VIEWPORT									ViewPort;
-	CD3DX12_RECT										ScissorRect;
 
 	// D3D12 Variables
 	ComPtr<DXFactory4>									Factory;
@@ -102,6 +98,11 @@ private:
 	// D3D12 SwapChain
 	ComPtr<IDXGISwapChain3>								SwapChain;
 	UINT												CurrentFrameIdx;
+
+	// D3D12 Frame Buffer Render Target
+	ComPtr<DXDescriptorHeap>							RtvHeap;
+	std::vector<ComPtr<DXResource>>						RenderTargets;
+	UINT												RtvIncrementDescriptorSize;
 
 	// Resources
 	std::vector<BufferRef>								Buffers;

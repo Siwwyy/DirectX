@@ -21,7 +21,7 @@ Buffer::Buffer(BufferDesc Desc)
 // InitializeUnderlayingResource
 void Buffer::InitializeUnderlayingResource(DXDevice * Device)
 {
-	const UINT BufferSize	= Desc.BytesPerElement * Desc.NumElements;
+	const UINT BufferSize = Desc.BytesPerElement * Desc.NumElements;
 	if (Desc.BufferType == BufferType::VertexBuffer)
 	{
 		Helpers::VERTEX_HELPER Vertex(Device,

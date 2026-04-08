@@ -55,6 +55,8 @@ private:
 	void WaitForPreviousFrame();
 	void FlushCommandList();
 
+public:
+
 	// Window Properties
 	UINT												WindowWidth;
 	UINT												WindowHeight;
