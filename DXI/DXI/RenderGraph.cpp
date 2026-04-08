@@ -1,4 +1,5 @@
 #include "RenderGraph.h"
+#include <pix3.h>
 
 // Usings
 using Helpers::ThrowIfFailed;
@@ -7,10 +8,6 @@ using Helpers::ThrowIfFailed;
 //RenderGraph::~RenderGraph()
 //{
 //	// Clean resources
-//	for (std::size_t i = 0; i < Buffers.size(); ++i)
-//	{
-//		delete Buffers[i].first;
-//	}
 //
 //	// Close handle
 //	CloseHandle(FenceEvent);
@@ -38,56 +35,18 @@ using Helpers::ThrowIfFailed;
 RenderGraph::RenderGraph(ComPtr<DXDevice>& Device, ComPtr<DXGraphicsCommandList>& CommandList)
 	: Device(Device)
 	, CommandList(CommandList)
+	, CurrentFrameIdx(0)
 {
+	DXASSERT(Device, "Device can not be null for RenderGraph construction");
+
+	// If device is not null, initialize rest of resources needed to contruct the graph and execute passes
+	//InitializeFrameResources();
 }
 
-// Initializers
-void RenderGraph::InitializeDevice()
+void RenderGraph::InitializeFrameResources()
 {
-	// Initialize factory
-	UINT DxgiFactoryFlags = 0;
-
-#if DEBUG_MODE
-	// Enable the debug layer (requires the Graphics Tools "optional feature").
-	// NOTE: Enabling the debug layer after device creation will invalidate the active device.
-	{
-		ComPtr<ID3D12Debug3> DebugController;
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&DebugController))))
-		{
-			DebugController->EnableDebugLayer();
-			DebugController->SetEnableGPUBasedValidation(true);
-
-			// Enable additional debug layers.
-			DxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-		}
-	}
-#endif // DEBUG_MODE
-
-	//Create dxgi factory
-	ThrowIfFailed(CreateDXGIFactory2(DxgiFactoryFlags, IID_PPV_ARGS(&Factory)));
-
-	// Initialize device
-	const ComPtr<IDXGIAdapter1> HardwareAdapter = Helpers::GetAdapter(Factory, D3D12_FEATURE_LEVEL);
-	ThrowIfFailed(D3D12CreateDevice(
-		HardwareAdapter.Get(),
-		D3D12_FEATURE_LEVEL,
-		IID_PPV_ARGS(&Device)
-	));
-
-#if DEBUG_MODE
-	{
-		ComPtr<ID3D12InfoQueue> InfoQueue;
-		ThrowIfFailed(Device->QueryInterface(IID_PPV_ARGS(&InfoQueue)));
-		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-		InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-	}
-#endif // DEBUG_MODE
-}
-
-void RenderGraph::InitializePerFrameResources()
-{
-	DXASSERT(Device, "Device can not be null for Initialization per frame resources");
+	// Get handle for 0th descriptor in heap
+	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Resize arrays/vectors per frame buffer resources
 	// Fences
@@ -96,6 +55,8 @@ void RenderGraph::InitializePerFrameResources()
 	FenceValue.resize(BACK_BUFFER_COUNT);
 	// Command allocators
 	CommandAllocators.resize(BACK_BUFFER_COUNT);
+	// Render Targets
+	RenderTargets.resize(BACK_BUFFER_COUNT);
 
 	// Loop
 	for (UINT i = 0; i < BACK_BUFFER_COUNT; ++i)
@@ -105,6 +66,18 @@ void RenderGraph::InitializePerFrameResources()
 
 		//Create the command allocators
 		ThrowIfFailed(Device->CreateCommandAllocator(COMMAND_LIST_TYPE, IID_PPV_ARGS(&CommandAllocators[i])));
+
+		// Render target creation
+		{
+			// Get pointer to swapChain buffer
+			ThrowIfFailed(SwapChain->GetBuffer(i, IID_PPV_ARGS(&RenderTargets[i])));
+
+			// Create RenderTargetView 
+			Device->CreateRenderTargetView(RenderTargets[i].Get(), nullptr, RtvHandle);
+
+			// Offsets the rtv handle by descriptor size -> new_rtvHandle = rtvHandle + 1 * rtvDescriptorSize
+			RtvHandle.Offset(1, RtvIncrementDescriptorSize);
+		}
 	}
 }
 
@@ -163,15 +136,66 @@ void RenderGraph::Execute()
 		Resource->InitializeUnderlayingResource(Device.Get());
 	}
 
+	//// Begin Frame
+	//BeginFrame();
+
+	// Execute Passes
 	for (std::size_t i = 0; i < Passes.size(); ++i)
 	{
 		auto Lambda = Passes[i];
+		PIXBeginEvent(CommandList.Get(), 0, Lambda->JobName.c_str());
 		Lambda->Execute(Device.Get(), CommandList.Get());
+		PIXEndEvent(CommandList.Get());
 	}
+
+	//// End Frame
+	//EndFrame();
 
 	// Submit everything to GPU after collecting resources etc.
 	//WaitForPreviousFrame();
 
 	// Delete all the resources
 	Buffers.clear();
+}
+
+
+void RenderGraph::BeginFrame()
+{
+	// Reset previously used command list and command allocator
+	ThrowIfFailed(CommandAllocators[CurrentFrameIdx]->Reset());
+	//ThrowIfFailed(CommandList->Reset(CommandAllocators[CurrentFrameIdx].Get(), PipelineState.Get()));
+
+	// Get Current Frame index 
+	CurrentFrameIdx = SwapChain->GetCurrentBackBufferIndex();
+
+	// Indicate that the back buffer will be used as a render target.
+	const CD3DX12_RESOURCE_BARRIER BarrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &BarrierPresentToRTV);
+
+	//// Set necessary state.
+	//CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	//CommandList->RSSetViewports(1, &ViewPort);
+	//CommandList->RSSetScissorRects(1, &ScissorRect);
+	//CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	//// get a handle to the depth/stencil buffer
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE DsvHandle(DsvHeap->GetCPUDescriptorHandleForHeapStart());
+	//CommandList->ClearDepthStencilView(DsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// SV TARGET
+	constexpr float ClearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), CurrentFrameIdx, RtvIncrementDescriptorSize);
+	//CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
+	CommandList->ClearRenderTargetView(RtvHandle, ClearColor, 0, nullptr);
+}
+
+void RenderGraph::EndFrame()
+{
+	// Indicate that the back buffer will now be used to present.
+	const CD3DX12_RESOURCE_BARRIER BarrierRTVToPresent = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	CommandList->ResourceBarrier(1, &BarrierRTVToPresent);
+	// Close the command list and submit it to the GPU.
+	ThrowIfFailed(CommandList->Close());
+	ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
+	CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }

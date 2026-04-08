@@ -4,9 +4,10 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "D3D12Math.h"
+#include "RenderGraph.h"
 
 #include <string>
-#include "RenderGraph.h"
+#include <pix3.h>
 
 // Namespaces
 using namespace Helpers;
@@ -95,9 +96,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
 	// Objects properties, positions etc.
-	//Camera.SetPosVector(XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0));
-	//Cube.Transform(XMFLOAT3(0.f, 0.0f, 0.f));
-	Cube.Transform({ 0.0f, 0.1f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.5f, 0.5f, 1.f });
+	Cube.Transform({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
 
 	// Main ground plane
 	Plane.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
@@ -105,6 +104,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 
 void D3D12App::Initialize()
 {
+	HMODULE module = LoadLibrary(L"WinPixEventRuntime.dll");
 	// Initialize factory
 	UINT DxgiFactoryFlags = 0;
 
@@ -305,15 +305,20 @@ void D3D12App::Initialize()
 		SquareMatrices.RotVec	= RotateTransform;
 		XMStoreFloat4(&SquareMatrices.PositionVec, PositionNew);
 
-		// create translation matrix
-		const auto PositionMat = XMMatrixTranslation(
-			SquareMatrices.PositionVec.x, 
-			SquareMatrices.PositionVec.y, 
-			SquareMatrices.PositionVec.z);
+		// create translation matrix                                                                           
+		const auto TranslationMat = XMMatrixTranslation(SquareMatrices.PositionVec.x, SquareMatrices.PositionVec.y, SquareMatrices.PositionVec.z);
+
+		// Create World Matrix, Rotation * Position
+		{
+			const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
+			XMStoreFloat4x4(&SquareMatrices.ScaleRotMat, ScaleRotMat);
+		}
 
 		// Create World Matrix, Scale * Rotation * Position
-		const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
-		XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMatrix);
+		{
+			const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
+			XMStoreFloat4x4(&SquareMatrices.WorldMat, ScaleRotTranslationMat);
+		}
 	}
 	/////////
 
@@ -324,7 +329,7 @@ void D3D12App::Initialize()
 
 		// Create resources
 		// Vertex Buffer
-		auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT, D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
+		auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
 		auto VertexDescCPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"VertexBufferCPU");
 		auto VertexBufferGPU	= Graph.CreateBuffer(VertexDescGPU);
 		auto VertexBufferCPU	= Graph.CreateBuffer(VertexDescCPU);
@@ -444,6 +449,7 @@ void D3D12App::Initialize()
 
 void D3D12App::Render()
 {
+
 	//Always BeginFrame first
 	BeginFrame();
 
@@ -470,25 +476,29 @@ void D3D12App::Render()
 	//}
 
 	// Cube
+	PIXBeginEvent(CommandList.Get(), 0, L"Cube Rendering");
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		Handle.Offset(1, IncrementDescriptorSize);
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Cube.IndexBufferView);
+		CommandList->IASetVertexBuffers(0, 1, &Cube.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&Cube.VertexFactory.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Cube.GetNumIndices(), 1, 0, 0, 0); // draw cube
 	}
+	PIXEndEvent(CommandList.Get());
 
 	// Plane
+	PIXBeginEvent(CommandList.Get(), 0, L"Plane Rendering");
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Plane.IndexBufferView);
+		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&Plane.VertexFactory.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw plane
 	}
+	PIXEndEvent(CommandList.Get());
 
 	//Always EndFrame last
 	EndFrame();
@@ -516,37 +526,37 @@ void D3D12App::Update(float DeltaTime)
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
-	// create xmvector for object world matrix
-	const auto ScaleMat			= XMMatrixScaling(SquareMatrices.ScaleVec.x, SquareMatrices.ScaleVec.y, SquareMatrices.ScaleVec.z);
-	const auto RotationMatX		= XMMatrixRotationX(SquareMatrices.RotVec.x);
-	const auto RotationMatY		= XMMatrixRotationY(SquareMatrices.RotVec.y);
-	const auto RotationMatZ		= XMMatrixRotationZ(SquareMatrices.RotVec.z);
-	const auto RotationMatXYZ	= RotationMatX * RotationMatY * RotationMatZ;
+	//// create xmvector for object world matrix
+	//const auto ScaleMat			= XMMatrixScaling(SquareMatrices.ScaleVec.x, SquareMatrices.ScaleVec.y, SquareMatrices.ScaleVec.z);
+	//const auto RotationMatX		= XMMatrixRotationX(SquareMatrices.RotVec.x);
+	//const auto RotationMatY		= XMMatrixRotationY(SquareMatrices.RotVec.y);
+	//const auto RotationMatZ		= XMMatrixRotationZ(SquareMatrices.RotVec.z);
+	//const auto RotationMatXYZ	= RotationMatX * RotationMatY * RotationMatZ;
 
-	// Offset of translation
-	const auto PositionOld = SquareMatrices.PositionVec;
-	const auto PositionNew = XMLoadFloat4(&PositionOld) + DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f); // no movement yet
+	//// Offset of translation
+	//const auto PositionOld = SquareMatrices.PositionVec;
+	//const auto PositionNew = XMLoadFloat4(&PositionOld) + DirectX::XMVectorSet(0.f, 0.f, 0.f, 0.f); // no movement yet
 
-	// create translation matrix      
-	XMStoreFloat4(&SquareMatrices.PositionVec, PositionNew);                                                                        // initialize object's rotation matrix to identity matrix
-	const auto PositionMat = XMMatrixTranslation(
-		SquareMatrices.PositionVec.x,
-		SquareMatrices.PositionVec.y,
-		SquareMatrices.PositionVec.z);
+	//// create translation matrix      
+	//XMStoreFloat4(&SquareMatrices.PositionVec, PositionNew);                                                                        // initialize object's rotation matrix to identity matrix
+	//const auto PositionMat = XMMatrixTranslation(
+	//	SquareMatrices.PositionVec.x,
+	//	SquareMatrices.PositionVec.y,
+	//	SquareMatrices.PositionVec.z);
 
-	// Create World Matrix, Scale * Rotation * Position
-	const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
-	XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMatrix);
+	//// Create World Matrix, Scale * Rotation * Position
+	//const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
+	//XMStoreFloat4x4(&SquareMatrices.WorldMat, WorldMatrix);
 
 
-	// update constant buffer for object
-	// create the wvp matrix and store in constant buffer
-	XMMATRIX MVPMat				= XMLoadFloat4x4(&SquareMatrices.WorldMat) * ViewMat * ProjMat; // create wvp matrix
-	XMMATRIX Transposed			= XMMatrixTranspose(MVPMat);									// must transpose wvp matrix for the gpu
-	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, Transposed);						// store transposed wvp matrix in constant buffer
+	//// update constant buffer for object
+	//// create the wvp matrix and store in constant buffer
+	//XMMATRIX MVPMat				= XMLoadFloat4x4(&SquareMatrices.WorldMat) * ViewMat * ProjMat; // create wvp matrix
+	//XMMATRIX Transposed			= XMMatrixTranspose(MVPMat);									// must transpose wvp matrix for the gpu
+	//XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, Transposed);						// store transposed wvp matrix in constant buffer
 
-	// copy our ConstantBuffer instance to the mapped constant buffer resource
-	memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
+	//// copy our ConstantBuffer instance to the mapped constant buffer resource
+	//memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 
 
 	// Cube
@@ -554,23 +564,32 @@ void D3D12App::Update(float DeltaTime)
 	// store cube1's world matrix
 	static float z_offset		= 0.0001f;
 	static float x_rot_offset	= 0.001f;
-	Cube.Transform(DX_IDENTITY_TRANSFORM3, { x_rot_offset, x_rot_offset, 0.0f });
+	////static float z_offset		= 0.0000f;
+	//static float x_rot_offset	= 0.000f;
+
+	Cube.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, 0.0f });
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
-	const auto CubeWorldMatrix	= Cube.GetWorldMatrix();
-	XMMATRIX MVPMatCube			= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
-	XMMATRIX TransposedCube		= XMMatrixTranspose(MVPMatCube); // must transpose wvp matrix for the gpu
-	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, TransposedCube); // store transposed wvp matrix in constant buffer
+	const auto CubeWorldMatrix				= Cube.GetWorldMatrix();
+	const auto CubeScaleRotMatrix			= Cube.GetScaleRotMatrix();
+	XMMATRIX MVPMatCube						= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
+	XMMATRIX TransposedCubeScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&CubeScaleRotMatrix));	// must transpose world matrix for the gpu
+	XMMATRIX TransposedMVPMatCube		= XMMatrixTranspose(MVPMatCube);						// must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCubeScaleRotMatrix);						// store transposed world matrix in constant buffer
+	XMStoreFloat4x4(&CbvPerObject.WorldToClip,	TransposedMVPMatCube);							// store transposed wvp matrix in constant buffer
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 
 	// store plane's world matrix
 	// create the wvp matrix and store in constant buffer
-	const auto PlaneWorldMatrix = Plane.GetWorldMatrix();
-	XMMATRIX MVPMatPlane		= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat;	// create wvp matrix
-	XMMATRIX TransposedPlane	= XMMatrixTranspose(MVPMatPlane);							// must transpose wvp matrix for the gpu
-	XMStoreFloat4x4(&CbvPerObject.WorldViewProjectionMat4x4, TransposedPlane);				// store transposed wvp matrix in constant buffer
+	const auto PlaneWorldMatrix				= Plane.GetWorldMatrix();
+	const auto PlaneScaleRotMatrix			= Plane.GetScaleRotMatrix();
+	XMMATRIX MVPMatPlane					= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat;	// create wvp matrix
+	XMMATRIX TransposedPlaneScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&PlaneScaleRotMatrix));		// must transpose wvp matrix for the gpu
+	XMMATRIX TransposedMVPMatPlane			= XMMatrixTranspose(MVPMatPlane);							// must transpose wvp matrix for the gpu
+	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedPlaneScaleRotMatrix);							// store transposed world matrix in constant buffer
+	XMStoreFloat4x4(&CbvPerObject.WorldToClip,	TransposedMVPMatPlane);							// store transposed wvp matrix in constant buffer
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
@@ -698,7 +717,8 @@ void D3D12App::InitalizeShaders()
 	// String arguments
 	//arguments.push_back(L"-enable-16bit-types");
 	//arguments.push_back(L"Qstrip_reflect");
-	//arguments.push_back(L"Qstrip_debug");
+	arguments.push_back(L"-Werror");
+	arguments.push_back(L"-Wconversion");
 	// Defines arguments
 	arguments.push_back(DXC_ARG_ALL_RESOURCES_BOUND);
 #if DEBUG_MODE
@@ -732,10 +752,17 @@ void D3D12App::InitializePSO()
 	//	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	//};
 
+	//D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
+	//{
+	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	//	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	//};
+
 	D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 

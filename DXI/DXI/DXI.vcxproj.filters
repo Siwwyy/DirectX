@@ -31,6 +31,12 @@
     <Filter Include="Source Files\Resources">
       <UniqueIdentifier>{c1f3a990-6e2b-4adb-9516-1264d9a1bd3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Geometry">
+      <UniqueIdentifier>{116c9ba9-cea3-4d4a-a46b-023e25f24d15}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
@@ -77,6 +83,9 @@
     </ClCompile>
     <ClCompile Include="Plane.cpp">
       <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Vertex.cpp">
+      <Filter>Source Files\Geometry</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -125,5 +134,11 @@
     <ClInclude Include="Plane.h">
       <Filter>Header Files\Objects</Filter>
     </ClInclude>
+    <ClInclude Include="Geometry\Vertex.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

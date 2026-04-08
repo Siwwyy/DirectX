@@ -6,6 +6,7 @@
 #include "../pch.h"
 #include "../D3D12Helpers.h"
 #include "../D3D12Math.h"
+#include "../Geometry/Vertex.h"
 
 class Primitive
 {
@@ -14,9 +15,9 @@ class Primitive
 public:
 
 	Primitive();
-	Primitive(const DirectX::XMFLOAT4 InitRot,
-			  const DirectX::XMFLOAT4 InitPosition,
-			  const XMFLOAT4 InitScale);
+	Primitive(const XMFLOAT3 InitRot,
+			const XMFLOAT3 InitPosition,
+			const XMFLOAT3 InitScale);
 	~Primitive() = default;
 
 	// Init
@@ -29,11 +30,15 @@ public:
 	}
 
 	// Main Transform of pritmitive
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM3,
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 	
 	// Getters
+	_NODISCARD inline const auto GetScaleRotMatrix() const
+	{
+		return Matrices.ScaleRotMat;
+	}
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
@@ -42,19 +47,13 @@ public:
 	{
 		return Matrices.PositionVec;
 	}
-	_NODISCARD inline const auto GetRotationMatrix() const
-	{
-		return Matrices.RotVec;
-	}
 	_NODISCARD inline const auto GetNumIndices() const
 	{
 		return NumIndices;
 	}
 
 	// D3D12 Vertex data
-	ComPtr<DXResource>			VertexBufferUpload;
-	ComPtr<DXResource>			VertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;
+	VertexFactory				VertexFactory;
 
 	// D3D12 Index buffer data
 	ComPtr<DXResource>			IndexBufferUpload;
@@ -62,23 +61,6 @@ public:
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
 private:
-
-	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
-	//{
-	//	XMStoreFloat4x4(&Matrices.WorldVec, Matrix);
-	//}
-
-	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
-	//{
-	//	const auto PositionVec = DirectX::XMVectorSet(Vector.x, Vector.y, Vector.z, 1.f);
-	//	XMStoreFloat4x4(&Matrices.PositionVec, XMMatrixTranslationFromVector(PositionVec));
-	//}
-
-	///* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
-	//{
-	//	XMStoreFloat4x4(&Matrices.RotVec, Matrix);
-	//}
-
 
 	// Matrices
 	ObjectMatrices				Matrices;

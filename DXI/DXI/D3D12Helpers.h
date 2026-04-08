@@ -49,7 +49,7 @@
 // logging to console | Curly brackets are for keeping MsgBuffer inside scope
 #define DXLOG(MESSAGE, ...)                                 \
         {                                                   \
-            char MsgBuffer[1024]{};                         \
+            char MsgBuffer[4096]{};                         \
             sprintf_s(MsgBuffer, MESSAGE, __VA_ARGS__);     \
             OutputDebugStringA(MsgBuffer);                  \
         }                                                   \
@@ -100,11 +100,11 @@ const CD3DX12_HEAP_PROPERTIES	DX_HEAP_PROPERTY_CUSTOM     = CD3DX12_HEAP_PROPERT
 // TRANSFORMS
 #define DX_IDENTITY_SCALE3          XMFLOAT3(1.f, 1.f, 1.f)
 #define DX_IDENTITY_ROTATE3         XMFLOAT3(0.f, 0.f, 0.f)
-#define DX_IDENTITY_TRANSFORM3      XMFLOAT3(0.f, 0.f, 0.f)
+#define DX_IDENTITY_TRANSLATE3      XMFLOAT3(0.f, 0.f, 0.f)
 
 #define DX_IDENTITY_SCALE4          XMFLOAT4(1.f, 1.f, 1.f, 1.f)
 #define DX_IDENTITY_ROTATE4         XMFLOAT4(0.f, 0.f, 0.f, 1.f)
-#define DX_IDENTITY_TRANSFORM4      XMFLOAT4(0.f, 0.f, 0.f, 1.f)
+#define DX_IDENTITY_TRANSLATE4      XMFLOAT4(0.f, 0.f, 0.f, 1.f)
 
 
 /***************************
