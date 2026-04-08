@@ -88,5 +88,3 @@ HRESULT Plane::Init(DXDevice* Device, DXGraphicsCommandList * CommandList)
 
     return hr;
 }
-
-

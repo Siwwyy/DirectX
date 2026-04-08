@@ -22,25 +22,25 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
 {
     // NOTE! Scale should be first always, then rotate and then translate
 
-// NOTE! TODO! If rotatio if e.g., 720 degrees, there is no need
-// to rotate object twice. Based on assumption, if we set rotation
-// bigger than 360 degrees, do:
+    // NOTE! TODO! If rotatio if e.g., 720 degrees, there is no need
+    // to rotate object twice. Based on assumption, if we set rotation
+    // bigger than 360 degrees, do:
     const auto SubtractRotation = [](float Rotation) -> float
+    {
+        constexpr auto MaxRotation = 360.f;
+        auto NewRotation = Rotation;
+        if (Rotation > 360.f)
         {
-            constexpr auto MaxRotation = 360.f;
-            auto NewRotation = Rotation;
-            if (Rotation > 360.f)
-            {
-                // 780 degrees of rotation / 360 ~= 2.16(6)
-                // 2 * 360 = 720
-                // 780 - 720 = 60
-                // Final rotation should be 60 degrees only!
-                UINT Multiplier = Rotation / MaxRotation;
-                UINT MultipliedRotation = MaxRotation * Multiplier;
-                NewRotation = Rotation - MultipliedRotation;
-            }
-            return NewRotation;
-        };
+            // 780 degrees of rotation / 360 ~= 2.16(6)
+            // 2 * 360 = 720
+            // 780 - 720 = 60
+            // Final rotation should be 60 degrees only!
+            UINT Multiplier = Rotation / MaxRotation;
+            UINT MultipliedRotation = MaxRotation * Multiplier;
+            NewRotation = Rotation - MultipliedRotation;
+        }
+        return NewRotation;
+    };
 
     // set starting scale, rotation and position
     const auto ScaleVec = DirectX::XMVectorSet(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z, 1.f);
@@ -83,8 +83,6 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
         const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
         XMStoreFloat4x4(&this->WorldMat, ScaleRotTranslationMat);
     }
-
-
 
 #if 0
 
