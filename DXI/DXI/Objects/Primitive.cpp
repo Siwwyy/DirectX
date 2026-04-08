@@ -10,9 +10,9 @@ Primitive::Primitive()
     , Matrices()
 { }
 
-Primitive::Primitive(const XMFLOAT4 InitRot,
-    const XMFLOAT4 InitPosition,
-    const XMFLOAT4 InitScale)
+Primitive::Primitive(const XMFLOAT3 InitRot,
+    const XMFLOAT3 InitPosition,
+    const XMFLOAT3 InitScale)
     : VertexFactory({})
     , IndexBufferUpload({})
     , IndexBuffer({})
@@ -33,6 +33,10 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
     const XMFLOAT3 ScaleTransform)
 {
+
+    Matrices.Transform(TranslateTransform, RotateTransform, ScaleTransform);
+
+#if 0
     // NOTE! Scale should be first always, then rotate and then translate
 
     // NOTE! TODO! If rotatio if e.g., 720 degrees, there is no need
@@ -71,6 +75,9 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const auto PositionOld          = XMLoadFloat4(&Matrices.PositionVec);
     const auto PositionNew          = PositionOld + PositionOffsetVec;
     
+    Matrices.
+
+
     // Store
     XMStoreFloat4(&Matrices.ScaleVec,       ScaleVec);
     XMStoreFloat4(&Matrices.RotVec,         RotationXYZNew);
@@ -83,10 +90,19 @@ void Primitive::Transform(const XMFLOAT3 TranslateTransform,
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
     // create translation matrix                                                                           
-    // initialize object's rotation matrix to identity matrix
-    const auto PositionMat      = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
+    const auto TranslationMat = XMMatrixTranslation(Matrices.PositionVec.x, Matrices.PositionVec.y, Matrices.PositionVec.z);
     
+    // Create World Matrix, Rotation * Position
+    {
+        const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
+        XMStoreFloat4x4(&Matrices.ScaleRotMat, ScaleRotMat);
+    }
+
     // Create World Matrix, Scale * Rotation * Position
-    const auto WorldMatrix = ScaleMat * RotationMatXYZ * PositionMat;
-    XMStoreFloat4x4(&Matrices.WorldMat, WorldMatrix);
+    {
+        const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
+        XMStoreFloat4x4(&Matrices.WorldMat, ScaleRotTranslationMat);
+    }
+
+#endif
 }

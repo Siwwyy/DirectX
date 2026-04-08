@@ -33,6 +33,7 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 															static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 
 															Near, 
 															Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
+	// TODO | DO REVERSE Z PROJECTION MATRIX
 	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
 
 	//// set starting camera state

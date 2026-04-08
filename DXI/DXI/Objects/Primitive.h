@@ -15,9 +15,9 @@ class Primitive
 public:
 
 	Primitive();
-	Primitive(const DirectX::XMFLOAT4 InitRot,
-			  const DirectX::XMFLOAT4 InitPosition,
-			  const XMFLOAT4 InitScale);
+	Primitive(const XMFLOAT3 InitRot,
+			const XMFLOAT3 InitPosition,
+			const XMFLOAT3 InitScale);
 	~Primitive() = default;
 
 	// Init
@@ -30,11 +30,15 @@ public:
 	}
 
 	// Main Transform of pritmitive
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM3,
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 	
 	// Getters
+	_NODISCARD inline const auto GetScaleRotMatrix() const
+	{
+		return Matrices.ScaleRotMat;
+	}
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
@@ -42,10 +46,6 @@ public:
 	_NODISCARD inline const auto GetPosVector() const
 	{
 		return Matrices.PositionVec;
-	}
-	_NODISCARD inline const auto GetRotationMatrix() const
-	{
-		return Matrices.RotVec;
 	}
 	_NODISCARD inline const auto GetNumIndices() const
 	{

@@ -113,11 +113,26 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 // https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
 struct alignas(256) ConstantBufferPerObject 
 {
-	DirectX::XMFLOAT4X4 WorldViewProjectionMat4x4;
+	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
+	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
 };
 static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
 constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
 constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
+
+// Constant buffer per Camera/World (View/Projection)
+struct alignas(256) ConstantBufferPerCamera
+{
+	//
+	//DirectX::XMFLOAT4X4 WorldToView;   // World * View
+	DirectX::XMFLOAT4X4 ViewToClip;    // View * Clip
+
+	//
+	//DirectX::XMFLOAT4X4 WorldToClip;   // World * View * Clip
+};
+static_assert((sizeof(ConstantBufferPerCamera) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
+constexpr auto ConstantBufferPerCameraSize		= sizeof(ConstantBufferPerCamera);
+constexpr auto ConstantBufferPerCameraAlignment = alignof(ConstantBufferPerCamera);
 
 // Camera matrices
 struct alignas(256) CameraMatrices
@@ -139,22 +154,23 @@ constexpr auto CameraMatricesAlignment	= alignof(CameraMatrices);
 struct alignas(256) ObjectMatrices
 {
 	ObjectMatrices();
-	ObjectMatrices(const DirectX::XMFLOAT4 InitRot,
-				   const DirectX::XMFLOAT4 InitPosition,
-				   const DirectX::XMFLOAT4 InitScale);
+	ObjectMatrices(const DirectX::XMFLOAT3 InitRot,
+				   const DirectX::XMFLOAT3 InitPosition,
+				   const DirectX::XMFLOAT3 InitScale);
 	~ObjectMatrices() = default;
 
 	// Membre variables
-	DirectX::XMFLOAT4	RotVec;				// this will keep track of our rotation for object
-	DirectX::XMFLOAT4	ScaleVec;			// scale vec
-	DirectX::XMFLOAT4	PositionVec;		// position vector
-	DirectX::XMFLOAT4X4 WorldMat;			// our world matrix (transformation matrix)
+	DirectX::XMFLOAT4	RotVec;								// this will keep track of our rotation for object
+	DirectX::XMFLOAT4	ScaleVec;							// scale vec
+	DirectX::XMFLOAT4	PositionVec;						// position vector
+	DirectX::XMFLOAT4X4 ScaleRotMat;						// our world matrix (transformation matrix scale+rot)
+	DirectX::XMFLOAT4X4 WorldMat;							// our world matrix (transformation matrix scale+rot+translation)
 	
-private:
 	// Init Function
-	void Init(const DirectX::XMFLOAT4 InitRot		= DX_IDENTITY_ROTATE4,
-			  const DirectX::XMFLOAT4 InitPosition	= DX_IDENTITY_TRANSFORM4,
-			  const DirectX::XMFLOAT4 InitScale		= DX_IDENTITY_SCALE4) noexcept;
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
+					const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
+					const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3) noexcept;
+
 };
 
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");

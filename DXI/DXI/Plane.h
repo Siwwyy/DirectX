@@ -12,9 +12,6 @@ class Plane : public Primitive
 public:
 
 	Plane();
-	Plane(const DirectX::XMFLOAT4 InitRot,
-		  const DirectX::XMFLOAT4 InitPosition,
-		  const XMFLOAT4 InitScale);
 	~Plane() = default;
 
 	// Init

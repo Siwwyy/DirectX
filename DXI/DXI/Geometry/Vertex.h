@@ -446,15 +446,20 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&I
 /// `auto init = Vertex::VertexInitData{ VertexType::Position, std::move(myByteBuffer) };`
 /// `vertex.Init(device, cmdList, std::move(init));`
 /// </summary>
+template<typename VertexStruct = VertexPosition>
 struct VertexInitData
 {
 	DISABLE_COPY(VertexInitData)
 
+	constexpr static size_t MaxVertexDataSize = 1024; // Maximum size of vertex data in bytes (adjust as needed)
+	constexpr static size_t MaxIndexDataSize = 1024;  // Maximum size of index data in bytes (adjust as needed)
 	// Make fields movable by removing const qualifiers.
 	// VertexBufferSize is kept in sync with VertexData.size() by helper ctor.
 	VertexType Type{ VertexType::Position };
 	size_t VertexBufferSize{ 0 };
-	std::vector<BYTE> VertexData;
+	size_t IndexBufferSize{ 0 };
+	std::array<VertexStruct, MaxVertexDataSize> VertexData{};
+	std::array<DWORD, MaxIndexDataSize> IndexData{};
 
 	// Default ctors/dctors
 	VertexInitData() noexcept = default;
@@ -495,7 +500,21 @@ public:
 	/// <param name="CommandList">Pointer to the graphics command list.</param>
 	/// <param name="VertexInitData">Vertex Initial Data, struct to fill and std::move().</param>
 	/// <returns>HRESULT indicating success or failure of initialization.</returns>
-	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList, VertexInitData InitData);
+	template<typename VertexStruct>
+	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList, VertexInitData<VertexStruct>&& InitData)
+	{
+		// HRESULT, just in case...
+		HRESULT hr = S_OK;
+		// Store vertex type
+		Type = InitData.Type;
+		// Create and upload vertex buffer
+		CreateAndUploadVertexBuffer(Device, CommandList, std::move(InitData.VertexData), InitData.VertexBufferSize);
+		// Create and upload index buffer
+		CreateAndUploadIndexBuffer(Device, CommandList, std::move(InitData.IndexData), InitData.IndexBufferSize);
+
+		// Return
+		return hr;
+	}
 
 	/// <summary>
 	/// GPU-side upload resource (upload heap) that temporarily holds the vertex bytes on the CPU.
@@ -528,7 +547,110 @@ public:
 	///// </summary>
 	VertexType Type;
 
+	// Index Buffer
+	ComPtr<DXResource>			IndexBufferUpload;
+	ComPtr<DXResource>			IndexBuffer;
+	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
+
 private:
+	// Create + upload helpers (templated to accept std::array with the Vertex/Index type)
+	template<typename VertexStruct, size_t N>
+	void CreateAndUploadVertexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::array<VertexStruct, N>&& VertexData, size_t VertexBufferSize)
+	{
+		using Helpers::ThrowIfFailed;
+
+		// Basic validation
+		DXASSERT(Device != nullptr, "Device can not be null");
+		DXASSERT(CommandList != nullptr, "CommandList can not be null");
+		DXASSERT(VertexBufferSize > 0, "Vertex buffer size must be >0");
+		DXASSERT(VertexData.size() >= (VertexBufferSize / sizeof(VertexStruct)), "VertexData does not contain enough elements");
+
+		constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+		constexpr auto StateAfter  = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+
+		// GPU-side vertex resource (default heap)
+		Helpers::VERTEX_HELPER VertexGPU(
+			Device,
+			static_cast<UINT>(VertexBufferSize),
+			DX_HEAP_PROPERTY_DEFAULT,
+			D3D12_RESOURCE_STATE_COMMON,
+			L"VertexGPU");
+
+		// Upload (intermediate) resource (upload heap)
+		Helpers::VERTEX_HELPER VertexUploadToGPU(
+			Device,
+			static_cast<UINT>(VertexBufferSize),
+			DX_HEAP_PROPERTY_UPLOAD,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			L"VertexUploadToGPU");
+
+		// Prepare subresource data pointing to the contiguous array memory
+		D3D12_SUBRESOURCE_DATA VertexSubData = {};
+		VertexSubData.pData      = reinterpret_cast<const void*>(VertexData.data());
+		VertexSubData.RowPitch   = VertexBufferSize;
+		VertexSubData.SlicePitch = VertexSubData.RowPitch;
+
+		// Upload to GPU
+		UpdateSubresources(CommandList, VertexGPU.GetPointer(), VertexUploadToGPU.GetPointer(), 0, 0, 1, &VertexSubData);
+
+		// Transition to the vertex buffer state
+		const auto VertexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(VertexGPU.GetPointer(), StateBefore, StateAfter);
+		CommandList->ResourceBarrier(1, &VertexBarrier);
+
+		// Store views/resources on the factory
+		VertexBufferView   = VertexGPU.CreateView(static_cast<UINT>(VertexTypeSizes[static_cast<uint32_t>(Type)]), static_cast<UINT>(VertexBufferSize));
+		VertexBuffer       = VertexGPU.ReleaseResource();
+		VertexBufferUpload = VertexUploadToGPU.ReleaseResource();
+	}
+
+	template<typename IndexType, size_t N>
+	void CreateAndUploadIndexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::array<IndexType, N>&& IndexData, size_t IndexBufferSize)
+	{
+		using Helpers::ThrowIfFailed;
+
+		// Basic validation
+		DXASSERT(Device != nullptr, "Device can not be null");
+		DXASSERT(CommandList != nullptr, "CommandList can not be null");
+		DXASSERT(IndexBufferSize > 0, "Index buffer size must be >0");
+		DXASSERT(IndexData.size() >= (IndexBufferSize / sizeof(IndexType)), "IndexData does not contain enough elements");
+
+		constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+		constexpr auto StateAfter  = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+
+		// GPU-side index resource (default heap)
+		Helpers::INDEX_HELPER IndexGPU(
+			Device,
+			static_cast<UINT>(IndexBufferSize),
+			DX_HEAP_PROPERTY_DEFAULT,
+			D3D12_RESOURCE_STATE_COMMON,
+			L"IndexGPU");
+
+		// Upload (intermediate) resource (upload heap)
+		Helpers::INDEX_HELPER IndexUploadToGPU(
+			Device,
+			static_cast<UINT>(IndexBufferSize),
+			DX_HEAP_PROPERTY_UPLOAD,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			L"IndexUploadToGPU");
+
+		// Prepare subresource data pointing to the contiguous array memory
+		D3D12_SUBRESOURCE_DATA IndexSubData = {};
+		IndexSubData.pData      = reinterpret_cast<const void*>(IndexData.data());
+		IndexSubData.RowPitch   = IndexBufferSize;
+		IndexSubData.SlicePitch = IndexSubData.RowPitch;
+
+		// Upload to GPU
+		UpdateSubresources<1>(CommandList, IndexGPU.GetPointer(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexSubData);
+
+		// Transition to the index buffer state
+		const auto IndexBarrier = CD3DX12_RESOURCE_BARRIER::Transition(IndexGPU.GetPointer(), StateBefore, StateAfter);
+		CommandList->ResourceBarrier(1, &IndexBarrier);
+
+		// Store views/resources on the factory
+		IndexBufferView   = IndexGPU.CreateView(static_cast<UINT>(IndexBufferSize), DXGI_FORMAT_R32_UINT);
+		IndexBuffer       = IndexGPU.ReleaseResource();
+		IndexBufferUpload = IndexUploadToGPU.ReleaseResource();
+	}
 };
 
 #endif // D3D12_VERTEX_H_INCLUDED
