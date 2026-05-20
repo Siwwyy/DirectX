@@ -1,4 +1,4 @@
-#include "Cube.h"
+#include "Cube_BasePass.h"
 
 static VertexPositionTexCoord VertexList[] =
 {
@@ -68,23 +68,21 @@ static DWORD IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-using TypeOfVertex = VertexPositionTexCoordNormal;
+using TypeOfVertex                      = VertexPositionTexCoordNormal;
 static const auto TexNormalVertexList   = ComputeFaceNormal<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
 static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
 static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
 
 // Ctors
-Cube::Cube()
+Cube_BasePass::Cube_BasePass()
     : Primitive()
-{ }
-
-Cube::Cube(std::wstring Name)
-    : Primitive(Name)
-{ }
+{ 
+    Name = TEXT("Cube_BasePass");
+}
 
 // Functions
-HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
+HRESULT Cube_BasePass::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
 {
     using Helpers::ThrowIfFailed;
     HRESULT hr = Primitive::Init(Device, CommandList);

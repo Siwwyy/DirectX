@@ -13,7 +13,7 @@
 
 // Objects
 #include "Objects/Camera.h"
-#include "Plane.h"
+#include "Objects/Plane.h"
 #include "Objects/Cube.h"
 
 
@@ -114,10 +114,13 @@ public:
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 	ObjectMatrices										SquareMatrices;
-	Cube												Cube;
+	Cube												Cube1;
+	Cube												Cube2;
 	Plane												Plane;
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
+
+
 
 	//
 	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
@@ -130,6 +133,17 @@ public:
 	// Timer
 	//Helpers::Timer timer;
 	Helpers::StepTimer step_timer;
+
+
+	// NEW SECTION
+	std::vector<std::unique_ptr<Primitive>>				Primitives;
+
+	// CBV section for primitives
+	UINT8*												PrimitivesConstantBufferPtr;
+	ComPtr<DXResource>									PrimitiveCBV;	// constant buffer per primitive
+
+
+	void StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT PrimitiveIdx);
 
 };
 

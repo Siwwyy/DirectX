@@ -15,6 +15,7 @@ class Primitive
 public:
 
 	Primitive();
+	Primitive(std::wstring Name);
 	Primitive(const XMFLOAT3 InitRot,
 			const XMFLOAT3 InitPosition,
 			const XMFLOAT3 InitScale);
@@ -35,7 +36,7 @@ public:
 				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 	
 	// Getters
-	_NODISCARD inline const auto GetScaleRotMatrix() const
+	_NODISCARD inline const auto GetWorldMatrixNoTranslation() const
 	{
 		return Matrices.ScaleRotMat;
 	}
@@ -60,13 +61,16 @@ public:
 	ComPtr<DXResource>			IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
+	// Name of primitive (for debug purposes)
+	std::wstring				Name = TEXT("Primitive");
+
 private:
 
 	// Matrices
 	ObjectMatrices				Matrices;
 
 	// Number of indices
-	UINT NumIndices;
+	UINT						NumIndices;
 };
 
 #endif // D3D12_PRIMITIVE_H_INCLUDED

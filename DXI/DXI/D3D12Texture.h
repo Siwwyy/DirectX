@@ -128,10 +128,6 @@ public:
 
 	void Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TexturePath, ComPtr<DXDescriptorHeap> & MainDescriptorHeap, UINT& IncrementDescriptorSize, const UINT TextureIdx, std::wstring TextureName = L"TextureBuffer");
 
-	// Texture Handle
-	//D3D12_GPU_DESCRIPTOR_HANDLE GetTextureHandle(SIZE_T TextureIdx = 0);
-
-
 private:
 
 	ComPtr<DXResource>			TextureBuffer; // the resource heap containing our texture

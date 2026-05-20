@@ -120,6 +120,16 @@ static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer siz
 constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
 constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
+// Constant buffer per Primitive
+struct alignas(256) PrimitiveConstantBuffer
+{
+	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
+	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
+};
+static_assert((sizeof(PrimitiveConstantBuffer) % 256) == 0, "Primitive Constant Buffer size must be aligned to 256-bytes boudary");
+constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
+constexpr auto PrimitiveConstantBufferAlignment = alignof(PrimitiveConstantBuffer);
+
 // Constant buffer per Camera/World (View/Projection)
 struct alignas(256) ConstantBufferPerCamera
 {
@@ -163,8 +173,8 @@ struct alignas(256) ObjectMatrices
 	DirectX::XMFLOAT4	RotVec;								// this will keep track of our rotation for object
 	DirectX::XMFLOAT4	ScaleVec;							// scale vec
 	DirectX::XMFLOAT4	PositionVec;						// position vector
-	DirectX::XMFLOAT4X4 ScaleRotMat;						// our world matrix (transformation matrix scale+rot)
-	DirectX::XMFLOAT4X4 WorldMat;							// our world matrix (transformation matrix scale+rot+translation)
+	DirectX::XMFLOAT4X4 ScaleRotMat;						// transformation matrix scale+rot
+	DirectX::XMFLOAT4X4 WorldMat;							// transformation matrix scale+rot+translation
 	
 	// Init Function
 	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,

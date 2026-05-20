@@ -10,6 +10,16 @@ Primitive::Primitive()
     , Matrices()
 { }
 
+Primitive::Primitive(std::wstring Name):
+    VertexFactory({})
+    , IndexBufferUpload({})
+    , IndexBuffer({})
+    , IndexBufferView({})
+    , NumIndices(0)
+    , Matrices()
+	, Name(std::move(Name))
+{ }
+
 Primitive::Primitive(const XMFLOAT3 InitRot,
     const XMFLOAT3 InitPosition,
     const XMFLOAT3 InitScale)

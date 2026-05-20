@@ -43,17 +43,17 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
     };
 
     // set starting scale, rotation and position
-    const auto ScaleVec = DirectX::XMVectorSet(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z, 1.f);
-    const auto RotationVec = DirectX::XMVectorSet(SubtractRotation(RotateTransform.x), SubtractRotation(RotateTransform.y), SubtractRotation(RotateTransform.z), 1.f);
-    const auto PositionOffsetVec = DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f);
+    const auto ScaleVec             = DirectX::XMVectorSet(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z, 1.f);
+    const auto RotationVec          = DirectX::XMVectorSet(SubtractRotation(RotateTransform.x), SubtractRotation(RotateTransform.y), SubtractRotation(RotateTransform.z), 1.f);
+    const auto PositionOffsetVec    = DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f);
 
     // create rotation for x,y,z
-    const auto RotationXYZOld = XMLoadFloat4(&this->RotVec);
-    const auto RotationXYZNew = RotationXYZOld + RotationVec;
+    const auto RotationXYZOld       = XMLoadFloat4(&this->RotVec);
+    const auto RotationXYZNew       = RotationXYZOld + RotationVec;
 
     // Offset of translation
-    const auto PositionOld = XMLoadFloat4(&this->PositionVec);
-    const auto PositionNew = PositionOld + PositionOffsetVec;
+    const auto PositionOld          = XMLoadFloat4(&this->PositionVec);
+    const auto PositionNew          = PositionOld + PositionOffsetVec;
 
     // Store
     XMStoreFloat4(&this->ScaleVec,      ScaleVec);
@@ -64,15 +64,15 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
     const auto ScaleMat = XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
 
     // Create offset of rotation
-    const auto RotationMatX = XMMatrixRotationX(this->RotVec.x);
-    const auto RotationMatY = XMMatrixRotationY(this->RotVec.y);
-    const auto RotationMatZ = XMMatrixRotationZ(this->RotVec.z);
-    const auto RotationMatXYZ = RotationMatX * RotationMatY * RotationMatZ;
+    const auto RotationMatX     = XMMatrixRotationX(this->RotVec.x);
+    const auto RotationMatY     = XMMatrixRotationY(this->RotVec.y);
+    const auto RotationMatZ     = XMMatrixRotationZ(this->RotVec.z);
+    const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
     // create translation matrix                                                                           
     const auto TranslationMat = XMMatrixTranslation(this->PositionVec.x, this->PositionVec.y, this->PositionVec.z);
 
-    // Create World Matrix, Rotation * Position
+    // Create World Matrix, Scale * Rotation
     {
         const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
         XMStoreFloat4x4(&this->ScaleRotMat, ScaleRotMat);

@@ -37,6 +37,12 @@
     <Filter Include="Source Files\Geometry">
       <UniqueIdentifier>{116c9ba9-cea3-4d4a-a46b-023e25f24d15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Passes">
+      <UniqueIdentifier>{ef21707e-b0aa-4912-a2c5-eae05b29501d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Passes">
+      <UniqueIdentifier>{ac4855b8-05a2-4bee-84aa-e81b4f1c1642}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
@@ -81,11 +87,20 @@
     <ClCompile Include="JobLambda.cpp">
       <Filter>Source Files\RenderGraph</Filter>
     </ClCompile>
-    <ClCompile Include="Plane.cpp">
-      <Filter>Source Files\Objects</Filter>
-    </ClCompile>
     <ClCompile Include="Geometry\Vertex.cpp">
       <Filter>Source Files\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\BasePass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\LightPass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\PassBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Plane.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,11 +146,20 @@
     <ClInclude Include="JobLambda.h">
       <Filter>RenderGraph</Filter>
     </ClInclude>
-    <ClInclude Include="Plane.h">
-      <Filter>Header Files\Objects</Filter>
-    </ClInclude>
     <ClInclude Include="Geometry\Vertex.h">
       <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\BasePass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\LightPass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\PassBase.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Plane.h">
+      <Filter>Header Files\Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -74,14 +74,6 @@ void Texture::Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::
 	Device->CreateShaderResourceView(TextureBuffer.Get(), &SrvDesc, Handle);
 }
 
-//D3D12_GPU_DESCRIPTOR_HANDLE Texture::GetTextureHandle(SIZE_T TextureIdx)
-//{
-//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-//	// ptr = UINT64(INT64(ptr) + INT64(offsetInDescriptors) * INT64(descriptorIncrementSize));
-//	return Handle.Offset(TextureIdx, IncrementDescriptorSize);
-//}
-
-
 // Functions
 int LoadImageDataFromFile(SimpleSmartPointer<BYTE>& ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow)
 {

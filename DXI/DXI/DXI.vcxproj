@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -141,8 +141,12 @@
     <ClCompile Include="JobLambda.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
+    <ClCompile Include="Objects\Cube_BasePass.cpp" />
+    <ClCompile Include="Objects\Plane.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
-    <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Passes\BasePass.cpp" />
+    <ClCompile Include="Passes\LightPass.cpp" />
+    <ClCompile Include="Passes\PassBase.cpp" />
     <ClCompile Include="RenderGraph.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
@@ -159,9 +163,13 @@
     <ClInclude Include="JobLambda.h" />
     <ClInclude Include="Objects\Camera.h" />
     <ClInclude Include="Objects\Cube.h" />
+    <ClInclude Include="Objects\Cube_BasePass.h" />
+    <ClInclude Include="Objects\Plane.h" />
     <ClInclude Include="Objects\Primitive.h" />
+    <ClInclude Include="Passes\BasePass.h" />
+    <ClInclude Include="Passes\LightPass.h" />
+    <ClInclude Include="Passes\PassBase.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Plane.h" />
     <ClInclude Include="RenderGraph.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />

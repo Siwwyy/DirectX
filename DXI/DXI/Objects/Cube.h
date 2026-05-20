@@ -12,6 +12,7 @@ class Cube : public Primitive
 public:
 
 	Cube();
+	Cube(std::wstring Name);
 	~Cube() = default;
 
 	// Init

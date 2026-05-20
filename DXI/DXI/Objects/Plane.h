@@ -3,7 +3,7 @@
 #ifndef D3D12_PLANE_H_INCLUDED
 #define D3D12_PLANE_H_INCLUDED
 
-#include "Objects/Primitive.h"
+#include "Primitive.h"
 
 class Plane : public Primitive
 {
@@ -12,6 +12,7 @@ class Plane : public Primitive
 public:
 
 	Plane();
+	Plane(std::wstring Name);
 	~Plane() = default;
 
 	// Init
