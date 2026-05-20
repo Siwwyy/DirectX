@@ -282,82 +282,82 @@ void D3D12App::Initialize()
 	{
 		// Init
 
-		// Create resources
-		// Vertex Buffer
-		auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
-		auto VertexDescCPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"VertexBufferCPU");
-		auto VertexBufferGPU	= Graph.CreateBuffer(VertexDescGPU);
-		auto VertexBufferCPU	= Graph.CreateBuffer(VertexDescCPU);
+		//// Create resources
+		//// Vertex Buffer
+		//auto VertexDescGPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"VertexBufferGPU");
+		//auto VertexDescCPU		= BufferDesc::CreateBufferDesc(VertexBufferSize, 1, BufferType::VertexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"VertexBufferCPU");
+		//auto VertexBufferGPU	= Graph.CreateBuffer(VertexDescGPU);
+		//auto VertexBufferCPU	= Graph.CreateBuffer(VertexDescCPU);
 
-		// IndexBuffer
-		auto IndexDescGPU		= BufferDesc::CreateBufferDesc(IndexBufferSize, 1, BufferType::IndexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"IndexBufferGPU");
-		auto IndexDescCPU		= BufferDesc::CreateBufferDesc(IndexBufferSize, 1, BufferType::IndexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"IndexBufferCPU");
-		auto IndexBufferGPU		= Graph.CreateBuffer(IndexDescGPU);
-		auto IndexBufferCPU		= Graph.CreateBuffer(IndexDescCPU);
+		//// IndexBuffer
+		//auto IndexDescGPU		= BufferDesc::CreateBufferDesc(IndexBufferSize, 1, BufferType::IndexBuffer, DX_HEAP_PROPERTY_DEFAULT,	D3D12_RESOURCE_STATE_COMMON,		L"IndexBufferGPU");
+		//auto IndexDescCPU		= BufferDesc::CreateBufferDesc(IndexBufferSize, 1, BufferType::IndexBuffer, DX_HEAP_PROPERTY_UPLOAD,	D3D12_RESOURCE_STATE_GENERIC_READ,	L"IndexBufferCPU");
+		//auto IndexBufferGPU		= Graph.CreateBuffer(IndexDescGPU);
+		//auto IndexBufferCPU		= Graph.CreateBuffer(IndexDescCPU);
 
-		// AddPass
-		Graph.AddPass(TEXT("VertexSquare"), {&VertexBufferGPU, &VertexBufferCPU}, [=, &VertexBufferGPU, &VertexBufferCPU](DXDevice * Device, DXGraphicsCommandList * CommandList)
-		{
-			/***************************
-			****** VERTEX BUFFER ******
-			***************************/
-			constexpr const auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
-			constexpr const auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-			// Copy data to the intermediate upload heap and then schedule a copy 
-			// from the upload heap to the vertex buffer.
-			// store vertex buffer in upload heap
-			D3D12_SUBRESOURCE_DATA	VertexData = {};
-			VertexData.pData		= reinterpret_cast<UINT8*>(CubeVertices);
-			VertexData.RowPitch		= VertexBufferSize;
-			VertexData.SlicePitch	= VertexData.RowPitch;
+		//// AddPass
+		//Graph.AddPass(TEXT("VertexSquare"), {&VertexBufferGPU, &VertexBufferCPU}, [=, &VertexBufferGPU, &VertexBufferCPU](DXDevice * Device, DXGraphicsCommandList * CommandList)
+		//{
+		//	/***************************
+		//	****** VERTEX BUFFER ******
+		//	***************************/
+		//	constexpr const auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
+		//	constexpr const auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		//	// Copy data to the intermediate upload heap and then schedule a copy 
+		//	// from the upload heap to the vertex buffer.
+		//	// store vertex buffer in upload heap
+		//	D3D12_SUBRESOURCE_DATA	VertexData = {};
+		//	VertexData.pData		= reinterpret_cast<UINT8*>(CubeVertices);
+		//	VertexData.RowPitch		= VertexBufferSize;
+		//	VertexData.SlicePitch	= VertexData.RowPitch;
 
-			//PIXBeginEvent(CommandList.Get(), 0, L"Copy vertex buffer data to default resource...");
+		//	//PIXBeginEvent(CommandList.Get(), 0, L"Copy vertex buffer data to default resource...");
 
-			// transition 
-			RenderGraph::TransitionBarrier(CommandList, &VertexBufferGPU, StateBefore);
+		//	// transition 
+		//	RenderGraph::TransitionBarrier(CommandList, &VertexBufferGPU, StateBefore);
 
-			// Update Subresource
-			UpdateSubresources(CommandList, VertexBufferGPU.Resource.Get(), VertexBufferCPU.Resource.Get(), 0, 0, 1, &VertexData);
+		//	// Update Subresource
+		//	UpdateSubresources(CommandList, VertexBufferGPU.Resource.Get(), VertexBufferCPU.Resource.Get(), 0, 0, 1, &VertexData);
 
-			// transition the vertex buffer data from copy destination state to vertex buffer state
-			RenderGraph::TransitionBarrier(CommandList, &VertexBufferGPU, StateAfter);
+		//	// transition the vertex buffer data from copy destination state to vertex buffer state
+		//	RenderGraph::TransitionBarrier(CommandList, &VertexBufferGPU, StateAfter);
 
-			// Release the resources
-			VertexBuffer		= VertexBufferGPU.Resource;
-			VertexBufferView	= RenderGraph::CreateVertexBufferView(VertexBuffer->GetGPUVirtualAddress(), sizeof(TexVertex), VertexBufferSize);
-		});
+		//	// Release the resources
+		//	VertexBuffer		= VertexBufferGPU.Resource;
+		//	VertexBufferView	= RenderGraph::CreateVertexBufferView(VertexBuffer->GetGPUVirtualAddress(), sizeof(TexVertex), VertexBufferSize);
+		//});
 
-		// AddPass
-		Graph.AddPass(TEXT("IndexSquare"), { &IndexBufferGPU, &IndexBufferCPU }, [=, &IndexBufferGPU, &IndexBufferCPU](DXDevice * Device, DXGraphicsCommandList * CommandList)
-		{
-			/***************************
-			****** INDEX BUFFER ******
-			***************************/
-			constexpr const auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
-			constexpr const auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-			// Copy data to the intermediate upload heap and then schedule a copy 
-			// from the upload heap to the vertex buffer.
-			// store index buffer in upload heap
-			D3D12_SUBRESOURCE_DATA	IndexData = {};
-			IndexData.pData			= reinterpret_cast<UINT8*>(Indices);	// pointer to our index array
-			IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
-			IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
+		//// AddPass
+		//Graph.AddPass(TEXT("IndexSquare"), { &IndexBufferGPU, &IndexBufferCPU }, [=, &IndexBufferGPU, &IndexBufferCPU](DXDevice * Device, DXGraphicsCommandList * CommandList)
+		//{
+		//	/***************************
+		//	****** INDEX BUFFER ******
+		//	***************************/
+		//	constexpr const auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
+		//	constexpr const auto StateAfter		= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		//	// Copy data to the intermediate upload heap and then schedule a copy 
+		//	// from the upload heap to the vertex buffer.
+		//	// store index buffer in upload heap
+		//	D3D12_SUBRESOURCE_DATA	IndexData = {};
+		//	IndexData.pData			= reinterpret_cast<UINT8*>(Indices);	// pointer to our index array
+		//	IndexData.RowPitch		= IndexBufferSize;						 // size of all our index buffer
+		//	IndexData.SlicePitch	= IndexData.RowPitch;					 // also the size of our index buffer
 
-			//PIXBeginEvent(CommandList.Get(), 0, L"Copy vertex buffer data to default resource...");
+		//	//PIXBeginEvent(CommandList.Get(), 0, L"Copy vertex buffer data to default resource...");
 
-			// transition 
-			RenderGraph::TransitionBarrier(CommandList, &IndexBufferGPU, StateBefore);
+		//	// transition 
+		//	RenderGraph::TransitionBarrier(CommandList, &IndexBufferGPU, StateBefore);
 
-			// Update Subresource
-			UpdateSubresources(CommandList, IndexBufferGPU.Resource.Get(), IndexBufferCPU.Resource.Get(), 0, 0, 1, &IndexData);
+		//	// Update Subresource
+		//	UpdateSubresources(CommandList, IndexBufferGPU.Resource.Get(), IndexBufferCPU.Resource.Get(), 0, 0, 1, &IndexData);
 
-			// transition the vertex buffer data from copy destination state to vertex buffer state
-			RenderGraph::TransitionBarrier(CommandList, &IndexBufferGPU, StateAfter);
+		//	// transition the vertex buffer data from copy destination state to vertex buffer state
+		//	RenderGraph::TransitionBarrier(CommandList, &IndexBufferGPU, StateAfter);
 
-			// Release the resources
-			IndexBuffer		= IndexBufferGPU.Resource;
-			IndexBufferView = RenderGraph::CreateIndexBufferView(IndexBuffer->GetGPUVirtualAddress(), DXGI_FORMAT_R32_UINT, IndexBufferSize);
-		});
+		//	// Release the resources
+		//	IndexBuffer		= IndexBufferGPU.Resource;
+		//	IndexBufferView = RenderGraph::CreateIndexBufferView(IndexBuffer->GetGPUVirtualAddress(), DXGI_FORMAT_R32_UINT, IndexBufferSize);
+		//});
 
 		/***************************
 		 **** TEXTURING & Cube *****
@@ -372,8 +372,8 @@ void D3D12App::Initialize()
 		// AddPass
 		Graph.AddPass(TEXT("Cubes Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{
-			Cube1.Init(Device,			CommandList);
-			Cube2.Init(Device,			CommandList);
+			//Cube1.Init(Device,			CommandList);
+			//Cube2.Init(Device,			CommandList);
 			Texture.Load(Device,		CommandList,	L"bryanzar.png",	MainDescriptorHeap, IncrementDescriptorSize, 0);
 			TextureMegane.Load(Device,	CommandList,	L"megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
 		});
@@ -426,7 +426,7 @@ void D3D12App::Initialize()
 			Primitives[PrimitiveIdx]->Init(Device, CommandList);
 
 			// Initial position, rotation, scale etc. for the primitive
-			Primitives[PrimitiveIdx]->Transform(DX_IDENTITY_TRANSLATE3, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
+			Primitives[PrimitiveIdx]->Transform({ -3.0f + 2 * static_cast<float>(PrimitiveIdx), 1.0f, 1.0f}, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
 			
 			// CBV per objects (for first frame)
 			StoreCBVDataForPrimitive(*Primitives[PrimitiveIdx], PrimitiveIdx);
@@ -438,8 +438,6 @@ void D3D12App::Initialize()
 
 	// MUST BE LAST ONE HERE!!!
 	{
-
-	
 		// Submit necessary things from command list
 		// Execute command lists
 		ThrowIfFailed(CommandList->Close()); //close command list for execution
@@ -467,33 +465,33 @@ void D3D12App::Render()
 		CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
 	}
 
-	// Cube
-	PIXBeginEvent(CommandList.Get(), 0, L"Cube1 Rendering");
-	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Cube1.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Cube1.VertexFactory.IndexBufferView);
-		CommandList->DrawIndexedInstanced(Cube1.GetNumIndices(), 1, 0, 0, 0); // draw cube
-	}
-	PIXEndEvent(CommandList.Get());
+	//// Cube
+	//PIXBeginEvent(CommandList.Get(), 0, L"Cube1 Rendering");
+	//{
+	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
+	//	CommandList->IASetVertexBuffers(0, 1, &Cube1.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	//	CommandList->IASetIndexBuffer(&Cube1.VertexFactory.IndexBufferView);
+	//	CommandList->DrawIndexedInstanced(Cube1.GetNumIndices(), 1, 0, 0, 0); // draw cube
+	//}
+	//PIXEndEvent(CommandList.Get());
 
-	// Cube 2
-	PIXBeginEvent(CommandList.Get(), 0, L"Cube2 Rendering");
-	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		Handle.Offset(1, IncrementDescriptorSize);
-		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Cube2.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Cube2.VertexFactory.IndexBufferView);
-		CommandList->DrawIndexedInstanced(Cube2.GetNumIndices(), 1, 0, 0, 0); // draw cube
-	}
-	PIXEndEvent(CommandList.Get());
+	//// Cube 2
+	//PIXBeginEvent(CommandList.Get(), 0, L"Cube2 Rendering");
+	//{
+	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//	Handle.Offset(1, IncrementDescriptorSize);
+	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
+	//	CommandList->IASetVertexBuffers(0, 1, &Cube2.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+	//	CommandList->IASetIndexBuffer(&Cube2.VertexFactory.IndexBufferView);
+	//	CommandList->DrawIndexedInstanced(Cube2.GetNumIndices(), 1, 0, 0, 0); // draw cube
+	//}
+	//PIXEndEvent(CommandList.Get());
 
 	// Plane
-	PIXBeginEvent(CommandList.Get(), 0, L"Plane Rendering");
+	PIXBeginEvent(CommandList.Get(), 0, L"Main Plane Rendering");
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
@@ -504,6 +502,23 @@ void D3D12App::Render()
 	}
 	PIXEndEvent(CommandList.Get());
 
+	// Primitives
+	PIXBeginEvent(CommandList.Get(), 0, L"Primitives Rendering");
+	{
+		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+		{
+			CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+			CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+			CommandList->SetGraphicsRootConstantBufferView(0, PrimitiveCBV->GetGPUVirtualAddress() + (PrimitiveIdx * PrimitiveConstantBufferSize));
+			CommandList->IASetVertexBuffers(0, 1, &Primitives[PrimitiveIdx]->VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+			CommandList->IASetIndexBuffer(&Primitives[PrimitiveIdx]->VertexFactory.IndexBufferView);
+			CommandList->DrawIndexedInstanced(Primitives[PrimitiveIdx]->GetNumIndices(), 1, 0, 0, 0); // draw primitive
+		}
+	}
+	PIXEndEvent(CommandList.Get());
+
+
+
 	//Always EndFrame last
 	EndFrame();
 }
@@ -511,12 +526,12 @@ void D3D12App::Render()
 void D3D12App::Update(float DeltaTime)
 {
 	// Other Updates
-	step_timer.Tick(NULL);
+	StepTimer.Tick(NULL);
 	if (CurrentFrameIdx % 509)
 	{
 		// Update window text with FPS value.
 		wchar_t fps[64];
-		swprintf_s(fps, L"%ufps", step_timer.GetFramesPerSecond());
+		swprintf_s(fps, L"%ufps", StepTimer.GetFramesPerSecond());
 		//SetCustomWindowText(fps);
 		std::wstring WindowText		= L"My Window | FPS: ";
 		std::wstring WindowText2	= fps;
@@ -524,55 +539,55 @@ void D3D12App::Update(float DeltaTime)
 	}
 
 	// Camera matrices
-	Camera.Update(static_cast<float>(step_timer.GetElapsedSeconds()));
+	Camera.Update(static_cast<float>(StepTimer.GetElapsedSeconds()));
 	const auto ViewMat	= Camera.GetViewMatrix();
 	const auto ProjMat	= Camera.GetProjMatrix();
 
-	// update app logic, such as moving the camera or figuring out what objects are in view
+	//// update app logic, such as moving the camera or figuring out what objects are in view
 
 
 
-	// Cube
-	{
-		// store cube1's world matrix
-		static float z_offset = 0.0001f;
-		static float x_rot_offset = 0.001f;
+	//// Cube
+	//{
+	//	// store cube1's world matrix
+	//	static float z_offset = 0.0001f;
+	//	static float x_rot_offset = 0.001f;
 
-		Cube1.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, 0.0f });
-		// update constant buffer for cube1
-		// create the wvp matrix and store in constant buffer
-		const auto CubeWorldMatrix				= Cube1.GetWorldMatrix();
-		const auto CubeScaleRotMatrix			= Cube1.GetWorldMatrixNoTranslation();
-		XMMATRIX MVPMatCube						= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
-		XMMATRIX TransposedCubeScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&CubeScaleRotMatrix));	// must transpose world matrix for the gpu
-		XMMATRIX TransposedMVPMatCube			= XMMatrixTranspose(MVPMatCube);						// must transpose wvp matrix for the gpu
-		XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCubeScaleRotMatrix);						// store transposed world matrix in constant buffer
-		XMStoreFloat4x4(&CbvPerObject.WorldToClip,	TransposedMVPMatCube);							// store transposed wvp matrix in constant buffer
+	//	Cube1.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, 0.0f });
+	//	// update constant buffer for cube1
+	//	// create the wvp matrix and store in constant buffer
+	//	const auto CubeWorldMatrix				= Cube1.GetWorldMatrix();
+	//	const auto CubeScaleRotMatrix			= Cube1.GetWorldMatrixNoTranslation();
+	//	XMMATRIX MVPMatCube						= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
+	//	XMMATRIX TransposedCubeScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&CubeScaleRotMatrix));	// must transpose world matrix for the gpu
+	//	XMMATRIX TransposedMVPMatCube			= XMMatrixTranspose(MVPMatCube);						// must transpose wvp matrix for the gpu
+	//	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCubeScaleRotMatrix);						// store transposed world matrix in constant buffer
+	//	XMStoreFloat4x4(&CbvPerObject.WorldToClip,	TransposedMVPMatCube);							// store transposed wvp matrix in constant buffer
 
-		// copy our ConstantBuffer instance to the mapped constant buffer resource
-		memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
-	}
-	
-	// Cube2
-	{
-		// store cube2's world matrix
-		static float z_offset = 0.001f;
-		static float x_rot_offset = 0.001f;
+	//	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	//	memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
+	//}
+	//
+	//// Cube2
+	//{
+	//	// store cube2's world matrix
+	//	static float z_offset = 0.001f;
+	//	static float x_rot_offset = 0.001f;
 
-		Cube2.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, z_offset });
-		// update constant buffer for cube2
-		// create the wvp matrix and store in constant buffer
-		const auto Cube2WorldMatrix				= Cube2.GetWorldMatrix();
-		const auto Cube2ScaleRotMatrix			= Cube2.GetWorldMatrixNoTranslation();
-		XMMATRIX MVPMatCube2					= XMLoadFloat4x4(&Cube2WorldMatrix) * ViewMat * ProjMat; // create wvp matrix
-		XMMATRIX TransposedCube2ScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&Cube2ScaleRotMatrix));	// must transpose world matrix for the gpu
-		XMMATRIX TransposedMVPMatCube2			= XMMatrixTranspose(MVPMatCube2);						// must transpose wvp matrix for the gpu
-		XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCube2ScaleRotMatrix);						// store transposed world matrix in constant buffer
-		XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatCube2);							// store transposed wvp matrix in constant buffer
+	//	Cube2.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, z_offset });
+	//	// update constant buffer for cube2
+	//	// create the wvp matrix and store in constant buffer
+	//	const auto Cube2WorldMatrix				= Cube2.GetWorldMatrix();
+	//	const auto Cube2ScaleRotMatrix			= Cube2.GetWorldMatrixNoTranslation();
+	//	XMMATRIX MVPMatCube2					= XMLoadFloat4x4(&Cube2WorldMatrix) * ViewMat * ProjMat; // create wvp matrix
+	//	XMMATRIX TransposedCube2ScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&Cube2ScaleRotMatrix));	// must transpose world matrix for the gpu
+	//	XMMATRIX TransposedMVPMatCube2			= XMMatrixTranspose(MVPMatCube2);						// must transpose wvp matrix for the gpu
+	//	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCube2ScaleRotMatrix);						// store transposed world matrix in constant buffer
+	//	XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatCube2);							// store transposed wvp matrix in constant buffer
 
-		// copy our ConstantBuffer instance to the mapped constant buffer resource
-		memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
-	}
+	//	// copy our ConstantBuffer instance to the mapped constant buffer resource
+	//	memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
+	//}
 
 	// store plane's world matrix
 	{
@@ -588,6 +603,16 @@ void D3D12App::Update(float DeltaTime)
 		// copy our ConstantBuffer instance to the mapped constant buffer resource
 		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 	}
+
+
+	// Primitives
+	{
+		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+		{
+			StoreCBVDataForPrimitive(*Primitives[PrimitiveIdx], PrimitiveIdx);
+		}
+	}
+
 }
 
 void D3D12App::Destroy()
@@ -946,8 +971,8 @@ void D3D12App::StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT P
 
 	// CBV data for primitive
 	PrimitiveConstantBuffer PrimitiveCBVData = {};
-	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorld,		LocalToWorld);
-	XMStoreFloat4x4(&PrimitiveCBVData.WorldToClip,		WorldToClip);
+	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorld,		XMMatrixTranspose(LocalToWorld));
+	XMStoreFloat4x4(&PrimitiveCBVData.WorldToClip,		XMMatrixTranspose(WorldToClip));
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(PrimitivesConstantBufferPtr + (PrimitiveIdx * PrimitiveConstantBufferSize), &PrimitiveCBVData, PrimitiveConstantBufferSize /* size of */);

@@ -132,7 +132,7 @@ public:
 
 	// Timer
 	//Helpers::Timer timer;
-	Helpers::StepTimer step_timer;
+	Helpers::StepTimer StepTimer;
 
 
 	// NEW SECTION
