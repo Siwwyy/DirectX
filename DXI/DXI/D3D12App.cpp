@@ -21,64 +21,6 @@ const DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_
 const DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
 const DXGI_SAMPLE_DESC					SAMPLE_DESC					= SAMPLER_HELPER::CreateSampler(1, 0);
 
-
-//Globals
-
-// Vertices/Index buffers etc.
-TexVertex CubeVertices[] =
-{
-
-	//{ -0.5f,  0.5f, 0.5f , 1.0f, 1.0f, 1.0f, 1.0f}, // top left
-	//{ 0.5f , -0.5f, 0.5f , 1.0f, 1.0f, 0.0f, 1.0f},	// bottom right
-	//{ -0.5f, -0.5f, 0.5f , 1.0f, 0.0f, 0.0f, 1.0f}, // bottom left
-	//{  0.5f,  0.5f, 0.5f , 0.0f, 0.0f, 1.0f, 1.0f}, // top right
-
-	{ -0.5f,  0.5f, 0.5f , 0.0f, 0.0f }, // top left
-	{ 0.5f , -0.5f, 0.5f , 1.0f, 1.0f }, // bottom right
-	{ -0.5f, -0.5f, 0.5f , 0.0f, 1.0f }, // bottom left
-	{  0.5f,  0.5f, 0.5f , 1.0f, 0.0f }  // top right
-};
-
-constexpr UINT VertexBufferSize = sizeof(CubeVertices);
-
-DWORD Indices[] =
-{
-	//// front face
-	//0, 1, 2, // first triangle
-	//0, 3, 1, // second triangle
-
-	//// left face
-	//4, 5, 6, // first triangle
-	//4, 7, 5, // second triangle
-
-	//// right face
-	//8, 9, 10, // first triangle
-	//8, 11, 9, // second triangle
-
-	//// back face
-	//12, 13, 14, // first triangle
-	//12, 15, 13, // second triangle
-
-	//// top face
-	//16, 17, 18, // first triangle
-	//16, 19, 17, // second triangle
-
-	//// bottom face
-	//20, 21, 22, // first triangle
-	//20, 23, 21, // second triangle
-
-	///////////////////////////////
-	0, 1, 2,
-	0, 3, 1
-	// Its order is because its clock-wise when using Triangle List topology
-	// See: https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-primitive-topologies
-
-	///////////////////////////////
-};
-
-constexpr UINT IndexBufferSize	= sizeof(Indices);
-constexpr UINT NumIndices		= IndexBufferSize / sizeof(DWORD);
-
 //////////////////////////////////////////////////////////////////
 
 
@@ -94,10 +36,6 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	, Camera(WindowWidth, WindowHeight)
 {
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
-
-	// Objects properties, positions etc.
-	Cube1.Transform({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
-	Cube2.Transform({ 3.0f, 1.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
 
 	// Main ground plane
 	Plane.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
@@ -456,39 +394,13 @@ void D3D12App::Render()
 	BeginFrame();
 
 	// Drawing
-	
 
 	// Texture
 	{
 		// set the descriptor heap
-		ID3D12DescriptorHeap* DescriptorHeaps[] = { MainDescriptorHeap.Get()};
+		DXDescriptorHeap* DescriptorHeaps[] = { MainDescriptorHeap.Get()};
 		CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
 	}
-
-	//// Cube
-	//PIXBeginEvent(CommandList.Get(), 0, L"Cube1 Rendering");
-	//{
-	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
-	//	CommandList->IASetVertexBuffers(0, 1, &Cube1.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	//	CommandList->IASetIndexBuffer(&Cube1.VertexFactory.IndexBufferView);
-	//	CommandList->DrawIndexedInstanced(Cube1.GetNumIndices(), 1, 0, 0, 0); // draw cube
-	//}
-	//PIXEndEvent(CommandList.Get());
-
-	//// Cube 2
-	//PIXBeginEvent(CommandList.Get(), 0, L"Cube2 Rendering");
-	//{
-	//	CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	//	Handle.Offset(1, IncrementDescriptorSize);
-	//	CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-	//	CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (1 * ConstantBufferPerObjectSize));
-	//	CommandList->IASetVertexBuffers(0, 1, &Cube2.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-	//	CommandList->IASetIndexBuffer(&Cube2.VertexFactory.IndexBufferView);
-	//	CommandList->DrawIndexedInstanced(Cube2.GetNumIndices(), 1, 0, 0, 0); // draw cube
-	//}
-	//PIXEndEvent(CommandList.Get());
 
 	// Plane
 	PIXBeginEvent(CommandList.Get(), 0, L"Main Plane Rendering");
@@ -505,9 +417,10 @@ void D3D12App::Render()
 	// Primitives
 	PIXBeginEvent(CommandList.Get(), 0, L"Primitives Rendering");
 	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		Handle.Offset(1, IncrementDescriptorSize);
 		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 		{
-			CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 			CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 			CommandList->SetGraphicsRootConstantBufferView(0, PrimitiveCBV->GetGPUVirtualAddress() + (PrimitiveIdx * PrimitiveConstantBufferSize));
 			CommandList->IASetVertexBuffers(0, 1, &Primitives[PrimitiveIdx]->VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
@@ -516,8 +429,6 @@ void D3D12App::Render()
 		}
 	}
 	PIXEndEvent(CommandList.Get());
-
-
 
 	//Always EndFrame last
 	EndFrame();
@@ -543,51 +454,7 @@ void D3D12App::Update(float DeltaTime)
 	const auto ViewMat	= Camera.GetViewMatrix();
 	const auto ProjMat	= Camera.GetProjMatrix();
 
-	//// update app logic, such as moving the camera or figuring out what objects are in view
-
-
-
-	//// Cube
-	//{
-	//	// store cube1's world matrix
-	//	static float z_offset = 0.0001f;
-	//	static float x_rot_offset = 0.001f;
-
-	//	Cube1.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, 0.0f });
-	//	// update constant buffer for cube1
-	//	// create the wvp matrix and store in constant buffer
-	//	const auto CubeWorldMatrix				= Cube1.GetWorldMatrix();
-	//	const auto CubeScaleRotMatrix			= Cube1.GetWorldMatrixNoTranslation();
-	//	XMMATRIX MVPMatCube						= XMLoadFloat4x4(&CubeWorldMatrix) * ViewMat * ProjMat; // create wvp matrix
-	//	XMMATRIX TransposedCubeScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&CubeScaleRotMatrix));	// must transpose world matrix for the gpu
-	//	XMMATRIX TransposedMVPMatCube			= XMMatrixTranspose(MVPMatCube);						// must transpose wvp matrix for the gpu
-	//	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCubeScaleRotMatrix);						// store transposed world matrix in constant buffer
-	//	XMStoreFloat4x4(&CbvPerObject.WorldToClip,	TransposedMVPMatCube);							// store transposed wvp matrix in constant buffer
-
-	//	// copy our ConstantBuffer instance to the mapped constant buffer resource
-	//	memcpy(CbvGPUAddress[CurrentFrameIdx] + (0 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
-	//}
-	//
-	//// Cube2
-	//{
-	//	// store cube2's world matrix
-	//	static float z_offset = 0.001f;
-	//	static float x_rot_offset = 0.001f;
-
-	//	Cube2.Transform(DX_IDENTITY_TRANSLATE3, { x_rot_offset, x_rot_offset, z_offset });
-	//	// update constant buffer for cube2
-	//	// create the wvp matrix and store in constant buffer
-	//	const auto Cube2WorldMatrix				= Cube2.GetWorldMatrix();
-	//	const auto Cube2ScaleRotMatrix			= Cube2.GetWorldMatrixNoTranslation();
-	//	XMMATRIX MVPMatCube2					= XMLoadFloat4x4(&Cube2WorldMatrix) * ViewMat * ProjMat; // create wvp matrix
-	//	XMMATRIX TransposedCube2ScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&Cube2ScaleRotMatrix));	// must transpose world matrix for the gpu
-	//	XMMATRIX TransposedMVPMatCube2			= XMMatrixTranspose(MVPMatCube2);						// must transpose wvp matrix for the gpu
-	//	XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedCube2ScaleRotMatrix);						// store transposed world matrix in constant buffer
-	//	XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatCube2);							// store transposed wvp matrix in constant buffer
-
-	//	// copy our ConstantBuffer instance to the mapped constant buffer resource
-	//	memcpy(CbvGPUAddress[CurrentFrameIdx] + (1 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
-	//}
+	// update app logic, such as moving the camera or figuring out what objects are in view
 
 	// store plane's world matrix
 	{
@@ -604,7 +471,6 @@ void D3D12App::Update(float DeltaTime)
 		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
 	}
 
-
 	// Primitives
 	{
 		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
@@ -612,7 +478,6 @@ void D3D12App::Update(float DeltaTime)
 			StoreCBVDataForPrimitive(*Primitives[PrimitiveIdx], PrimitiveIdx);
 		}
 	}
-
 }
 
 void D3D12App::Destroy()
@@ -769,19 +634,7 @@ void D3D12App::InitializePSO()
 {
 	// Pipeline state object (PSO)
 	// Define the vertex input layout.
-	//D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
-	//{
-	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	//	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	//};
-
-	//D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
-	//{
-	//	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	//	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	//};
-
-	D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
+	D3D12_INPUT_ELEMENT_DESC InputElementDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -861,14 +714,13 @@ void D3D12App::InitializePSO()
 
 	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
-	PsoDesc.InputLayout				= { InputElementDescs, _countof(InputElementDescs) };
+	PsoDesc.InputLayout				= { InputElementDesc, _countof(InputElementDesc) };
 	PsoDesc.pRootSignature			= RootSignature.Get();
 	PsoDesc.VS						= CD3DX12_SHADER_BYTECODE(VertexShader.Get());
 	PsoDesc.PS						= CD3DX12_SHADER_BYTECODE(PixelShader.Get());
 	PsoDesc.RasterizerState			= CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	PsoDesc.BlendState				= CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	PsoDesc.DepthStencilState		= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	//PsoDesc.DepthStencilState		= DepthStencilDesc;
 	PsoDesc.DSVFormat				= DEPTH_STENCIL_FORMAT;
 	PsoDesc.SampleMask				= UINT_MAX;
 	PsoDesc.SampleDesc				= SAMPLE_DESC;

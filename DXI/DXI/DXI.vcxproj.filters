@@ -31,9 +31,6 @@
     <Filter Include="Source Files\Resources">
       <UniqueIdentifier>{c1f3a990-6e2b-4adb-9516-1264d9a1bd3f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Geometry">
-      <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Geometry">
       <UniqueIdentifier>{116c9ba9-cea3-4d4a-a46b-023e25f24d15}</UniqueIdentifier>
     </Filter>
@@ -42,6 +39,9 @@
     </Filter>
     <Filter Include="Source Files\Passes">
       <UniqueIdentifier>{ac4855b8-05a2-4bee-84aa-e81b4f1c1642}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Geometry">
+      <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -147,7 +147,7 @@
       <Filter>RenderGraph</Filter>
     </ClInclude>
     <ClInclude Include="Geometry\Vertex.h">
-      <Filter>Geometry</Filter>
+      <Filter>Header Files\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Passes\BasePass.h">
       <Filter>Header Files\Passes</Filter>

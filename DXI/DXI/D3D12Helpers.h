@@ -26,18 +26,28 @@
 
 
 // Disables base default constructor of class
-#define DISABLE_DEFAULT_CTOR(CLASS_NAME)                    \
-		CLASS_NAME() = delete;                              \
+#define DISABLE_DEFAULT_CTOR(CLASS_NAME)                        \
+		CLASS_NAME() = delete;                                  \
 
 // Disables copy ability of specified class
-#define DISABLE_COPY(CLASS_NAME)                            \
-		CLASS_NAME(const CLASS_NAME&) = delete;             \
-		CLASS_NAME& operator=(const CLASS_NAME&) = delete;  \
+#define DISABLE_COPY(CLASS_NAME)                                \
+		CLASS_NAME(const CLASS_NAME&) = delete;                 \
+		CLASS_NAME& operator=(const CLASS_NAME&) = delete;      \
+
+// Enables copy ability of specified class
+#define ENABLE_COPY(CLASS_NAME)                                 \
+		CLASS_NAME(const CLASS_NAME&) = default;                \
+		CLASS_NAME& operator=(const CLASS_NAME&) = default;     \
 
 // Disables move ability of specified class
-#define DISABLE_MOVE(CLASS_NAME)                            \
-		CLASS_NAME(CLASS_NAME&&) = delete;                  \
-		CLASS_NAME& operator=(CLASS_NAME&&) = delete;       \
+#define DISABLE_MOVE(CLASS_NAME)                                \
+		CLASS_NAME(CLASS_NAME&&) = delete;                      \
+		CLASS_NAME& operator=(CLASS_NAME&&) = delete;           \
+
+// Enables move ability of specified class
+#define ENABLE_MOVE(CLASS_NAME)                                 \
+		CLASS_NAME(CLASS_NAME&&) = default;                     \
+		CLASS_NAME& operator=(CLASS_NAME&&) = default;          \
 
 // Disables both copy and move of specified class
 #define DISABLE_COPY_MOVE(CLASS_NAME) DISABLE_COPY(CLASS_NAME) DISABLE_MOVE(CLASS_NAME) 

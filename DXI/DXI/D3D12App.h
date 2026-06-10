@@ -113,9 +113,6 @@ public:
 	// Constant Buffers
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	ObjectMatrices										SquareMatrices;
-	Cube												Cube1;
-	Cube												Cube2;
 	Plane												Plane;
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
@@ -131,7 +128,6 @@ public:
 	Texture Texture;
 
 	// Timer
-	//Helpers::Timer timer;
 	Helpers::StepTimer StepTimer;
 
 

@@ -5,6 +5,9 @@
 
 #include "../pch.h"
 
+// usings
+using TypeOfIndice = DWORD;
+
 /// <summary>
 /// Enumeration of supported vertex attribute types.
 /// Defines the composition of vertex data for different rendering scenarios.
@@ -40,7 +43,9 @@ enum class VertexType : uint32_t
 /// </summary>
 struct VertexPosition
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[] =
+	constexpr static VertexType VertexTypeValue = VertexType::Position;
+	constexpr static uint32_t InputElementCount = 1;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{ 
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 } 
 	};
@@ -85,10 +90,12 @@ struct VertexPosition
 /// </summary>
 struct VertexPositionNormal
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[2] =
+	constexpr static VertexType VertexTypeValue = VertexType::PositionNormal;
+	constexpr static uint32_t InputElementCount = 2;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION",	0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -139,10 +146,12 @@ struct VertexPositionNormal
 /// </summary>
 struct VertexPositionColor
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[2] =
+	constexpr static VertexType VertexTypeValue = VertexType::PositionColor;
+	constexpr static uint32_t InputElementCount = 2;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION",	0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -193,11 +202,13 @@ struct VertexPositionColor
 /// </summary>
 struct VertexPositionColorNormal
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[3] =
+	constexpr static VertexType VertexTypeValue = VertexType::PositionColorNormal;
+	constexpr static uint32_t InputElementCount = 3;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION",	0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -255,10 +266,12 @@ struct VertexPositionColorNormal
 /// </summary>
 struct VertexPositionTexCoord
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[2] =
+	constexpr static VertexType VertexTypeValue = VertexType::PositionTexCoord;
+	constexpr static uint32_t InputElementCount = 2;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,	0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,			0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -309,11 +322,13 @@ struct VertexPositionTexCoord
 /// </summary>
 struct VertexPositionTexCoordNormal
 {
-	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDescs[3] =
+	constexpr static VertexType VertexTypeValue = VertexType::PositionTexCoordNormal;
+	constexpr static uint32_t InputElementCount = 3;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "POSITION",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",	0,		DXGI_FORMAT_R32G32_FLOAT,		0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -378,7 +393,7 @@ const uint64_t VertexTypeSizes[] = {
 };
 
 template<typename In, typename Out, size_t N, size_t M>
-std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&IndicesList)[M])
+std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])
 {
 	constexpr size_t NumVertices = N;	// Number of vertices in the input array
 	constexpr size_t NumVerticesPerTriangle = 3;	// Number of vertices in triangle (everytime its 3, but who knows?)
@@ -388,9 +403,9 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&I
 	for (size_t i = 0; i < NumTriangles; ++i)
 	{
 		// Get values
-		const DWORD IdxX0	= IndicesList[i * NumVerticesPerTriangle + 0];
-		const DWORD IdxX1	= IndicesList[i * NumVerticesPerTriangle + 1];
-		const DWORD IdxX2	= IndicesList[i * NumVerticesPerTriangle + 2];
+		const TypeOfIndice IdxX0	= IndicesList[i * NumVerticesPerTriangle + 0];
+		const TypeOfIndice IdxX1	= IndicesList[i * NumVerticesPerTriangle + 1];
+		const TypeOfIndice IdxX2	= IndicesList[i * NumVerticesPerTriangle + 2];
 		const In& Vertex0	= VertexArray[IdxX0];
 		const In& Vertex1	= VertexArray[IdxX1];
 		const In& Vertex2	= VertexArray[IdxX2];
@@ -420,7 +435,7 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&I
 		DXASSERT(!IsNormalNearZero, "Normal vector can not be zero vector");
 
 		// Check if normal length is equal to 1.0 (Unit Length Vector
-		XMVECTOR UnitVector = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR UnitVector		= XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 		bool IsNormalUnitLength = XMVector3NearEqual(XMVector3Length(Normal), XMVector3Length(UnitVector), Epsilon);
 		DXASSERT(IsNormalUnitLength, "Normal vector should be unit length vector");
 
@@ -430,8 +445,8 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&I
 		std::vector<BYTE> DataVertex2 = Vertex2.SerializeToBytes();
 
 		// Create NormalXYZW for memcpy
-		const float NormalXYZW[] = { XMVectorGetX(Normal), XMVectorGetY(Normal), XMVectorGetZ(Normal), 0.0f };
-		const size_t NormalSize = sizeof(NormalXYZW);
+		const float NormalXYZW[]	= { XMVectorGetX(Normal), XMVectorGetY(Normal), XMVectorGetZ(Normal), 0.0f };
+		const size_t NormalSize		= sizeof(NormalXYZW);
 
 		// Resize to fill Normals
 		DataVertex0.resize(DataVertex0.size() + NormalSize);
@@ -483,25 +498,60 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const DWORD (&I
 /// `auto init = Vertex::VertexInitData{ VertexType::Position, std::move(myByteBuffer) };`
 /// `vertex.Init(device, cmdList, std::move(init));`
 /// </summary>
-template<typename VertexStruct = VertexPosition>
+template<typename TypeOfVertex = VertexPosition>
 struct VertexInitData
 {
 	DISABLE_COPY(VertexInitData)
+	ENABLE_MOVE(VertexInitData)
 
-	constexpr static size_t MaxVertexDataSize = 1024; // Maximum size of vertex data in bytes (adjust as needed)
-	constexpr static size_t MaxIndexDataSize = 1024;  // Maximum size of index data in bytes (adjust as needed)
-	constexpr static size_t MaxElementDescSize = 3; // Maximum number of input element descriptions (adjust as needed)
+	// Constants
+	constexpr static size_t MaxVertexDataSize	= 2 << 10;		// Maximum size of vertex data in bytes (adjust as needed)
+	constexpr static size_t MaxIndexDataSize	= 2 << 10;		// Maximum size of index data in bytes (adjust as needed)
+	constexpr static size_t MaxElementDescSize	= 3;			// Maximum number of input element descriptions (adjust as needed)
+
 	// Make fields movable by removing const qualifiers.
-	// VertexBufferSize is kept in sync with VertexData.size() by helper ctor.
-	VertexType Type{ VertexType::Position };
-	size_t VertexBufferSize{ 0 };
-	size_t IndexBufferSize{ 0 };
-	std::array<D3D12_INPUT_ELEMENT_DESC,	MaxElementDescSize> InputElementDesc;
-	std::array<VertexStruct,				MaxVertexDataSize>	VertexData{};
-	std::array<DWORD,						MaxIndexDataSize>	IndexData{};
+	VertexType									Type{};
+	std::vector<D3D12_INPUT_ELEMENT_DESC>		InputElementDesc{};
+	std::vector<TypeOfVertex>					VertexData{};
+	std::vector<TypeOfIndice>					IndexData{};
+
+	// Make function to initialize init data for vertex.
+	template<std::size_t NumVertices>
+	static VertexInitData<TypeOfVertex> CreateVertexInitData(
+		const std::array<TypeOfVertex, NumVertices>& Vertices, 
+		TypeOfIndice const * const IndicesArray,
+		const std::size_t NumIndices)
+	{
+		VertexInitData<TypeOfVertex> InitData;
+		InitData.Type				= TypeOfVertex::VertexTypeValue;
+
+		// Input Element Desc
+		InitData.InputElementDesc.insert(
+			InitData.InputElementDesc.end(),
+			TypeOfVertex::InputElementDesc,
+			TypeOfVertex::InputElementDesc + TypeOfVertex::InputElementCount
+		);
+
+		// Vertex Data
+		InitData.VertexData.insert(
+			InitData.VertexData.end(),
+			Vertices.begin(),
+			Vertices.end()
+		);
+
+		// Index Data
+		InitData.IndexData.insert(
+			InitData.IndexData.end(),
+			IndicesArray,
+			IndicesArray + NumIndices
+		);
+
+		// Return
+		return InitData; //RVO / NRVO
+	}
 
 	// Default ctors/dctors
-	VertexInitData() noexcept = default;
+	VertexInitData() = default;
 	~VertexInitData() = default;
 };
 
@@ -539,17 +589,17 @@ public:
 	/// <param name="CommandList">Pointer to the graphics command list.</param>
 	/// <param name="VertexInitData">Vertex Initial Data, struct to fill and std::move().</param>
 	/// <returns>HRESULT indicating success or failure of initialization.</returns>
-	template<typename VertexStruct>
-	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList, VertexInitData<VertexStruct>&& InitData)
+	template<typename VertexStructType>
+	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList, VertexInitData<VertexStructType> InitData)
 	{
 		// HRESULT, just in case...
 		HRESULT hr = S_OK;
 		// Store vertex type
 		Type = InitData.Type;
 		// Create and upload vertex buffer
-		CreateAndUploadVertexBuffer(Device, CommandList, std::move(InitData.VertexData), InitData.VertexBufferSize);
+		CreateAndUploadVertexBuffer(Device, CommandList,	std::move(InitData.VertexData));
 		// Create and upload index buffer
-		CreateAndUploadIndexBuffer(Device, CommandList, std::move(InitData.IndexData), InitData.IndexBufferSize);
+		CreateAndUploadIndexBuffer(Device,	CommandList,	std::move(InitData.IndexData));
 
 		// Return
 		return hr;
@@ -593,17 +643,22 @@ public:
 
 private:
 
-	// Create + upload helpers (templated to accept std::array with the Vertex/Index type)
-	template<typename VertexStruct, size_t N>
-	void CreateAndUploadVertexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::array<VertexStruct, N>&& VertexData, size_t VertexBufferSize)
+	// Create + upload helpers (templated to accept std::vector with the Vertex/Index type)
+	template<typename VertexStruct>
+	void CreateAndUploadVertexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::vector<VertexStruct>&& VertexData)
 	{
 		using Helpers::ThrowIfFailed;
 
+		// Vertex type size in bytes (e.g. sizeof(VertexPositionNormal) = 32 bytes)
+		const auto VertexTypeSize	= static_cast<UINT>(VertexTypeSizes[static_cast<uint32_t>(Type)]);
+		// Vertex buffer size in bytes = number of vertices * size of each vertex (based on the vertex type)
+		const auto VertexBufferSize	= static_cast<UINT>(VertexData.size() * VertexTypeSize);
+
 		// Basic validation
-		DXASSERT(Device != nullptr, "Device can not be null");
-		DXASSERT(CommandList != nullptr, "CommandList can not be null");
-		DXASSERT(VertexBufferSize > 0, "Vertex buffer size must be >0");
-		DXASSERT(VertexData.size() >= (VertexBufferSize / sizeof(VertexStruct)), "VertexData does not contain enough elements");
+		DXASSERT(Device != nullptr,												"Device can not be null");
+		DXASSERT(CommandList != nullptr,										"CommandList can not be null");
+		DXASSERT(VertexBufferSize > 0,											"Vertex buffer size must be >0");
+		DXASSERT(VertexData.size() >= (VertexBufferSize / VertexTypeSize),		"VertexData does not contain enough elements");
 
 		constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 		constexpr auto StateAfter  = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
@@ -611,7 +666,7 @@ private:
 		// GPU-side vertex resource (default heap)
 		Helpers::VERTEX_HELPER VertexGPU(
 			Device,
-			static_cast<UINT>(VertexBufferSize),
+			VertexBufferSize,
 			DX_HEAP_PROPERTY_DEFAULT,
 			D3D12_RESOURCE_STATE_COMMON,
 			L"VertexGPU");
@@ -619,7 +674,7 @@ private:
 		// Upload (intermediate) resource (upload heap)
 		Helpers::VERTEX_HELPER VertexUploadToGPU(
 			Device,
-			static_cast<UINT>(VertexBufferSize),
+			VertexBufferSize,
 			DX_HEAP_PROPERTY_UPLOAD,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			L"VertexUploadToGPU");
@@ -638,21 +693,26 @@ private:
 		CommandList->ResourceBarrier(1, &VertexBarrier);
 
 		// Store views/resources on the factory
-		VertexBufferView   = VertexGPU.CreateView(static_cast<UINT>(VertexTypeSizes[static_cast<uint32_t>(Type)]), static_cast<UINT>(VertexBufferSize));
+		VertexBufferView   = VertexGPU.CreateView(VertexTypeSize, VertexBufferSize);
 		VertexBuffer       = VertexGPU.ReleaseResource();
 		VertexBufferUpload = VertexUploadToGPU.ReleaseResource();
 	}
 
-	template<typename IndexType, size_t N>
-	void CreateAndUploadIndexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::array<IndexType, N>&& IndexData, size_t IndexBufferSize)
+	template<typename IndexType = TypeOfIndice>
+	void CreateAndUploadIndexBuffer(DXDevice* Device, DXGraphicsCommandList* CommandList, std::vector<IndexType>&& IndexData)
 	{
 		using Helpers::ThrowIfFailed;
 
+		// Size of each index (e.g. 4 bytes for uint32_t)
+		const auto IndexTypeSize	= sizeof(IndexType);
+		// Total size of index buffer in bytes
+		const auto IndexBufferSize	= static_cast<UINT>(IndexData.size() * IndexTypeSize);
+
 		// Basic validation
-		DXASSERT(Device != nullptr, "Device can not be null");
-		DXASSERT(CommandList != nullptr, "CommandList can not be null");
-		DXASSERT(IndexBufferSize > 0, "Index buffer size must be >0");
-		DXASSERT(IndexData.size() >= (IndexBufferSize / sizeof(IndexType)), "IndexData does not contain enough elements");
+		DXASSERT(Device != nullptr,												"Device can not be null");
+		DXASSERT(CommandList != nullptr,										"CommandList can not be null");
+		DXASSERT(IndexBufferSize > 0,											"Index buffer size must be >0");
+		DXASSERT(IndexData.size() >= (IndexBufferSize / IndexTypeSize),			"IndexData does not contain enough elements");
 
 		constexpr auto StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 		constexpr auto StateAfter  = D3D12_RESOURCE_STATE_INDEX_BUFFER;
@@ -660,7 +720,7 @@ private:
 		// GPU-side index resource (default heap)
 		Helpers::INDEX_HELPER IndexGPU(
 			Device,
-			static_cast<UINT>(IndexBufferSize),
+			IndexBufferSize,
 			DX_HEAP_PROPERTY_DEFAULT,
 			D3D12_RESOURCE_STATE_COMMON,
 			L"IndexGPU");
@@ -668,7 +728,7 @@ private:
 		// Upload (intermediate) resource (upload heap)
 		Helpers::INDEX_HELPER IndexUploadToGPU(
 			Device,
-			static_cast<UINT>(IndexBufferSize),
+			IndexBufferSize,
 			DX_HEAP_PROPERTY_UPLOAD,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			L"IndexUploadToGPU");
@@ -687,7 +747,7 @@ private:
 		CommandList->ResourceBarrier(1, &IndexBarrier);
 
 		// Store views/resources on the factory
-		IndexBufferView   = IndexGPU.CreateView(static_cast<UINT>(IndexBufferSize), DXGI_FORMAT_R32_UINT);
+		IndexBufferView   = IndexGPU.CreateView(IndexBufferSize, DXGI_FORMAT_R32_UINT);
 		IndexBuffer       = IndexGPU.ReleaseResource();
 		IndexBufferUpload = IndexUploadToGPU.ReleaseResource();
 	}

@@ -41,7 +41,7 @@ static VertexPositionTexCoord VertexList[] =
 
 
 // a quad (2 triangles)
-static DWORD IndicesList[] =
+static TypeOfIndice IndicesList[] =
 {
     // front face
     0, 1, 2, // first triangle
@@ -72,8 +72,7 @@ using TypeOfVertex = VertexPositionTexCoordNormal;
 static const auto TexNormalVertexList   = ComputeFaceNormal<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
 static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
-static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(DWORD);
-
+static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(TypeOfIndice);
 // Ctors
 Cube::Cube()
     : Primitive()
@@ -92,22 +91,9 @@ HRESULT Cube::Init(DXDevice * Device, DXGraphicsCommandList* CommandList)
     // Set neccessary values
     SetNumIndices(CubeNumIndices);
 
-	// Input assembly description
-    const auto InputElementDesc = TypeOfVertex::InputElementDescs;
+    // Init vertex factory
+    VertexFactory.Init(Device, CommandList, VertexInitData<TypeOfVertex>::CreateVertexInitData(TexNormalVertexList, IndicesList, CubeNumIndices));
 
-	// Init per vertex data
-	VertexInitData<TypeOfVertex> InitData;
-	InitData.Type               = VertexType::PositionTexCoordNormal;
-	InitData.VertexBufferSize   = VertexBufferSize;
-	InitData.IndexBufferSize    = IndexBufferSize;
-
-	// Maybe rethink that
-    std::copy(TexNormalVertexList.begin(), TexNormalVertexList.end(), InitData.VertexData.begin());
-	std::copy(IndicesList, IndicesList + CubeNumIndices, InitData.IndexData.begin());
-	std::copy(InputElementDesc, InputElementDesc + VertexInitData<TypeOfVertex>::MaxElementDescSize, InitData.InputElementDesc.begin());
-
-	// Init vertex factory
-    VertexFactory.Init(Device, CommandList, std::move(InitData));
-
+    // Return
     return hr;
 }

@@ -21,10 +21,11 @@ static constexpr DWORD IndicesList[] =
 	///////////////////////////////
 };
 
+using TypeOfVertex = VertexPositionTexCoordNormal;
 static const auto TexNormalVertexList           = ComputeFaceNormal< VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
 static constexpr const UINT VertexBufferSize    = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
-static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(DWORD);
+static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(TypeOfIndice);
 
 // Ctors
 Plane::Plane()
@@ -45,17 +46,7 @@ HRESULT Plane::Init(DXDevice* Device, DXGraphicsCommandList * CommandList)
     SetNumIndices(PlaneNumIndices);
 
     // Init per vertex data
-    VertexInitData<VertexPositionTexCoordNormal> InitData;
-    InitData.Type = VertexType::PositionTexCoordNormal;
-    InitData.VertexBufferSize = VertexBufferSize;
-    InitData.IndexBufferSize = IndexBufferSize;
-
-    // Maybe rethink that
-    std::copy(TexNormalVertexList.begin(), TexNormalVertexList.end(), InitData.VertexData.begin());
-    std::copy(IndicesList, IndicesList + PlaneNumIndices, InitData.IndexData.begin());
-
-    // Init vertex factory
-    VertexFactory.Init(Device, CommandList, std::move(InitData));
+    VertexFactory.Init(Device, CommandList, VertexInitData<TypeOfVertex>::CreateVertexInitData(TexNormalVertexList, IndicesList, PlaneNumIndices));
 
     return hr;
 }
