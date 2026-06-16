@@ -10,9 +10,9 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 	//TODO Parsing command line arguments
 
 	//Constants
-	const wchar_t*      windowTitle = dx12App->GetWindowName().c_str();
-	const LONG          MaxWidth	= dx12App->GetWindowWidth();
-	const LONG          MaxHeight	= dx12App->GetWindowHeight();
+	const std::wstring	windowTitleStr	= dx12App->GetWindowName();
+	const LONG          MaxWidth		= dx12App->GetWindowWidth();
+	const LONG          MaxHeight		= dx12App->GetWindowHeight();
 
 	// Initialization of window class
 	WNDCLASSEX windowClass{};
@@ -31,7 +31,7 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 	// Create the window and store a handle to it.
 	hwnd = CreateWindow(
 		windowClass.lpszClassName,
-		windowTitle,
+		windowTitleStr.c_str(),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,

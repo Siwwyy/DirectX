@@ -38,7 +38,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
 	// Main ground plane
-	Plane.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
+	PlanePrimitive.Transform({ 0.0f, 0.0f, 3.0f }, { -30.0f, 0.0f, 0.0f }, { 5.f, 5.f, 1.f });
 }
 
 void D3D12App::Initialize()
@@ -312,16 +312,16 @@ void D3D12App::Initialize()
 		{
 			//Cube1.Init(Device,			CommandList);
 			//Cube2.Init(Device,			CommandList);
-			Texture.Load(Device,		CommandList,	L"bryanzar.png",	MainDescriptorHeap, IncrementDescriptorSize, 0);
-			TextureMegane.Load(Device,	CommandList,	L"megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
+			MainTexture.Load(Device,		CommandList,	L"bryanzar.png",	MainDescriptorHeap, IncrementDescriptorSize, 0);
+			MeganeTexture.Load(Device,	CommandList,	L"megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
 		});
 
 		/***************************
 		 ********** Plane **********
 		 ***************************/
-		Graph.AddPass(TEXT("Plane Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
+		Graph.AddPass(TEXT("Plane Init"), {}, [this](DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{
-			Plane.Init(Device, CommandList);
+			PlanePrimitive.Init(Device, CommandList);
 		});
 	}
 
@@ -408,9 +408,9 @@ void D3D12App::Render()
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
-		CommandList->IASetVertexBuffers(0, 1, &Plane.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&Plane.VertexFactory.IndexBufferView);
-		CommandList->DrawIndexedInstanced(Plane.GetNumIndices(), 1, 0, 0, 0); // draw plane
+		CommandList->IASetVertexBuffers(0, 1, &PlanePrimitive.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
+		CommandList->IASetIndexBuffer(&PlanePrimitive.VertexFactory.IndexBufferView);
+		CommandList->DrawIndexedInstanced(PlanePrimitive.GetNumIndices(), 1, 0, 0, 0); // draw plane
 	}
 	PIXEndEvent(CommandList.Get());
 
@@ -459,8 +459,8 @@ void D3D12App::Update(float DeltaTime)
 	// store plane's world matrix
 	{
 		// create the wvp matrix and store in constant buffer
-		const auto PlaneWorldMatrix				= Plane.GetWorldMatrix();
-		const auto PlaneScaleRotMatrix			= Plane.GetWorldMatrixNoTranslation();
+		const auto PlaneWorldMatrix				= PlanePrimitive.GetWorldMatrix();
+		const auto PlaneScaleRotMatrix			= PlanePrimitive.GetWorldMatrixNoTranslation();
 		XMMATRIX MVPMatPlane					= XMLoadFloat4x4(&PlaneWorldMatrix) * ViewMat * ProjMat;	// create wvp matrix
 		XMMATRIX TransposedPlaneScaleRotMatrix	= XMMatrixTranspose(XMLoadFloat4x4(&PlaneScaleRotMatrix));		// must transpose wvp matrix for the gpu
 		XMMATRIX TransposedMVPMatPlane			= XMMatrixTranspose(MVPMatPlane);							// must transpose wvp matrix for the gpu

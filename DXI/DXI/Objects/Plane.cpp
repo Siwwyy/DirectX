@@ -22,7 +22,7 @@ static constexpr DWORD IndicesList[] =
 };
 
 using TypeOfVertex = VertexPositionTexCoordNormal;
-static const auto TexNormalVertexList           = ComputeFaceNormal< VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
+static const auto TexNormalVertexList           = ComputeFaceNormal<VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
 static constexpr const UINT VertexBufferSize    = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
 static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(TypeOfIndice);

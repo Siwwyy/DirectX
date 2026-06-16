@@ -1,4 +1,3 @@
-
 //Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
 #ifndef D3D12_APP_H_INCLUDED
@@ -113,7 +112,7 @@ public:
 	// Constant Buffers
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	Plane												Plane;
+	Plane												PlanePrimitive;
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
@@ -124,8 +123,8 @@ public:
 	UINT						IncrementDescriptorSize;
 
 	// Texture class
-	Texture TextureMegane;
-	Texture Texture;
+	Texture MainTexture;
+	Texture MeganeTexture;
 
 	// Timer
 	Helpers::StepTimer StepTimer;

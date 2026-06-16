@@ -62,7 +62,7 @@ public:
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
 	// Name of primitive (for debug purposes)
-	std::wstring				Name = TEXT("Primitive");
+	std::wstring				Name = L"Primitive";
 
 private:
 
