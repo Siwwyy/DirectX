@@ -19,6 +19,30 @@
     <Filter Include="Source Files\Objects">
       <UniqueIdentifier>{c9d40fc0-8839-4ac5-a1b0-7897b5cb92bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderGraph">
+      <UniqueIdentifier>{159e79e1-5a42-4f6f-ad23-94dee3891fc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderGraph">
+      <UniqueIdentifier>{3411fe55-89d3-402b-b091-e0da1c119a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources">
+      <UniqueIdentifier>{b3888abd-8157-40e9-8464-4eef21db46f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{c1f3a990-6e2b-4adb-9516-1264d9a1bd3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Geometry">
+      <UniqueIdentifier>{116c9ba9-cea3-4d4a-a46b-023e25f24d15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Passes">
+      <UniqueIdentifier>{ef21707e-b0aa-4912-a2c5-eae05b29501d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Passes">
+      <UniqueIdentifier>{ac4855b8-05a2-4bee-84aa-e81b4f1c1642}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Geometry">
+      <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
@@ -53,6 +77,30 @@
     </ClCompile>
     <ClCompile Include="D3D12Texture.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Buffer.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="JobLambda.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Vertex.cpp">
+      <Filter>Source Files\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\BasePass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\LightPass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\PassBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Plane.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -89,5 +137,32 @@
     <ClInclude Include="D3D12Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderGraph.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Buffer.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="JobLambda.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Vertex.h">
+      <Filter>Header Files\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\BasePass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\LightPass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\PassBase.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Plane.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

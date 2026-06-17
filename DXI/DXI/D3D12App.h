@@ -1,5 +1,5 @@
 
-//Copyright, Damian Andrysiak 2023, All Rights Reserved.
+//Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
 #ifndef D3D12_APP_H_INCLUDED
 #define D3D12_APP_H_INCLUDED
@@ -9,20 +9,24 @@
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
-#include "Objects/Camera.h"
-#include "Objects/Cube.h"
 #include "D3D12Texture.h"
 
+// Objects
+#include "Objects/Camera.h"
+#include "Objects/Plane.h"
+#include "Objects/Cube.h"
 
 
 //APP
 class D3D12App
 {
 public:
-	D3D12App() = delete;
-	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
 
+	D3D12App()	= delete;
+	// Ctors & DCtors
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
+	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
+	
 
 	// Getters
 	[[nodiscard]] UINT											GetWindowWidth() const { return WindowWidth; }
@@ -36,6 +40,10 @@ public:
 	void Update(float DeltaTime);
 	void Destroy();
 
+	// Movement of camera
+	void OnKeyDown(UINT8 key);
+	void OnKeyUp(UINT8 key);
+
 private:
 
 	//Utility functions
@@ -46,6 +54,8 @@ private:
 	void EndFrame();
 	void WaitForPreviousFrame();
 	void FlushCommandList();
+
+public:
 
 	// Window Properties
 	UINT												WindowWidth;
@@ -74,13 +84,13 @@ private:
 	UINT												CurrentFrameIdx;
 
 	// D3D12 Frame Buffer Render Target
-	ComPtr<ID3D12DescriptorHeap>						RtvHeap;
-	std::vector<ComPtr<ID3D12Resource>>					RenderTargets;
+	ComPtr<DXDescriptorHeap>							RtvHeap;
+	std::vector<ComPtr<DXResource>>						RenderTargets;
 	UINT												RtvIncrementDescriptorSize;
 
 	// D3D12 Depth Stencil
-	ComPtr<ID3D12DescriptorHeap>						DsvHeap;
-	ComPtr<ID3D12Resource>								DepthStencil;
+	ComPtr<DXDescriptorHeap>							DsvHeap;
+	ComPtr<DXResource>									DepthStencil;
 	UINT												DsvIncrementDescriptorSize;
 
 	// Pipeline state and root signature
@@ -88,11 +98,11 @@ private:
 	ComPtr<ID3D12RootSignature>							RootSignature;
 
 	// D3D12 Vertex data
-	ComPtr<ID3D12Resource>								VertexBuffer;
+	ComPtr<DXResource>									VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW							VertexBufferView;
 
 	// D3D12 Index buffer data
-	ComPtr<ID3D12Resource>								IndexBuffer;
+	ComPtr<DXResource>									IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
 
 	// Shaders
@@ -103,23 +113,33 @@ private:
 	// Constant Buffers
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	ObjectMatrices										SquareMatrices;
-	Cube												Cube;
+	Plane												Plane;
 	Camera												Camera;
 	ConstantBufferPerObject								CbvPerObject;
 
-	//// TODO | Move it to separate file
-	//ComPtr<DXResource> TextureBuffer; // the resource heap containing our texture
 
-	//int LoadImageDataFromFile(BYTE** ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
 
-	//DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	//WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);
-	//int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& dxgiFormat);
+	//
+	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
+	UINT						IncrementDescriptorSize;
 
-	//ComPtr<ID3D12DescriptorHeap> MainDescriptorHeap;
-	//ComPtr<DXResource> TextureBufferUploadHeap;
+	// Texture class
+	Texture TextureMegane;
 	Texture Texture;
+
+	// Timer
+	Helpers::StepTimer StepTimer;
+
+
+	// NEW SECTION
+	std::vector<std::unique_ptr<Primitive>>				Primitives;
+
+	// CBV section for primitives
+	UINT8*												PrimitivesConstantBufferPtr;
+	ComPtr<DXResource>									PrimitiveCBV;	// constant buffer per primitive
+
+
+	void StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT PrimitiveIdx);
 
 };
 

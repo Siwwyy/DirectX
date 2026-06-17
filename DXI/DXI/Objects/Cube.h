@@ -12,12 +12,10 @@ class Cube : public Primitive
 public:
 
 	Cube();
-	Cube(const DirectX::XMFLOAT4X4 InitWorldMat,
-			const DirectX::XMFLOAT4X4 InitRotMat,
-			const DirectX::XMFLOAT4 InitPosition,
-			const XMFLOAT4 InitScale);
+	Cube(std::wstring Name);
 	~Cube() = default;
 
+	// Init
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
 private:

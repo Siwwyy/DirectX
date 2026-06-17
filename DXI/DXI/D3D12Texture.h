@@ -7,12 +7,17 @@
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
 
-// Simple Smart Pointer following RAII idiom
+// Simple Smart Pointer following RAII idiom, using malloc!
+// No ctor for allocated memory, only raw buffers allowed
 template<typename PtrType>
 struct SimpleSmartPointer
 {
+	// Checking if type is POD
+	static_assert(std::is_trivially_copyable_v<PtrType>, "SimpleSmartPointer works only for POD like types e.g., int, float, BYTE etc.");
+
+	// Disable unnecessary methods
 	DISABLE_COPY(SimpleSmartPointer)
-	DISABLE_BASE_CTOR(SimpleSmartPointer)
+	DISABLE_DEFAULT_CTOR(SimpleSmartPointer)
 
 	// Ctors
 	SimpleSmartPointer(const unsigned int size)
@@ -121,22 +126,12 @@ public:
 	Texture()	= default;
 	~Texture()	= default;
 
-	SimpleSmartPointer<BYTE>&& Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TextureName = L"TextureBuffer");
-
-	// Texture Handle
-	D3D12_GPU_DESCRIPTOR_HANDLE GetTextureHandle(SIZE_T TextureIdx = 0);
-
-	DXDescriptorHeap* GetDescriptorHeap()
-	{
-		return MainDescriptorHeap.Get();
-	}
+	void Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TexturePath, ComPtr<DXDescriptorHeap> & MainDescriptorHeap, UINT& IncrementDescriptorSize, const UINT TextureIdx, std::wstring TextureName = L"TextureBuffer");
 
 private:
 
 	ComPtr<DXResource>			TextureBuffer; // the resource heap containing our texture
-	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
 	ComPtr<DXResource>			TextureBufferUploadHeap;
-	UINT						IncrementDescriptorSize;
 };
 
 // Functions
