@@ -1,0 +1,32 @@
+name: CI - Windows Build
+
+on:
+  push:
+    branches: [ main, master, PSO, RenderGraph ]
+  pull_request:
+    branches: [ main, master, PSO, RenderGraph ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild (Visual Studio)
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Configure with CMake (Visual Studio 2022, x64)
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G "Visual Studio 17 2022" -A x64 ..
+
+      - name: Build (Release)
+        run: cmake --build build --config Release -- /m:2
+
+      - name: List build outputs
+        run: dir build\**\*.exe || true

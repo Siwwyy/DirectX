@@ -4,6 +4,7 @@
 #define D3D12_MATH_H_INCLUDED
 
 #include "pch.h"
+#include "D3D12Helpers.h"
 #include <array> // for fixed-size array helpers
 
 // Vertex attributes

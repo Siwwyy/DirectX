@@ -4,6 +4,7 @@
 #define D3D12_VERTEX_H_INCLUDED
 
 #include "../pch.h"
+#include "../D3D12Helpers.h"
 
 // usings
 using TypeOfIndice = DWORD;

@@ -1,16 +1,23 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.26)
 project(DXIApp LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(USE_VCPKG "Enable vcpkg toolchain (pass -DCMAKE_TOOLCHAIN_FILE=...)" OFF)
-option(USE_PIX "Try to enable PIX support if available" ON)
-set(WINPIX_VERSION "" CACHE STRING "Optional WinPixEventRuntime version to install via nuget (leave empty for latest)")
+# INCLUDE
+include(FetchContent)
+
+##
+
+set(CMAKE_CXX_STANDARD              17)
+set(CMAKE_CXX_STANDARD_REQUIRED     ON)
+set(CMAKE_CXX_EXTENSIONS            OFF)
+set(WINPIX_VERSION                  "" CACHE STRING "Optional WinPixEventRuntime version to install via nuget (leave empty for latest)")
+
+option(USE_VCPKG    "Enable vcpkg toolchain (pass -DCMAKE_TOOLCHAIN_FILE=...)" OFF)
+option(USE_PIX      "Try to enable PIX support if available" ON)
 
 # Source directory containing the DXI project (DXI/DXI)
-set(DXI_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/DXI")
+set(DXI_SRC_DIR                     "${CMAKE_CURRENT_SOURCE_DIR}/DXI")
+set(DXI_THIRD_PARTY_DIRECTORY       "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
 # Gather implementation sources only
 file(GLOB_RECURSE DXI_SOURCES CONFIGURE_DEPENDS
@@ -30,11 +37,46 @@ file(GLOB_RECURSE DXI_HEADERS CONFIGURE_DEPENDS
     "${DXI_SRC_DIR}/*.hpp"
 )
 
+set(DXI_HEADERS
+    ${DXI_SRC_DIR}/TextRenderer.h
+    ${DXI_SRC_DIR}/RenderGraph.h
+    ${DXI_SRC_DIR}/PSO.h
+    ${DXI_SRC_DIR}/pch.h
+    ${DXI_SRC_DIR}/JobLambda.h
+    ${DXI_SRC_DIR}/D3D12Texture.h
+    ${DXI_SRC_DIR}/D3D12Texture.h
+    ${DXI_SRC_DIR}/D3D12Texture.h
+    ${DXI_SRC_DIR}/D3D12Texture.h
+    ${DXI_SRC_DIR}/D3D12ShaderCompiler.h
+    ${DXI_SRC_DIR}/D3D12Math.h
+    ${DXI_SRC_DIR}/D3D12Helpers.h
+    ${DXI_SRC_DIR}/D3D12Buffer.h
+    ${DXI_SRC_DIR}/D3D12App.h
+)
+
 # Detect WinMain sources and ensure at most one entry point
 file(GLOB_RECURSE DXI_WINMAINS CONFIGURE_DEPENDS
     "${DXI_SRC_DIR}/*WinMain.cpp"
     "${DXI_SRC_DIR}/*winmain.cpp"
 )
+
+# SHADERS or KERNELS
+# Collect shader/kernel files
+file(GLOB_RECURSE DXI_SHADERS
+    "${DXI_SRC_DIR}/shaders/*.glsl"
+    "${DXI_SRC_DIR}/shaders/*.hlsl"
+    "${DXI_SRC_DIR}/shaders/*.comp"
+    "${DXI_SRC_DIR}/shaders/*.hip"
+    "${DXI_SRC_DIR}/shaders/*.cl"
+)
+
+# Mark shader files as "IDE only" so generators (Visual Studio) won't attempt to compile them
+if(DXI_SHADERS)
+    set_source_files_properties(${DXI_SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
+endif()
+
+# Create a virtual folder in the .sln
+source_group(TREE "${DXI_SRC_DIR}/shaders" PREFIX "Shaders" FILES ${DXI_SHADERS})
 
 if(DXI_WINMAINS)
     list(LENGTH DXI_WINMAINS DXI_WINMAIN_COUNT)
@@ -44,7 +86,7 @@ if(DXI_WINMAINS)
 endif()
 
 # Create executable from all DXI sources (include headers for IDE)
-add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS})
+add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS})
 
 # Include DXI root and common subfolders (only add if they exist)
 set(DXI_PUBLIC_INCLUDES
@@ -52,10 +94,9 @@ set(DXI_PUBLIC_INCLUDES
 )
 
 set(DXI_OPTIONAL_SUBDIRS
-    "Objects"
     "Geometry"
-    "libs"
-    "Window"
+    "Objects"
+    "Passes"
 )
 
 foreach(_sub ${DXI_OPTIONAL_SUBDIRS})
@@ -65,6 +106,7 @@ foreach(_sub ${DXI_OPTIONAL_SUBDIRS})
     endif()
 endforeach()
 
+# Add include directories to the target
 target_include_directories(DXIApp
     PRIVATE
         ${DXI_PUBLIC_INCLUDES}
@@ -72,7 +114,7 @@ target_include_directories(DXIApp
 
 # Compile settings
 target_compile_definitions(DXIApp PRIVATE UNICODE _UNICODE NOMINMAX) # work with wstring etc.
-target_compile_features(DXIApp PRIVATE cxx_std_17)
+target_compile_features(DXIApp PRIVATE cxx_std_14)
 
 # Link system DirectX libraries on Windows
 if(WIN32)
@@ -101,7 +143,7 @@ if(WIN32)
             if(NOT NUGET_EXE)
                 file(MAKE_DIRECTORY "${_NUGET_LOCAL_DIR}")
                 if(NOT EXISTS "${_NUGET_LOCAL_EXE}")
-                    message(STATUS "nuget.exe not found on PATH — downloading local copy to ${_NUGET_LOCAL_EXE}")
+                    message(STATUS "nuget.exe not found on PATH ï¿½ downloading local copy to ${_NUGET_LOCAL_EXE}")
                     file(DOWNLOAD "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" "${_NUGET_LOCAL_EXE}" SHOW_PROGRESS STATUS _nuget_dl_status)
                     list(GET _nuget_dl_status 0 _nuget_dl_code)
                     if(NOT _nuget_dl_code EQUAL 0)
@@ -135,20 +177,48 @@ if(WIN32)
 
                 if(_nuget_res EQUAL 0)
                     message(STATUS "nuget install completed; searching package tree for pix.h and .lib...")
-                    file(GLOB_RECURSE _nuget_pix_headers CONFIGURE_DEPENDS "${_NUGET_OUTPUT_DIR}/*/pix3.h" "${_NUGET_OUTPUT_DIR}/*/Include/pix3.h")
+
+                    # headers
+                    file(GLOB_RECURSE _nuget_pix_headers CONFIGURE_DEPENDS "${_NUGET_OUTPUT_DIR}/*/Include/pix3.h")
                     if(_nuget_pix_headers)
                         list(GET _nuget_pix_headers 0 _first_pix)
                         get_filename_component(PIX_INCLUDE_DIR "${_first_pix}" DIRECTORY)
                         message(STATUS "Found pix.h via nuget in ${PIX_INCLUDE_DIR}")
                     endif()
-
-                    file(GLOB_RECURSE _nuget_pix_libs CONFIGURE_DEPENDS "${_NUGET_OUTPUT_DIR}/x64/WinPixEventRuntime.lib" "${_NUGET_OUTPUT_DIR}/*.lib" "${_NUGET_OUTPUT_DIR}/x64/*.lib")
+                    # libs
+                    file(GLOB_RECURSE _nuget_pix_libs CONFIGURE_DEPENDS "${_NUGET_OUTPUT_DIR}/*/WinPixEventRuntime.lib")
+                    message(STATUS "NUGET PIX LIBS: ${_nuget_pix_libs}")
                     if(_nuget_pix_libs)
                         #message(STATUS "Found candidate PIX libs via nuget: ${_nuget_pix_libs}")
-                        list(GET _nuget_pix_libs 2 _first_lib)
-                        get_filename_component(PIX_RUNTIME_LIB "${_first_lib}" ABSOLUTE)
+                        foreach(_lib IN LISTS _nuget_pix_libs)
+                            string(TOLOWER "${_lib}" _lib_lc)
+                            if(_lib_lc MATCHES "/x64/|\\\\x64\\\\|/X64/|\\\\X64\\\\")
+                                set(_picked_pix_lib "${_lib}")
+                                break()
+                            endif()
+                        endforeach()
+                        #list(GET _nuget_pix_libs 0 _first_lib)
+                        get_filename_component(PIX_RUNTIME_LIB "${_picked_pix_lib}" ABSOLUTE)
                         message(STATUS "Found PIX lib via nuget: ${PIX_RUNTIME_LIB}")
                     endif()
+
+                    # dlls
+                    file(GLOB_RECURSE _nuget_pix_dlls CONFIGURE_DEPENDS "${_NUGET_OUTPUT_DIR}/*/WinPixEventRuntime.dll")
+                    message(STATUS "NUGET PIX DLLS: ${_nuget_pix_dlls}")
+                    if(_nuget_pix_dlls)
+                        #message(STATUS "Found candidate PIX DLLs via nuget: ${_nuget_pix_dlls}")
+                        foreach(_dll IN LISTS _nuget_pix_dlls)
+                            string(TOLOWER "${_dll}" _dll_lc)
+                            if(_dll_lc MATCHES "/x64/|\\\\x64\\\\|/X64/|\\\\X64\\\\")
+                                set(_picked_pix_dll "${_dll}")
+                                break()
+                            endif()
+                        endforeach()
+                        #list(GET _nuget_pix_dlls 0 _first_dll)
+                        get_filename_component(PIX_RUNTIME_DLL "${_picked_pix_dll}" ABSOLUTE)
+                        message(STATUS "Found PIX DLL via nuget: ${PIX_RUNTIME_DLL}")
+                    endif()
+
                 else()
                     message(WARNING "nuget install failed (exit ${_nuget_res}). Output: ${_nuget_out} ${_nuget_err}")
                 endif()
@@ -162,6 +232,15 @@ if(WIN32)
             target_include_directories(DXIApp PRIVATE ${PIX_INCLUDE_DIR})
             target_link_libraries(DXIApp PRIVATE ${PIX_RUNTIME_LIB})
             target_compile_definitions(DXIApp PRIVATE USE_PIX=1)
+
+            # Copy the runtime DLL(s) to the target output folder after build
+            add_custom_command(TARGET DXIApp POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${PIX_RUNTIME_DLL}
+                    $<TARGET_FILE_DIR:DXIApp>
+                COMMENT "Copying WinPixEventRuntime.dll to executable folder"
+            )
+            message(STATUS "Will copy WinPixEventRuntime.dll from ${PIX_RUNTIME_DLL} to executable folder.")
             message(STATUS "PIX support enabled.")
         else()
             message(WARNING "PIX is unavailable. Options:\n - Install via vcpkg: `vcpkg install winpixeventruntime:x64-windows` and pass -DCMAKE_TOOLCHAIN_FILE.\n - Install Microsoft.Pix manually (winget or Microsoft Store) and make pix.h / WinPixEventRuntime.lib visible to CMake.\n - Disable PIX support with -DUSE_PIX=OFF.")
@@ -169,52 +248,58 @@ if(WIN32)
     endif() # USE_PIX
 endif() # WIN32
 
-# Try to locate dxc import lib (dxcapi.lib). Add more HINTS if you place the files elsewhere.
-find_library(DXC_IMPORT_LIB
-    NAMES dxcapi dxcapi.lib dxcompiler.lib
-    HINTS
-        "${CMAKE_BINARY_DIR}/third_party/dxc/lib/x64"
-        "${CMAKE_SOURCE_DIR}/third_party/dxc/lib/x64"
-        "$ENV{VCPKG_ROOT}/installed/${VCPKG_TARGET_TRIPLET}/lib"
-        "$ENV{ProgramFiles}/DirectXShaderCompiler/lib"
-    PATH_SUFFIXES lib
-)
-message(STATUS "${CMAKE_BINARY_DIR}/third_party/dxc/lib/x64")
+# DXI Compiler 
+set(DXI_COMPILER_VERSION_TAG        "v1.9.2602.24")
+set(DXI_COMPILER_ZIP_FILE_NAME      "dxc_2026_05_27.zip")
+set(DXI_COMPILER_RELEASE_URL        "https://github.com/microsoft/DirectXShaderCompiler/releases/download/${DXI_COMPILER_VERSION_TAG}/${DXI_COMPILER_ZIP_FILE_NAME}")
 
-if(DXC_IMPORT_LIB)
-    message(STATUS "Found dxc import lib: ${DXC_IMPORT_LIB}")
-    target_link_libraries(DXIApp PRIVATE "${DXC_IMPORT_LIB}")
+if(DXI_COMPILER_RELEASE_URL)
 
-    # Try to find the matching dxcompiler.dll near the import lib
-    get_filename_component(_dxc_lib_dir "${CMAKE_SOURCE_DIR}/third_party/dxc/bin/x64" DIRECTORY)
+    # Actual fetching
+    message(STATUS "FetchContent: requesting DXC from ${DXI_COMPILER_RELEASE_URL}")
+    FetchContent_Declare(dxc_release URL ${DXI_COMPILER_RELEASE_URL})
+    FetchContent_GetProperties(dxc_release)
+    FetchContent_MakeAvailable(dxc_release) # downloads and extracts into dxc_release_SOURCE_DIR
 
-    set(_cand1 "${_dxc_lib_dir}/dxcompiler.dll")
-    set(_cand2 "${_dxc_lib_dir}/x64/dxcompiler.dll")
+    # release source dir (where files has been fetched)
+    set(_DXC_DIR "${dxc_release_SOURCE_DIR}")
+    message(STATUS "DXC extracted to: ${_DXC_DIR}")
+
+    # Find dxc import lib (prefer dxcapi.lib) and runtime DLL (dxcompiler.dll)
+    file(GLOB_RECURSE DXC_LIBS CONFIGURE_DEPENDS "${_DXC_DIR}/lib/x64/*.lib")
+    file(GLOB_RECURSE DXC_DLLS CONFIGURE_DEPENDS "${_DXC_DIR}/bin/x64/*.dll")
+
+    # add more verbosity for debugging
+    message(STATUS "DXC libs: ${DXC_LIBS}")
+    message(STATUS "DXC DLLs: ${DXC_DLLS}")
+
+    # Link statically againts DXC import lib and include DXC headers
+    target_include_directories(DXIApp PRIVATE "${_DXC_DIR}/inc")
+    target_link_libraries(DXIApp PRIVATE ${DXC_LIBS})
+
+else()
+
+    set(DXC_LIBS "")
     set(DXC_DLL "")
-    
-    if(EXISTS "${_cand1}")
-        set(DXC_DLL "${_cand1}")
-        message(STATUS "Found dxc dll import lib directory: ${_cand1}")
-    elseif(EXISTS "${_cand2}")
-        set(DXC_DLL "${_cand2}")
-        message(STATUS "Found dxc dll import lib directory: ${_cand2}")
-    endif()
+    message(WARNING "DXC release URL not specified; skipping DXC fetch.")
 
-    if(DXC_DLL)
-        # Copy the runtime DLL to the target output folder after build
+endif()
+
+# Link the DXC import DLLs to the target (just copy where .exe will be located of project)
+if(DXC_DLLS)
+    foreach(_dll IN LISTS DXC_DLLS)
         add_custom_command(TARGET DXIApp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${DXC_DLL}"
+                "${_dll}"
                 "$<TARGET_FILE_DIR:DXIApp>"
-            COMMENT "Copying dxcompiler.dll to executable folder"
+            COMMENT "Copying ${_dll} to executable folder"
         )
-        message(STATUS "Will copy dxcompiler.dll from ${DXC_DLL} to executable folder.")
-    else()
-        message(WARNING "dxc import lib found but dxcompiler.dll not located. Place dxcompiler.dll next to the EXE or add to PATH.")
-    endif()
+    endforeach()
+    message(STATUS "Will copy DXC runtime DLLs: ${DXC_DLLS}")
 else()
-    message(WARNING "dxc import lib (dxcapi.lib) not found. Install DirectXShaderCompiler and place dxcapi.lib/dxcompiler.dll in a known folder, or install via vcpkg.")
+    message(WARNING "dxc import lib found but dxcompiler.dll not located. Place dxcompiler.dll next to the EXE or add to PATH.")
 endif()
+
 
 # Per-configuration output directories
 set_target_properties(DXIApp PROPERTIES
@@ -222,3 +307,12 @@ set_target_properties(DXIApp PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+
+# optionally link dxguid if available (resolves some IID_* / GUID link errors)
+find_library(DXGUID_LIB NAMES dxguid dxguid.lib PATHS ENV LIB PATHS NO_DEFAULT_PATH)
+if(DXGUID_LIB)
+    target_link_libraries(DXIApp PRIVATE ${DXGUID_LIB})
+else()
+    # linking plain "dxguid" also works with MSVC in many cases:
+    target_link_libraries(DXIApp PRIVATE dxguid)
+endif()

@@ -43,7 +43,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 
 void D3D12App::Initialize()
 {
-	HMODULE module = LoadLibrary(L"WinPixEventRuntime.dll");
+	//HMODULE module = LoadLibrary(L"WinPixEventRuntime.dll");
 	// Initialize factory
 	UINT DxgiFactoryFlags = 0;
 

@@ -102,7 +102,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

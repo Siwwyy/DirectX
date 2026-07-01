@@ -6,6 +6,7 @@
 
 
 #include "pch.h"
+#include "D3D12Helpers.h"
 #include <dxcapi.h> //for new DX shader compiler API | Has to be included at the end, otherwise got many errors
 
 class D3D12ShaderCompiler

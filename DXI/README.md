@@ -24,16 +24,19 @@
 1. Create an out-of-source build directory and configure CMake:
 
     ```sh
-    mkdir build
-    cd build
-    cmake -G "Visual Studio 17 2022" -A x64 ..
+    cmake -G "Visual Studio 17 2022" -A x64 -S . -B build
     ```
 
-2. Build the Release configuration:
+2. Build the Debug/Release configuration:
 
     ```sh
-    cmake --build . --config Release
+    cmake --build build --config Debug
     ```
+    Or
+    ```sh
+    cmake --build build --config Release
+    ```
+
 
    This produces the executable `DXIApp` (if `WinMain.cpp` is present) in `build/bin/Release` (Debug builds go to `build/bin/Debug`).
 
