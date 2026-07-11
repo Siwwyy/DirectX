@@ -7,11 +7,8 @@ BasePass::BasePass()
 	// Init shaders
 	
 	// Shaders compilation
-	constexpr DxcDefine ShaderDefines[] =
-	{
-		L"BASE_PASS", L"1",
-		NULL, NULL
-	};
+	DXShaderDefines<1> ShaderDefines;
+	ShaderDefines.AddDefine({ L"BASE_PASS", L"1" });
 
 	constexpr const wchar_t* VertexShaderPath = L"shaders//BasePass//base_pass_vertex_shader.hlsl";
 	constexpr const wchar_t* PixelShaderPath = L"shaders//BasePass//base_pass_pixel_shader.hlsl";
@@ -32,8 +29,8 @@ BasePass::BasePass()
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, ShaderDefines, L"main", L"vs_6_0", arguments);
-	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"main", L"ps_6_0", arguments);
+	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) noexcept

@@ -4,14 +4,6 @@
 LightPass::LightPass()
 {
 	// Init shaders
-
-	// Shaders compilation
-	constexpr DxcDefine ShaderDefines[] =
-	{
-		//L"USE_TEXCOORD", L"1",
-		NULL, NULL
-	};
-
 	constexpr const wchar_t* VertexShaderPath = L"shaders//BasePass//vertex_shader.hlsl";
 	constexpr const wchar_t* PixelShaderPath = L"shaders//BasePass//pixel_shader.hlsl";
 
@@ -31,8 +23,8 @@ LightPass::LightPass()
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, ShaderDefines, L"main", L"vs_6_0", arguments);
-	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"main", L"ps_6_0", arguments);
+	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments);
+	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments);
 }
 
 HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) noexcept

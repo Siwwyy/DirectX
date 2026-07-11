@@ -528,7 +528,7 @@ namespace Helpers
 
 
     // Inline definitions
-    inline void ThrowIfFailed(HRESULT hr)
+    FORCEINLINE void ThrowIfFailed(HRESULT hr)
     {
         auto HrToString = [&]
         {

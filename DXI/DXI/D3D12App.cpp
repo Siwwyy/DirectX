@@ -635,7 +635,7 @@ void D3D12App::SoftwareRasterizer::InitalizeShader(D3D12ShaderCompiler& ShaderCo
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	ComputeShader = ShaderCompiler.CompileShader(ComputeShaderRelativeShaderPath, nullptr, L"CSMain", L"cs_6_0", arguments);
+	ComputeShader = ShaderCompiler.CompileShader(ComputeShaderRelativeShaderPath, L"CSMain", L"cs_6_0", arguments);
 }
 
 void D3D12App::SoftwareRasterizer::InitializePSO(ComPtr<DXDevice>& Device)
@@ -769,18 +769,21 @@ void D3D12App::InitializePerFrameResources()
 
 void D3D12App::InitalizeShaders()
 {
-	// Shaders compilation //TODO
 	// Shaders defines
 	//constexpr DxcDefine ShaderDefines[] =
 	//{
 	//	L"PIXEL_SHADER_ENABLED", L"1",
 	//	NULL, NULL
 	//};
-	constexpr DxcDefine ShaderDefines[] =
-	{
-		L"USE_TEXCOORD", L"1",
-		NULL, NULL
-	};
+	//struct DXShaderDefines
+	//{
+	//	DxcDefine Defines[2] = 
+	//	{ { L"PIXEL_SHADER_ENABLED", L"1" }, { NULL, NULL } };
+	//	SIZE_T Count;
+	//} ShaderDefines;
+
+	DXShaderDefines<1> ShaderDefines;
+	ShaderDefines.AddDefine({ L"USE_TEXCOORD", L"1" });
 
 	constexpr const wchar_t* VertexShaderPath	= L"shaders//vertex_shader.hlsl";
 	constexpr const wchar_t* PixelShaderPath	= L"shaders//pixel_shader.hlsl";
@@ -810,8 +813,8 @@ void D3D12App::InitalizeShaders()
 	//	arguments.push_back(define.Value);
 	//}
 
-	VertexShader	= ShaderCompiler.CompileShader(VertexShaderPath, ShaderDefines, L"main", L"vs_6_0", arguments);
-	PixelShader		= ShaderCompiler.CompileShader(PixelShaderPath, ShaderDefines, L"main", L"ps_6_0", arguments);
+	VertexShader	= ShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PixelShader		= ShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 void D3D12App::InitializePSO()
