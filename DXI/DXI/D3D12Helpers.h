@@ -500,7 +500,7 @@ namespace Helpers
 	 ******** FUNCTIONS ********
 	 ***************************/
     // Get adapter
-    ComPtr<IDXGIAdapter1>	GetAdapter(ComPtr<IDXGIFactory1> pFactory, D3D_FEATURE_LEVEL deviceFeatureLevel, bool useWarpAdapter = false, bool requestHighPerformanceAdapter = false);
+    [[nodiscard]] ComPtr<IDXGIAdapter1>	                GetAdapter(ComPtr<IDXGIFactory1> pFactory, D3D_FEATURE_LEVEL deviceFeatureLevel, bool useWarpAdapter = false, bool requestHighPerformanceAdapter = false);
 
     // Creates a Command List. Optionally with Command Allocator and Pipeline State
     [[nodiscard]] DXGraphicsCommandList *				CreateGraphicsCommandList(DXDevice * const Device, CommandListDesc CommandListDesc, DXCommandAllocator * CommandAllocator, DXPipelineState * PipelineState = nullptr);

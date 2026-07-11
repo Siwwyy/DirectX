@@ -39,6 +39,55 @@ public:
 	void Update(float DeltaTime);
 	void Destroy();
 
+
+	// SoftwareRasterizer
+	void InitializeSoftwareRasterizer();
+	void SoftwareRasterizer();
+
+
+	struct SoftwareRasterizer
+	{
+		//Utility functions
+		void InitializeResources(ComPtr<DXDevice>& Device);
+		void InitalizeShader(D3D12ShaderCompiler& ShaderCompiler);
+		void InitializePSO(ComPtr<DXDevice>& Device);
+		void BeginCompute();
+		void Compute();
+		void EndCompute();
+		void SubmitCompute();
+
+		//
+		ComPtr<DXCommandQueue>								CommandQueue;
+		ComPtr<DXGraphicsCommandList>						CommandList;
+		ComPtr<DXCommandAllocator>							CommandAllocator;
+
+		// D3D12 Synchronization CPU<->GPU
+		ComPtr<DXFence>										Fence;
+		UINT64												FenceValue;
+		HANDLE												FenceEvent;
+
+		// Pipeline state and root signature
+		ComPtr<ID3D12PipelineState>							PipelineState;
+		ComPtr<ID3D12RootSignature>							RootSignature;
+		ComPtr<ID3DBlob>									ComputeShader;				// Compute shader blob
+
+
+		// Constant Buffers
+		ComPtr<DXResource>									ConstantBufferUploadHeap;	// this is the memory on the gpu where constant buffers for each frame will be placed
+		UINT8*												CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+		ConstantBufferSoftwareRasterizer					CbvSoftwareRasterizer;
+
+
+		// Descriptor Heap for SRV/UAV
+		ComPtr<DXDescriptorHeap>							DescriptorHeap;
+		UINT												DescriptorHeapIncrementSize;
+
+		// 2 SRV + 1 UAV resources
+		ComPtr<DXResource>									SRVResources[2]; // input color, input depth/stencil
+		ComPtr<DXResource>									UAVResources[1]; // output rasterized color
+
+	} SR;
+
 	// Movement of camera
 	void OnKeyDown(UINT8 key);
 	void OnKeyUp(UINT8 key);

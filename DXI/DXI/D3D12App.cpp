@@ -15,6 +15,7 @@ using namespace Helpers;
 
 //CONSTANTS
 const D3D12_COMMAND_LIST_TYPE			COMMAND_LIST_TYPE			= D3D12_COMMAND_LIST_TYPE_DIRECT;
+const D3D12_COMMAND_LIST_TYPE			COMMAND_LIST_TYPE_COMPUTE	= D3D12_COMMAND_LIST_TYPE_COMPUTE;
 const UINT								BACK_BUFFER_COUNT			= 3;
 const D3D_FEATURE_LEVEL					D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 const DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -506,6 +507,189 @@ void D3D12App::Destroy()
 	}
 #endif // DEBUG_MODE
 }
+
+// SOFTWARE RASTERIZER
+void D3D12App::InitializeSoftwareRasterizer()
+{
+	//Initialize resources per frame buffer
+	SR.InitializeResources(Device);
+
+	// Initialize Shaders
+	SR.InitalizeShader(ShaderCompiler);
+
+	// Initialize PSO
+	SR.InitializePSO(Device);
+
+
+
+
+
+	// MUST BE LAST ONE HERE!!!
+	{
+		SR.EndCompute();
+	}
+}
+
+void D3D12App::SoftwareRasterizer()
+{
+	SR.Compute();
+}
+
+void D3D12App::SoftwareRasterizer::InitializeResources(ComPtr<DXDevice>& Device)
+{
+
+	// Initialization of command queue
+	{
+		D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
+		CommandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		CommandQueueDesc.NodeMask = 0; //single GPU env for now
+		CommandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+		CommandQueueDesc.Type = COMMAND_LIST_TYPE_COMPUTE;
+		CommandQueue = Helpers::CreateCommandQueue(Device.Get(), CommandQueueDesc);
+	}
+
+	//Create the command allocator
+	{
+		ThrowIfFailed(Device->CreateCommandAllocator(COMMAND_LIST_TYPE_COMPUTE, IID_PPV_ARGS(&CommandAllocator)));
+	}
+
+	// Create an event handle to use for frame synchronization + Fence.
+	{
+		FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (FenceEvent == nullptr)
+		{
+			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+		}
+
+		//Create fence
+		ThrowIfFailed(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
+	}
+
+	//Initialization of command list
+	{
+		CommandList = Helpers::CreateGraphicsCommandList(
+			Device.Get(),
+			CommandListDesc{ 0, COMMAND_LIST_TYPE_COMPUTE, D3D12_COMMAND_LIST_FLAG_NONE },
+			CommandAllocator.Get(),
+			nullptr);
+
+		ThrowIfFailed(CommandList->Close()); //close not closed command list
+		// Reset previously used command list and command allocator
+		ThrowIfFailed(CommandList->Reset(CommandAllocator.Get(), nullptr));
+	}
+
+	// CBV Upload heap
+	{
+		// create resource for CBV for software rasterizer
+		const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ConstantBufferSoftwareRasterizerSize);
+		ThrowIfFailed(Device->CreateCommittedResource(
+			&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the constant buffer data
+			D3D12_HEAP_FLAG_NONE,									// no flags
+			&UploadBufferDesc,										// size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
+			D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state
+			nullptr,												// we do not have use an optimized clear value for constant buffers
+			IID_PPV_ARGS(&ConstantBufferUploadHeap)));
+		NAME_D3D12_OBJECT(ConstantBufferUploadHeap, L"Constant Buffer Upload Resource Heap SR");
+
+		// Map
+		CD3DX12_RANGE readRange(0, 0);    
+		// We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
+		// map the resource heap to get a gpu virtual address to the beginning of the heap
+		ThrowIfFailed(ConstantBufferUploadHeap->Map(0, &readRange, reinterpret_cast<void**>(&CbvGPUAddress)));
+
+		// Memcpy initial data to the constant buffer
+		ZeroMemory(&CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize);
+		memcpy(CbvGPUAddress, &CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize);
+	}
+
+	// SRV/UAV Descriptor Heap
+	{
+		constexpr auto DescriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
+		HeapDesc.NumDescriptors = 3; // 2 SRV + 1 UAV
+		HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		HeapDesc.Type = DescriptorHeapType;
+		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)));
+	}
+
+}
+
+void D3D12App::SoftwareRasterizer::InitalizeShader(D3D12ShaderCompiler& ShaderCompiler)
+{
+	// Path
+	constexpr const wchar_t* ComputeShaderRelativeShaderPath = L"shaders//ComputeShaders//main.hlsl";
+
+	std::vector<LPCWSTR> arguments;
+	// String arguments
+	//arguments.push_back(L"-enable-16bit-types");
+	//arguments.push_back(L"Qstrip_reflect");
+	arguments.push_back(L"-Werror");
+	arguments.push_back(L"-Wconversion");
+	// Defines arguments
+	arguments.push_back(DXC_ARG_ALL_RESOURCES_BOUND);
+#if DEBUG_MODE
+	arguments.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);	//-Od
+	arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);	//-WX
+	arguments.push_back(DXC_ARG_DEBUG);					//-Zi
+#else
+	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
+#endif
+
+	ComputeShader = ShaderCompiler.CompileShader(ComputeShaderRelativeShaderPath, nullptr, L"CSMain", L"cs_6_0", arguments);
+}
+
+void D3D12App::SoftwareRasterizer::InitializePSO(ComPtr<DXDevice>& Device)
+{
+
+}
+
+void D3D12App::SoftwareRasterizer::BeginCompute()
+{
+	// Reset previously used command list and command allocator
+	{
+		ThrowIfFailed(CommandAllocator->Reset());
+		ThrowIfFailed(CommandList->Reset(CommandAllocator.Get(), PipelineState.Get()));
+	}
+}
+
+void D3D12App::SoftwareRasterizer::Compute()
+{
+	// Begin compute (always first!)
+	BeginCompute();
+
+
+	// End compute (always last!)
+	EndCompute();
+}
+
+void D3D12App::SoftwareRasterizer::EndCompute()
+{
+	// Submit necessary things from command list
+	// Execute command lists
+	ThrowIfFailed(CommandList->Close()); //close command list for execution
+	DXCommandList* CommandLists[] = { CommandList.Get() };
+	CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+
+	// Move Fence / Wait for previous compute to end
+	SubmitCompute();
+}
+
+void D3D12App::SoftwareRasterizer::SubmitCompute()
+{
+	// Signal and increment the fence value.
+	FenceValue = FenceValue + 1;
+	// Fence will keep previous value until all commands are completed, thats why FenceValue++;
+	ThrowIfFailed(CommandQueue->Signal(Fence.Get(), FenceValue));
+
+	// Wait until recorded commands are processed by GPU.
+	if (Fence->GetCompletedValue() < FenceValue)
+	{
+		ThrowIfFailed(Fence->SetEventOnCompletion(FenceValue, FenceEvent));
+		WaitForSingleObject(FenceEvent, INFINITE);
+	}
+}
+
+// SOFTWARE RASTERIZER
 
 void D3D12App::OnKeyDown(UINT8 key)
 {

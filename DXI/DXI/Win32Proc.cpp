@@ -45,6 +45,9 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 	//TODO Add initialization of DX12 environment
 	dx12App->Initialize();
 
+	dx12App->InitializeSoftwareRasterizer();
+	dx12App->SoftwareRasterizer();
+
 	ShowWindow(hwnd, nCmdShow);
 
 	// Main sample loop.
