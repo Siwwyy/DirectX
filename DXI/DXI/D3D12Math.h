@@ -197,6 +197,7 @@ struct alignas(256) ConstantBufferSoftwareRasterizer
 	DirectX::XMFLOAT4X4 ViewMatrix;		// Camera matrix (View)
 	DirectX::XMFLOAT4X4 ProjMatrix;		// Projection Matrix (Clip)
 	DirectX::XMFLOAT4X4 ViewProjMatrix;	// View * Projection Matrix (View -> Clip)
+	DirectX::XMFLOAT4		ScreenSize;		// Screen Size (Width, Height, 0.0f, 0.0f)
 };
 static_assert((sizeof(ConstantBufferSoftwareRasterizer) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
 constexpr auto ConstantBufferSoftwareRasterizerSize				= sizeof(ConstantBufferSoftwareRasterizer);

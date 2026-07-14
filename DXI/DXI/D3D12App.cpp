@@ -25,6 +25,83 @@ const DXGI_SAMPLE_DESC					SAMPLE_DESC					= SAMPLER_HELPER::CreateSampler(1, 0)
 //////////////////////////////////////////////////////////////////
 
 
+static VertexPosition VertexListComp[] =
+{
+	// front face
+	{ -0.5f,  0.5f, -0.5f},
+	{  0.5f, -0.5f, -0.5f},
+	{ -0.5f, -0.5f, -0.5f},
+	{  0.5f,  0.5f, -0.5f},
+
+	// right side face
+	{  0.5f, -0.5f, -0.5f},
+	{  0.5f,  0.5f,  0.5f},
+	{  0.5f, -0.5f,  0.5f},
+	{  0.5f,  0.5f, -0.5f},
+
+	// left side face
+	{ -0.5f,  0.5f,  0.5f},
+	{ -0.5f, -0.5f, -0.5f},
+	{ -0.5f, -0.5f,  0.5f},
+	{ -0.5f,  0.5f, -0.5f},
+
+	// back face
+	{  0.5f,  0.5f,  0.5f},
+	{ -0.5f, -0.5f,  0.5f},
+	{  0.5f, -0.5f,  0.5f},
+	{ -0.5f,  0.5f,  0.5f},
+
+	// top face
+	{ -0.5f,  0.5f, -0.5f},
+	{  0.5f,  0.5f,  0.5f},
+	{  0.5f,  0.5f, -0.5f},
+	{ -0.5f,  0.5f,  0.5f},
+
+	// bottom face
+	{  0.5f, -0.5f,  0.5f},
+	{ -0.5f, -0.5f, -0.5f},
+	{  0.5f, -0.5f, -0.5f},
+	{ -0.5f, -0.5f,  0.5f},
+};
+
+
+// a quad (2 triangles)
+static TypeOfIndice IndicesListComp[] =
+{
+	// front face
+	0, 1, 2, // first triangle
+	0, 3, 1, // second triangle
+
+	// left face
+	4, 5, 6, // first triangle
+	4, 7, 5, // second triangle
+
+	// right face
+	8, 9, 10, // first triangle
+	8, 11, 9, // second triangle
+
+	// back face
+	12, 13, 14, // first triangle
+	12, 15, 13, // second triangle
+
+	// top face
+	16, 17, 18, // first triangle
+	16, 19, 17, // second triangle
+
+	// bottom face
+	20, 21, 22, // first triangle
+	20, 23, 21, // second triangle
+};
+
+using TypeOfVertexComp = VertexPosition;
+static constexpr UINT CompVertexBufferSize = sizeof(VertexListComp);
+static constexpr UINT CompIndexBufferSize = sizeof(IndicesListComp);
+static constexpr UINT CompCubeNumIndices = CompIndexBufferSize / sizeof(TypeOfIndice);
+
+
+D3D12_RESOURCE_STATES RTBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_RENDER_TARGET;
+D3D12_RESOURCE_STATES RTAfter = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT;
+
 D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::wstring WindowName)
 	: WindowWidth(WindowWidth)
 	, WindowHeight(WindowHeight)
@@ -35,6 +112,7 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	, CurrentFrameIdx(0)
 	, RtvIncrementDescriptorSize(0)
 	, Camera(WindowWidth, WindowHeight)
+	, SR(WindowWidth, WindowHeight)
 {
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
@@ -390,7 +468,6 @@ void D3D12App::Initialize()
 
 void D3D12App::Render()
 {
-
 	//Always BeginFrame first
 	BeginFrame();
 
@@ -430,6 +507,12 @@ void D3D12App::Render()
 		}
 	}
 	PIXEndEvent(CommandList.Get());
+
+
+	{
+		SR.CopyFromRenderTarget(Device, RenderTargets[CurrentFrameIdx], CommandList);
+		SR.Compute();
+	}
 
 	//Always EndFrame last
 	EndFrame();
@@ -483,8 +566,6 @@ void D3D12App::Update(float DeltaTime)
 
 void D3D12App::Destroy()
 {
-	CloseHandle(FenceEvent);
-
 	// umap mapped memory for all primitive cbv
 	PrimitiveCBV->Unmap(0, nullptr);
 
@@ -511,6 +592,7 @@ void D3D12App::Destroy()
 // SOFTWARE RASTERIZER
 void D3D12App::InitializeSoftwareRasterizer()
 {
+	BeginFrame();
 	//Initialize resources per frame buffer
 	SR.InitializeResources(Device);
 
@@ -520,24 +602,26 @@ void D3D12App::InitializeSoftwareRasterizer()
 	// Initialize PSO
 	SR.InitializePSO(Device);
 
+	// Initialize data
+	SR.InitializeData(Device, Camera, CommandList);
 
-
-
-
-	// MUST BE LAST ONE HERE!!!
+	// MUST BE LAST ONE HERE!!! a.k.a submit everything before executing the compute shader
 	{
+		EndFrame();
 		SR.EndCompute();
 	}
 }
 
-void D3D12App::SoftwareRasterizer()
+void D3D12App::RenderSoftwareRasterizer()
 {
-	SR.Compute();
+	//SR.BeginCompute();
+	//SR.CopyRenderTarget(Device, RenderTargets[CurrentFrameIdx], CommandList);
+	//SR.Compute();
+	//SR.EndCompute();
 }
 
 void D3D12App::SoftwareRasterizer::InitializeResources(ComPtr<DXDevice>& Device)
 {
-
 	// Initialization of command queue
 	{
 		D3D12_COMMAND_QUEUE_DESC CommandQueueDesc = {};
@@ -588,14 +672,14 @@ void D3D12App::SoftwareRasterizer::InitializeResources(ComPtr<DXDevice>& Device)
 			&UploadBufferDesc,										// size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
 			D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state
 			nullptr,												// we do not have use an optimized clear value for constant buffers
-			IID_PPV_ARGS(&ConstantBufferUploadHeap)));
-		NAME_D3D12_OBJECT(ConstantBufferUploadHeap, L"Constant Buffer Upload Resource Heap SR");
+			IID_PPV_ARGS(&ConstantBufferUpload)));
+		NAME_D3D12_OBJECT(ConstantBufferUpload, L"Constant Buffer Upload Resource Heap SR");
 
 		// Map
 		CD3DX12_RANGE readRange(0, 0);    
 		// We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
 		// map the resource heap to get a gpu virtual address to the beginning of the heap
-		ThrowIfFailed(ConstantBufferUploadHeap->Map(0, &readRange, reinterpret_cast<void**>(&CbvGPUAddress)));
+		ThrowIfFailed(ConstantBufferUpload->Map(0, &readRange, reinterpret_cast<void**>(&CbvGPUAddress)));
 
 		// Memcpy initial data to the constant buffer
 		ZeroMemory(&CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize);
@@ -606,10 +690,165 @@ void D3D12App::SoftwareRasterizer::InitializeResources(ComPtr<DXDevice>& Device)
 	{
 		constexpr auto DescriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
-		HeapDesc.NumDescriptors = 3; // 2 SRV + 1 UAV
-		HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		HeapDesc.Type = DescriptorHeapType;
+		HeapDesc.NumDescriptors		= SRVResourceCount + UAVResourceCount; // 3 SRV + 1 UAV
+		HeapDesc.Flags				= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		HeapDesc.Type				= DescriptorHeapType;
 		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&DescriptorHeap)));
+	}
+
+	// SRV/UAV resource creation
+	{
+		const SIZE_T TOTAL_BUFFER_SIZE = Width * Height * 4 * sizeof(float); // resx*resy*4 channels*4 bytes per channel
+		IncrementSizeCBVSRVUAV = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		// SRV
+		{
+			// Get handle for 0th descriptor in heap
+			CD3DX12_CPU_DESCRIPTOR_HANDLE SRVHandle(DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+			{
+				// Desc
+				const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(TOTAL_BUFFER_SIZE);
+
+				// Color, DepthStencil
+
+				// Create SRV resources for input buffers (2 input buffers)
+				for (SIZE_T i = 0; i < 2; ++i)
+				{
+					// Upload SRV resources for input buffers (2 input buffers)
+					ThrowIfFailed(Device->CreateCommittedResource(
+						&DX_HEAP_PROPERTY_UPLOAD,
+						D3D12_HEAP_FLAG_NONE,
+						&BufferDesc,
+						D3D12_RESOURCE_STATE_GENERIC_READ,
+						nullptr,
+						IID_PPV_ARGS(&SRVResourcesUpload[i])));
+
+					// Real, GPU buffers
+					ThrowIfFailed(Device->CreateCommittedResource(
+						&DX_HEAP_PROPERTY_DEFAULT,
+						D3D12_HEAP_FLAG_NONE,
+						&BufferDesc,
+						D3D12_RESOURCE_STATE_COMMON,
+						nullptr,
+						IID_PPV_ARGS(&SRVResources[i])));
+
+					// Create SRV for the input texture
+					D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+					SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+					SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+					SrvDesc.Buffer.NumElements = TOTAL_BUFFER_SIZE / sizeof(float); // resx*resy*4 channels
+					SrvDesc.Buffer.StructureByteStride = sizeof(float);
+					Device->CreateShaderResourceView(SRVResources[i].Get(), &SrvDesc, SRVHandle);
+					SRVHandle.Offset(1, IncrementSizeCBVSRVUAV);
+				}
+			}
+
+			// Vertex/Color buffer
+			{
+				// Type of vertex and index
+
+				const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(CompVertexBufferSize);
+				// Create SRV resources for input buffers (2 input buffers)
+				for (SIZE_T i = 2; i < 2 + 2; ++i)
+				{
+					// Upload SRV resources for input buffers (2 input buffers)
+					ThrowIfFailed(Device->CreateCommittedResource(
+						&DX_HEAP_PROPERTY_UPLOAD,
+						D3D12_HEAP_FLAG_NONE,
+						&BufferDesc,
+						D3D12_RESOURCE_STATE_GENERIC_READ,
+						nullptr,
+						IID_PPV_ARGS(&SRVResourcesUpload[i])));
+
+					// Real, GPU buffers
+					ThrowIfFailed(Device->CreateCommittedResource(
+						&DX_HEAP_PROPERTY_DEFAULT,
+						D3D12_HEAP_FLAG_NONE,
+						&BufferDesc,
+						D3D12_RESOURCE_STATE_COMMON,
+						nullptr,
+						IID_PPV_ARGS(&SRVResources[i])));
+
+					// Create SRV for the input texture
+					D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+					SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+					SrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+					SrvDesc.Buffer.NumElements = CompVertexBufferSize / sizeof(float); // 4 channels
+					SrvDesc.Buffer.StructureByteStride = sizeof(float);
+					Device->CreateShaderResourceView(SRVResources[i].Get(), &SrvDesc, SRVHandle);
+					SRVHandle.Offset(1, IncrementSizeCBVSRVUAV);
+				}
+
+
+
+
+			}
+
+			// Index buffer
+			{
+				constexpr UINT IndexBufferPosition = 4;
+
+				const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(CompIndexBufferSize);
+				// Create SRV resources for index buffer (1 input buffer)
+				ThrowIfFailed(Device->CreateCommittedResource(
+					&DX_HEAP_PROPERTY_UPLOAD,
+					D3D12_HEAP_FLAG_NONE,
+					&BufferDesc,
+					D3D12_RESOURCE_STATE_GENERIC_READ,
+					nullptr,
+					IID_PPV_ARGS(&SRVResourcesUpload[IndexBufferPosition])));
+
+				// Real, GPU buffers
+				ThrowIfFailed(Device->CreateCommittedResource(
+					&DX_HEAP_PROPERTY_DEFAULT,
+					D3D12_HEAP_FLAG_NONE,
+					&BufferDesc,
+					D3D12_RESOURCE_STATE_COMMON,
+					nullptr,
+					IID_PPV_ARGS(&SRVResources[IndexBufferPosition])));
+
+				// Create SRV for the input texture
+				D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+				SrvDesc.Shader4ComponentMapping		= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				SrvDesc.ViewDimension				= D3D12_SRV_DIMENSION_BUFFER;
+				SrvDesc.Buffer.NumElements			= CompIndexBufferSize / (sizeof(uint32_t) * 3);
+				SrvDesc.Buffer.StructureByteStride	= sizeof(uint32_t) * 3; // uint32_t * 3 because each triangle has 3 indices
+				Device->CreateShaderResourceView(SRVResources[IndexBufferPosition].Get(), &SrvDesc, SRVHandle);
+				SRVHandle.Offset(1, IncrementSizeCBVSRVUAV);
+			}
+
+		}
+
+		// UAV
+		{
+			// Desc
+			const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(TOTAL_BUFFER_SIZE, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+			// Get handle for 0th descriptor in heap (after 2 SRVs)
+			CD3DX12_CPU_DESCRIPTOR_HANDLE UAVHandle(DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+			UAVHandle.Offset(SRVResourceCount, IncrementSizeCBVSRVUAV); // because of placement in heap (after 2 SRVs) | SRV | SRV | UAV |
+			// Create UAV resources for output buffers (1 output buffer)
+			for (SIZE_T i = 0; i < UAVResourceCount; ++i)
+			{
+				ThrowIfFailed(Device->CreateCommittedResource(
+					&DX_HEAP_PROPERTY_DEFAULT,
+					D3D12_HEAP_FLAG_NONE,
+					&BufferDesc,
+					D3D12_RESOURCE_STATE_COMMON,
+					nullptr,
+					IID_PPV_ARGS(&UAVResources[i])));
+
+				// Create UAV for the output texture
+				D3D12_UNORDERED_ACCESS_VIEW_DESC UavDesc = {};
+				UavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+				UavDesc.Buffer.NumElements = TOTAL_BUFFER_SIZE / sizeof(float); // resx*resy*4 channels
+				UavDesc.Buffer.StructureByteStride = sizeof(float);
+				UavDesc.Buffer.FirstElement = 0;
+				UavDesc.Buffer.CounterOffsetInBytes = 0;
+				UavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // or RAW if you want raw (byte-address) access
+				Device->CreateUnorderedAccessView(UAVResources[i].Get(), nullptr, &UavDesc, UAVHandle);
+				UAVHandle.Offset(1, IncrementSizeCBVSRVUAV);
+			}
+		}
 	}
 
 }
@@ -618,6 +857,9 @@ void D3D12App::SoftwareRasterizer::InitalizeShader(D3D12ShaderCompiler& ShaderCo
 {
 	// Path
 	constexpr const wchar_t* ComputeShaderRelativeShaderPath = L"shaders//ComputeShaders//main.hlsl";
+
+	DXShaderDefines<1> ShaderDefines;
+	ShaderDefines.AddDefine({L"VERTICES_COUNT", L"4"});
 
 	std::vector<LPCWSTR> arguments;
 	// String arguments
@@ -635,12 +877,140 @@ void D3D12App::SoftwareRasterizer::InitalizeShader(D3D12ShaderCompiler& ShaderCo
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	ComputeShader = ShaderCompiler.CompileShader(ComputeShaderRelativeShaderPath, L"CSMain", L"cs_6_0", arguments);
+	ComputeShader = ShaderCompiler.CompileShader(ComputeShaderRelativeShaderPath, L"CSMain", L"cs_6_0", arguments, &ShaderDefines);
 }
 
 void D3D12App::SoftwareRasterizer::InitializePSO(ComPtr<DXDevice>& Device)
 {
+	//// CREATE ROOT SIGNATURE
+	//// create a root descriptor, which explains where to find the data for this root parameter
+	//const auto RootCBVDescriptor = CreateRootDescriptor(0, 0);
+	//const auto RootSRVDescriptor1 = CreateRootDescriptor(0, 0);
+	//const auto RootCBVDescriptor = CreateRootDescriptor(0, 0);
 
+	//// Create Param
+	//// CBV
+	//RootParamHelper ParamCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
+	//	D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL,
+	//	RootCBVDescriptor);
+
+
+
+	//// SRV
+	//RootParamHelper ParamSRV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV,
+	//	D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL);
+
+	//// Create root parameters array
+	//auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV });
+
+	//CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+	//RootSignatureDesc.Init(RootParameters.size(), // we have 2 root parameters
+	//	RootParameters.data(), // a pointer to the beginning of our root parameters array
+	//	1, // we have one static sampler
+	//	nullptr, // a pointer to our static sampler (array)
+	//	D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
+	//	D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+	//	D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+	//	D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
+
+	//// Initialize Root Signature
+	//ComPtr<ID3DBlob> signature;
+	//ComPtr<ID3DBlob> error;
+	//ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	//ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+
+	// Create root signature with: [ SRV descriptor table (5) ] [ root CBV (b0) ] [ UAV descriptor table (1) ]
+	CD3DX12_DESCRIPTOR_RANGE SrvRange; // t0..t4
+	SrvRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+	CD3DX12_DESCRIPTOR_RANGE UavRange; // u0
+	UavRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+
+	// Root parameters: root CBV, descriptor table for SRVs, descriptor table for UAVs
+	CD3DX12_ROOT_PARAMETER RootParams[3];
+	RootParams[0].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);      // CBV at b0 (root CBV)
+	RootParams[1].InitAsDescriptorTable(1, &SrvRange, D3D12_SHADER_VISIBILITY_ALL); // SRVs
+	RootParams[2].InitAsDescriptorTable(1, &UavRange, D3D12_SHADER_VISIBILITY_ALL); // UAVs
+
+	// Optional: allow input assembler (common), adjust flags to your needs
+	CD3DX12_ROOT_SIGNATURE_DESC RootSigDesc(
+		_countof(RootParams),
+		RootParams,
+		0,
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+	);
+
+	// Serialize + create
+	ComPtr<ID3DBlob> SerializedRootSig;
+	ComPtr<ID3DBlob> ErrorBlob;
+	HRESULT hr = D3D12SerializeRootSignature(&RootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &SerializedRootSig, &ErrorBlob);
+	if (FAILED(hr))
+	{
+		if (ErrorBlob) OutputDebugStringA((char*)ErrorBlob->GetBufferPointer());
+		ThrowIfFailed(hr);
+	}
+	ThrowIfFailed(Device->CreateRootSignature(0, SerializedRootSig->GetBufferPointer(), SerializedRootSig->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+
+
+	// Describe and create the graphics pipeline state object (PSO).
+	D3D12_COMPUTE_PIPELINE_STATE_DESC PsoDesc = {};
+	PsoDesc.CS				= CD3DX12_SHADER_BYTECODE(ComputeShader.Get());
+	PsoDesc.pRootSignature	= RootSignature.Get();
+	PsoDesc.Flags			= D3D12_PIPELINE_STATE_FLAG_NONE;
+	ThrowIfFailed(Device->CreateComputePipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
+}
+
+void D3D12App::SoftwareRasterizer::InitializeData(ComPtr<DXDevice>& Device, const ::Camera& AppCamera, ComPtr<DXGraphicsCommandList>& CommandList)
+{
+	// Constant buffer data for software rasterizer
+	{
+		// View and Proj mat per frame (camera can move every frame, so we need to update these every frame)
+		const auto ViewMat		= AppCamera.GetViewMatrix();			//XMMATRIX
+		const auto ProjMat		= AppCamera.GetProjMatrix();			//XMMATRIX
+		const auto ViewProjMat	= ViewMat * ProjMat;					//XMMATRIX
+
+		// Constant buffer data for CS
+		ZeroMemory(&CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize); // just in case
+		XMStoreFloat4x4(&CbvSoftwareRasterizer.ViewMatrix,		XMMatrixTranspose(ViewMat));
+		XMStoreFloat4x4(&CbvSoftwareRasterizer.ProjMatrix,		XMMatrixTranspose(ProjMat));
+		XMStoreFloat4x4(&CbvSoftwareRasterizer.ViewProjMatrix,	XMMatrixTranspose(ViewProjMat));
+		XMStoreFloat4(&CbvSoftwareRasterizer.ScreenSize,		XMVectorSet(static_cast<float>(Width), static_cast<float>(Height), 0.0f, 0.0f));
+
+		// Copy data to mapped region
+		memcpy(CbvGPUAddress, &CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize);
+	}
+
+	// SRV
+	{
+		std::vector<float> InputData(Width * Height * 4, 0.0f); // Initialize with zeros
+		UINT* GPUVirtualAddress[SRVResourceCount] = {};
+		for (SIZE_T i = 0; i < SRVResourceCount - 3; ++i)
+		{
+			// Map
+			CD3DX12_RANGE readRange(0, 0);
+			// We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
+			// map the resource heap to get a gpu virtual address to the beginning of the heap
+			ThrowIfFailed(SRVResourcesUpload[i]->Map(0, &readRange, reinterpret_cast<void**>(&GPUVirtualAddress[i])));
+
+			// Memcpy initial data to the constant buffer
+			memcpy(GPUVirtualAddress[i], InputData.data(), Width * Height * 4 * sizeof(float));
+
+			// Actual copy
+			{
+				// Transition resources to copy destination and copy source states
+				const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[i].Get(),			D3D12_RESOURCE_STATE_COMMON,		D3D12_RESOURCE_STATE_COPY_DEST);
+				CommandList->ResourceBarrier(1, &Barrier1);
+
+				// Copy from upload heap to default heap
+				CommandList->CopyResource(SRVResources[i].Get(), SRVResourcesUpload[i].Get());
+
+				// Transition resources back to original states
+				const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[i].Get(),			D3D12_RESOURCE_STATE_COPY_DEST,		D3D12_RESOURCE_STATE_COMMON);
+				CommandList->ResourceBarrier(1, &Barrier2);
+			}
+		}
+	}
 }
 
 void D3D12App::SoftwareRasterizer::BeginCompute()
@@ -657,6 +1027,99 @@ void D3D12App::SoftwareRasterizer::Compute()
 	// Begin compute (always first!)
 	BeginCompute();
 
+	// Actual compute work
+	{
+		// Descriptor heap for compute shader
+		{
+			// set the descriptor heap
+			DXDescriptorHeap* DescriptorHeaps[] = { DescriptorHeap.Get() };
+			CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
+		}
+
+		// Transition SRVs and UAVs to the states required by the compute shader
+		{
+			// Transition SRV resources to NON_PIXEL_SHADER_RESOURCE
+			std::array<CD3DX12_RESOURCE_BARRIER, SRVResourceCount> SRVBarriers;
+			std::array<CD3DX12_RESOURCE_BARRIER, UAVResourceCount> UAVBarriers;
+			for (SIZE_T i = 0; i < SRVResourceCount; ++i)
+			{
+				SRVBarriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(
+					SRVResources[i].Get(),
+					D3D12_RESOURCE_STATE_COMMON, // current state after your uploads
+					D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			}
+			CommandList->ResourceBarrier(SRVResourceCount, SRVBarriers.data());
+
+			// Transition UAV resources to UNORDERED_ACCESS
+			for (SIZE_T i = 0; i < UAVResourceCount; ++i)
+			{
+				UAVBarriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(
+					UAVResources[i].Get(),
+					D3D12_RESOURCE_STATE_COMMON, // current state at creation
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			}
+			CommandList->ResourceBarrier(UAVResourceCount, UAVBarriers.data());
+		}
+
+		// Plane
+		PIXBeginEvent(CommandList.Get(), 0, L"Software Rasterizer");
+		{
+			CommandList->SetPipelineState(PipelineState.Get());
+			CommandList->SetComputeRootSignature(RootSignature.Get());
+
+			// CBV at b0 (root CBV)
+			CommandList->SetComputeRootConstantBufferView(0, ConstantBufferUpload->GetGPUVirtualAddress());
+
+			// SRV descriptor table (t0..t2)
+			CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+			CommandList->SetComputeRootDescriptorTable(1, Handle);
+
+			// UAV descriptor table (u0)
+			Handle.Offset(SRVResourceCount, IncrementSizeCBVSRVUAV); // because of placement in heap (after 2 SRVs) | SRV | SRV | UAV |
+			CommandList->SetComputeRootDescriptorTable(2, Handle);
+
+			// Dispatch compute shader
+			//const auto DIV_UP				= [] (UINT a, UINT b) { return (a + b - 1) / b; };
+			//const UINT ThreadGroupCountX	= DIV_UP(Width, 8); //
+			//const UINT ThreadGroupCountY	= DIV_UP(Height, 4); //
+			const auto UAVBarrier			= CD3DX12_RESOURCE_BARRIER::UAV(UAVResources[0].Get());
+			CommandList->ResourceBarrier(1, &UAVBarrier); // Ensure UAV writes are visible before dispatch
+
+			//Compute thread-group counts matching [numthreads(8,8,1)]
+			const UINT TGX = 8u;
+			const UINT TGY = 8u;
+			const UINT DispatchX = (Width + TGX - 1) / TGX;
+			const UINT DispatchY = (Height + TGY - 1) / TGY;
+			CommandList->Dispatch(DispatchX, DispatchY, 1);
+			//CommandList->Dispatch(ThreadGroupCountX, ThreadGroupCountY, 1);
+		}
+		PIXEndEvent(CommandList.Get());
+
+		// Transition SRVs and UAVs to the states required by the compute shader
+		{
+			// Transition SRV resources to NON_PIXEL_SHADER_RESOURCE
+			std::array<CD3DX12_RESOURCE_BARRIER, SRVResourceCount> SRVBarriers;
+			std::array<CD3DX12_RESOURCE_BARRIER, UAVResourceCount> UAVBarriers;
+			for (SIZE_T i = 0; i < SRVResourceCount; ++i)
+			{
+				SRVBarriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(
+					SRVResources[i].Get(),
+					D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, // current state after your uploads
+					D3D12_RESOURCE_STATE_COMMON);
+			}
+			CommandList->ResourceBarrier(SRVResourceCount, SRVBarriers.data());
+
+			// Transition UAV resources to UNORDERED_ACCESS
+			for (SIZE_T i = 0; i < UAVResourceCount; ++i)
+			{
+				UAVBarriers[i] = CD3DX12_RESOURCE_BARRIER::Transition(
+					UAVResources[i].Get(),
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS, // current state at creation
+					D3D12_RESOURCE_STATE_COMMON);
+			}
+			CommandList->ResourceBarrier(UAVResourceCount, UAVBarriers.data());
+		}
+	}
 
 	// End compute (always last!)
 	EndCompute();
@@ -686,6 +1149,196 @@ void D3D12App::SoftwareRasterizer::SubmitCompute()
 	{
 		ThrowIfFailed(Fence->SetEventOnCompletion(FenceValue, FenceEvent));
 		WaitForSingleObject(FenceEvent, INFINITE);
+	}
+}
+
+void D3D12App::SoftwareRasterizer::CopyFromRenderTarget(ComPtr<DXDevice>& Device, const ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList)
+{	
+	// SRV
+	{
+		// Transition Render Target to Copy Source
+		auto transition = CD3DX12_RESOURCE_BARRIER::Transition(
+			RT.Get(),
+			RTAfter,
+			D3D12_RESOURCE_STATE_COPY_SOURCE
+		);
+		CommandList->ResourceBarrier(1, &transition);
+
+		// Transition resources to copy destination and copy source states
+		const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[0].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		CommandList->ResourceBarrier(1, &Barrier1);
+
+		// Setup Copies and Copy Texture
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+		UINT numRows;
+		UINT64 totalBytes;
+		const auto RTDesc = RT->GetDesc();
+		Device->GetCopyableFootprints(&RTDesc, 0, 1, 0, &layout, &numRows, &totalBytes, nullptr);
+
+		// Create source and destination locations for the copy operation
+		CD3DX12_TEXTURE_COPY_LOCATION src(RT.Get());
+		CD3DX12_TEXTURE_COPY_LOCATION dest(SRVResources[0].Get(), layout);
+
+		// Copy the UAV resource to the render target
+		CommandList->CopyTextureRegion(&dest, 0, 0, 0, &src, nullptr);
+
+		// Transition resources back to original states
+		const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[0].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+		CommandList->ResourceBarrier(1, &Barrier2);
+
+		// Transition Render Target back to Render Target
+		auto transition2 = CD3DX12_RESOURCE_BARRIER::Transition(
+			RT.Get(),
+			D3D12_RESOURCE_STATE_COPY_SOURCE,
+			RTAfter
+		);
+		CommandList->ResourceBarrier(1, &transition2);
+	}
+
+}
+
+void D3D12App::SoftwareRasterizer::CopyToRenderTarget(ComPtr<DXDevice>& Device, ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList)
+{
+	// UAV from CS
+	{
+		// Transition Render Target to Copy Source
+		auto transition = CD3DX12_RESOURCE_BARRIER::Transition(
+			RT.Get(),
+			RTAfter,
+			D3D12_RESOURCE_STATE_COPY_DEST
+		);
+		CommandList->ResourceBarrier(1, &transition);
+
+		// Transition resources to copy destination and copy source states
+		const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(UAVResources[0].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		CommandList->ResourceBarrier(1, &Barrier1);
+
+		// Setup Copies and Copy Texture
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+		UINT numRows;
+		UINT64 totalBytes;
+		const auto RTDesc = RT->GetDesc();
+		Device->GetCopyableFootprints(&RTDesc, 0, 1, 0, &layout, &numRows, &totalBytes, nullptr);
+
+		// Create source and destination locations for the copy operation
+		CD3DX12_TEXTURE_COPY_LOCATION src(UAVResources[0].Get(), layout);
+		CD3DX12_TEXTURE_COPY_LOCATION dest(RT.Get());
+
+		// Copy the UAV resource to the render target
+		CommandList->CopyTextureRegion(&dest, 0, 0, 0, &src, nullptr);
+
+		// Transition resources back to original states
+		const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(UAVResources[0].Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
+		CommandList->ResourceBarrier(1, &Barrier2);
+
+		// Transition Render Target back to Render Target
+		auto transition2 = CD3DX12_RESOURCE_BARRIER::Transition(
+			RT.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			RTAfter
+		);
+		CommandList->ResourceBarrier(1, &transition2);
+	}
+}
+
+void D3D12App::SoftwareRasterizer::CopyVertexBufferPos(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList)
+{
+	// SRV
+	{
+		constexpr UINT VertexBufferPosition = 2;
+
+		// Transition resources to copy destination and copy source states
+		const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[VertexBufferPosition].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		CommandList->ResourceBarrier(1, &Barrier1);
+
+		// Prepare subresource data pointing to the contiguous array memory
+		D3D12_SUBRESOURCE_DATA VertexSubData = {};
+		VertexSubData.pData			= reinterpret_cast<const void*>(VertexListComp);
+		VertexSubData.RowPitch		= CompVertexBufferSize;
+		VertexSubData.SlicePitch	= VertexSubData.RowPitch;
+
+		// Upload to GPU
+		UpdateSubresources(CommandList.Get(), SRVResources[VertexBufferPosition].Get(), VertexUploadToGPU.GetPointer(), 0, 0, 1, &VertexSubData);
+
+		// Transition resources back to original states
+		const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[VertexBufferPosition].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+		CommandList->ResourceBarrier(1, &Barrier2);
+	}
+}
+
+void D3D12App::SoftwareRasterizer::CopyVertexBufferColor(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU2, ComPtr<DXGraphicsCommandList>& CommandList)
+{
+	// Vertices/Index buffers etc.
+	static const VertexPosition VertexListColor[] =
+	{
+		// Color(4xFloat)
+		//  R,		 G,		 B,		 A
+		{ 0.5f,		0.5f,	0.5f,	1.0f},	// top left
+		{ 0.5f,		0.0f,	0.0f,	1.0f},	// bottom right
+		{ 0.5f,		0.5f,	0.0f,	1.0f},	// bottom left
+		{ 0.5f,		0.5f,	0.5f,	1.0f},	// top right
+
+		{ 0.0f,		0.5f,	0.5f,	1.0f},	// top left
+		{ 0.0f,		0.0f,	0.0f,	1.0f},	// bottom right
+		{ 0.0f,		0.5f,	0.0f,	1.0f},	// bottom left
+		{ 0.0f,		0.5f,	0.5f,	1.0f},	// top right
+
+
+		{ 0.5f,		0.0f,	0.5f,	1.0f},	// top left
+		{ 0.5f,		0.0f,	0.0f,	1.0f},	// bottom right
+		{ 0.5f,		0.0f,	0.0f,	1.0f},	// bottom left
+		{ 0.5f,		0.0f,	0.5f,	1.0f},	// top right
+
+		{ 0.0f,		0.5f,	0.0f,	1.0f},	// top left
+		{ 0.0f,		0.5f,	0.0f,	1.0f},	// bottom right
+		{ 0.0f,		0.5f,	0.0f,	1.0f},	// bottom left
+		{ 0.0f,		0.5f,	0.0f,	1.0f}	// top right
+	};
+
+	// Type of vertex and index
+	constexpr UINT VertexColorBufferSize = sizeof(VertexListColor);
+	constexpr UINT VertexBufferColor = 3;
+
+	// Transition resources to copy destination and copy source states
+	const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[VertexBufferColor].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	CommandList->ResourceBarrier(1, &Barrier1);
+
+	// Prepare subresource data pointing to the contiguous array memory
+	D3D12_SUBRESOURCE_DATA VertexSubData = {};
+	VertexSubData.pData				= reinterpret_cast<const void*>(VertexListColor);
+	VertexSubData.RowPitch			= VertexColorBufferSize;
+	VertexSubData.SlicePitch		= VertexSubData.RowPitch;
+
+	// Upload to GPU
+	UpdateSubresources(CommandList.Get(), SRVResources[VertexBufferColor].Get(), VertexUploadToGPU2.GetPointer(), 0, 0, 1, &VertexSubData);
+
+	// Transition resources back to original states
+	const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[VertexBufferColor].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+	CommandList->ResourceBarrier(1, &Barrier2);
+}
+
+void D3D12App::SoftwareRasterizer::CopyIndexBuffer(ComPtr<DXDevice>& Device, Helpers::INDEX_HELPER & IndexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList)
+{
+	// SRV
+	{
+		constexpr UINT IndexBufferPosition	= 4;
+
+		// Transition resources to copy destination and copy source states
+		const auto Barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[IndexBufferPosition].Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+		CommandList->ResourceBarrier(1, &Barrier1);
+
+		// Prepare subresource data pointing to the contiguous array memory
+		D3D12_SUBRESOURCE_DATA IndexSubData = {};
+		IndexSubData.pData			= reinterpret_cast<const void*>(IndicesListComp);
+		IndexSubData.RowPitch		= CompIndexBufferSize;
+		IndexSubData.SlicePitch		= IndexSubData.RowPitch;
+
+		// Upload to GPU
+		UpdateSubresources(CommandList.Get(), SRVResources[IndexBufferPosition].Get(), IndexUploadToGPU.GetPointer(), 0, 0, 1, &IndexSubData);
+
+		// Transition resources back to original states
+		const auto Barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(SRVResources[IndexBufferPosition].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+		CommandList->ResourceBarrier(1, &Barrier2);
 	}
 }
 
@@ -928,7 +1581,9 @@ void D3D12App::BeginFrame()
 	CurrentFrameIdx = SwapChain->GetCurrentBackBufferIndex();
 
 	// Indicate that the back buffer will be used as a render target.
-	const CD3DX12_RESOURCE_BARRIER BarrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	RTBefore = D3D12_RESOURCE_STATE_PRESENT;
+	RTAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	const CD3DX12_RESOURCE_BARRIER BarrierPresentToRTV = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), RTBefore, RTAfter);
 	CommandList->ResourceBarrier(1, &BarrierPresentToRTV);
 
 	// Set necessary state.
@@ -950,9 +1605,59 @@ void D3D12App::BeginFrame()
 
 void D3D12App::EndFrame()
 {
+
+	// Upload (intermediate) resource (upload heap)
+	Helpers::VERTEX_HELPER VertexUploadToGPU(
+		Device.Get(),
+		CompVertexBufferSize,
+		DX_HEAP_PROPERTY_UPLOAD,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		L"VertexUploadToGPUSoftwareRasterizer");
+
+	// Upload (intermediate) resource (upload heap)
+	Helpers::VERTEX_HELPER VertexUploadToGPU2(
+		Device.Get(),
+		CompVertexBufferSize,
+		DX_HEAP_PROPERTY_UPLOAD,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		L"VertexUploadToGPUSoftwareRasterizer");
+
+	// Upload (intermediate) resource (upload heap)
+	Helpers::INDEX_HELPER IndexUploadToGPU(
+		Device.Get(),
+		CompIndexBufferSize,
+		DX_HEAP_PROPERTY_UPLOAD,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		L"IndexUploadToGPUSoftwareRasterizer");
+
+
+	SR.CopyToRenderTarget(		Device,			RenderTargets[CurrentFrameIdx],		CommandList);
+	SR.CopyVertexBufferPos(		Device,			VertexUploadToGPU,					CommandList);
+	SR.CopyVertexBufferColor(	Device,			VertexUploadToGPU2,					CommandList);
+	SR.CopyIndexBuffer(			Device,			IndexUploadToGPU,					CommandList);
+
+	// Update cam pos
+	// View and Proj mat per frame (camera can move every frame, so we need to update these every frame)
+	const auto ViewMat = Camera.GetViewMatrix();			//XMMATRIX
+	const auto ProjMat = Camera.GetProjMatrix();			//XMMATRIX
+	const auto ViewProjMat = ViewMat * ProjMat;				//XMMATRIX
+
+	// Constant buffer data for CS
+	XMStoreFloat4x4(&SR.CbvSoftwareRasterizer.ViewMatrix,		XMMatrixTranspose(ViewMat));
+	XMStoreFloat4x4(&SR.CbvSoftwareRasterizer.ProjMatrix,		XMMatrixTranspose(ProjMat));
+	XMStoreFloat4x4(&SR.CbvSoftwareRasterizer.ViewProjMatrix,	XMMatrixTranspose(ViewProjMat));
+	XMStoreFloat4(&SR.CbvSoftwareRasterizer.ScreenSize,			XMVectorSet(static_cast<float>(WindowWidth), static_cast<float>(WindowHeight), 0.0f, 0.0f));
+
+	// Copy data to mapped region
+	memcpy(SR.CbvGPUAddress, &SR.CbvSoftwareRasterizer, ConstantBufferSoftwareRasterizerSize);
+
+
 	// Indicate that the back buffer will now be used to present.
 	const CD3DX12_RESOURCE_BARRIER BarrierRTVtoPresent = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[CurrentFrameIdx].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	CommandList->ResourceBarrier(1, &BarrierRTVtoPresent);
+
+	RTBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	RTAfter = D3D12_RESOURCE_STATE_PRESENT;
 
 	// Execute command lists
 	ThrowIfFailed(CommandList->Close()); //close command list for execution

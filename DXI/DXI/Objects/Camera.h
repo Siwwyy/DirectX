@@ -28,7 +28,7 @@ public:
 	void OnKeyUp(WPARAM key);
 
 	// Getters
-	_NODISCARD inline const auto GetViewMatrix()
+	_NODISCARD inline const auto GetViewMatrix() const
 	{
 		return XMLoadFloat4x4(&CameraMatrices.ViewMat);						// View mat
 	}

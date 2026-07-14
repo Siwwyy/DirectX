@@ -42,19 +42,33 @@ public:
 
 	// SoftwareRasterizer
 	void InitializeSoftwareRasterizer();
-	void SoftwareRasterizer();
+	void RenderSoftwareRasterizer();
 
 
 	struct SoftwareRasterizer
 	{
+		SoftwareRasterizer(const UINT Width, const UINT Height) : Width(Width), Height(Height) {}
+
+
 		//Utility functions
 		void InitializeResources(ComPtr<DXDevice>& Device);
 		void InitalizeShader(D3D12ShaderCompiler& ShaderCompiler);
 		void InitializePSO(ComPtr<DXDevice>& Device);
+		void InitializeData(ComPtr<DXDevice>& Device, const Camera& AppCamera, ComPtr<DXGraphicsCommandList>& CommandList);
 		void BeginCompute();
 		void Compute();
 		void EndCompute();
 		void SubmitCompute();
+
+		void CopyFromRenderTarget(ComPtr<DXDevice>& Device, const ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList);
+		void CopyToRenderTarget(ComPtr<DXDevice>& Device, ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList);
+		void CopyVertexBufferPos(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList);
+		void CopyVertexBufferColor(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU2, ComPtr<DXGraphicsCommandList>& CommandList);
+		void CopyIndexBuffer(ComPtr<DXDevice>& Device, Helpers::INDEX_HELPER& IndexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList);
+
+		//
+		UINT Width;
+		UINT Height;
 
 		//
 		ComPtr<DXCommandQueue>								CommandQueue;
@@ -73,9 +87,10 @@ public:
 
 
 		// Constant Buffers
-		ComPtr<DXResource>									ConstantBufferUploadHeap;	// this is the memory on the gpu where constant buffers for each frame will be placed
+		ComPtr<DXResource>									ConstantBufferUpload;	// this is the memory on the gpu where constant buffers for each frame will be placed
 		UINT8*												CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 		ConstantBufferSoftwareRasterizer					CbvSoftwareRasterizer;
+		UINT												IncrementSizeCBVSRVUAV;
 
 
 		// Descriptor Heap for SRV/UAV
@@ -83,10 +98,13 @@ public:
 		UINT												DescriptorHeapIncrementSize;
 
 		// 2 SRV + 1 UAV resources
-		ComPtr<DXResource>									SRVResources[2]; // input color, input depth/stencil
-		ComPtr<DXResource>									UAVResources[1]; // output rasterized color
+		const static SIZE_T									SRVResourceCount = 5;
+		const static SIZE_T									UAVResourceCount = 1;
+		ComPtr<DXResource>									SRVResourcesUpload[SRVResourceCount];	// input color, input depth/stencil, input vertex pos, input vertex color
+		ComPtr<DXResource>									SRVResources[SRVResourceCount];			// input color, input depth/stencil
+		ComPtr<DXResource>									UAVResources[UAVResourceCount];			// output rasterized color
 
-	} SR;
+	};
 
 	// Movement of camera
 	void OnKeyDown(UINT8 key);
@@ -104,6 +122,9 @@ private:
 	void FlushCommandList();
 
 public:
+
+	// SoftwareRasterizer
+	SoftwareRasterizer SR;
 
 	// Window Properties
 	UINT												WindowWidth;
