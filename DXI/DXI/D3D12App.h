@@ -25,7 +25,6 @@ public:
 	// Ctors & DCtors
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
-	
 
 	// Getters
 	[[nodiscard]] UINT											GetWindowWidth() const { return WindowWidth; }
@@ -38,73 +37,6 @@ public:
 	void Render();
 	void Update(float DeltaTime);
 	void Destroy();
-
-
-	// SoftwareRasterizer
-	void InitializeSoftwareRasterizer();
-	void RenderSoftwareRasterizer();
-
-
-	struct SoftwareRasterizer
-	{
-		SoftwareRasterizer(const UINT Width, const UINT Height) : Width(Width), Height(Height) {}
-
-
-		//Utility functions
-		void InitializeResources(ComPtr<DXDevice>& Device);
-		void InitalizeShader(D3D12ShaderCompiler& ShaderCompiler);
-		void InitializePSO(ComPtr<DXDevice>& Device);
-		void InitializeData(ComPtr<DXDevice>& Device, const Camera& AppCamera, ComPtr<DXGraphicsCommandList>& CommandList);
-		void BeginCompute();
-		void Compute();
-		void EndCompute();
-		void SubmitCompute();
-
-		void CopyFromRenderTarget(ComPtr<DXDevice>& Device, const ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList);
-		void CopyToRenderTarget(ComPtr<DXDevice>& Device, ComPtr<DXResource>& RT, ComPtr<DXGraphicsCommandList>& CommandList);
-		void CopyVertexBufferPos(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList);
-		void CopyVertexBufferColor(ComPtr<DXDevice>& Device, Helpers::VERTEX_HELPER& VertexUploadToGPU2, ComPtr<DXGraphicsCommandList>& CommandList);
-		void CopyIndexBuffer(ComPtr<DXDevice>& Device, Helpers::INDEX_HELPER& IndexUploadToGPU, ComPtr<DXGraphicsCommandList>& CommandList);
-
-		//
-		UINT Width;
-		UINT Height;
-
-		//
-		ComPtr<DXCommandQueue>								CommandQueue;
-		ComPtr<DXGraphicsCommandList>						CommandList;
-		ComPtr<DXCommandAllocator>							CommandAllocator;
-
-		// D3D12 Synchronization CPU<->GPU
-		ComPtr<DXFence>										Fence;
-		UINT64												FenceValue;
-		HANDLE												FenceEvent;
-
-		// Pipeline state and root signature
-		ComPtr<ID3D12PipelineState>							PipelineState;
-		ComPtr<ID3D12RootSignature>							RootSignature;
-		ComPtr<ID3DBlob>									ComputeShader;				// Compute shader blob
-
-
-		// Constant Buffers
-		ComPtr<DXResource>									ConstantBufferUpload;	// this is the memory on the gpu where constant buffers for each frame will be placed
-		UINT8*												CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-		ConstantBufferSoftwareRasterizer					CbvSoftwareRasterizer;
-		UINT												IncrementSizeCBVSRVUAV;
-
-
-		// Descriptor Heap for SRV/UAV
-		ComPtr<DXDescriptorHeap>							DescriptorHeap;
-		UINT												DescriptorHeapIncrementSize;
-
-		// 2 SRV + 1 UAV resources
-		const static SIZE_T									SRVResourceCount = 5;
-		const static SIZE_T									UAVResourceCount = 1;
-		ComPtr<DXResource>									SRVResourcesUpload[SRVResourceCount];	// input color, input depth/stencil, input vertex pos, input vertex color
-		ComPtr<DXResource>									SRVResources[SRVResourceCount];			// input color, input depth/stencil
-		ComPtr<DXResource>									UAVResources[UAVResourceCount];			// output rasterized color
-
-	};
 
 	// Movement of camera
 	void OnKeyDown(UINT8 key);
@@ -122,9 +54,6 @@ private:
 	void FlushCommandList();
 
 public:
-
-	// SoftwareRasterizer
-	SoftwareRasterizer SR;
 
 	// Window Properties
 	UINT												WindowWidth;

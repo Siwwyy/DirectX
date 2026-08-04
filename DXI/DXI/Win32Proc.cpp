@@ -45,8 +45,6 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 	//TODO Add initialization of DX12 environment
 	dx12App->Initialize();
 
-	dx12App->InitializeSoftwareRasterizer();
-	
 	ShowWindow(hwnd, nCmdShow);
 
 	// Main sample loop.
@@ -112,9 +110,6 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		//auto DeltaTime = timer.GetFrameDelta();
 		dx12App->Update(static_cast<float>(0.0)); //or DeltaTime
 		dx12App->Render();
-
-		// Software Rasterizer
-		dx12App->RenderSoftwareRasterizer();
 	}
 	return 0;
 
