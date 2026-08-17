@@ -37,22 +37,16 @@ file(GLOB_RECURSE DXI_HEADERS CONFIGURE_DEPENDS
     "${DXI_SRC_DIR}/*.hpp"
 )
 
-set(DXI_HEADERS
-    ${DXI_SRC_DIR}/TextRenderer.h
-    ${DXI_SRC_DIR}/RenderGraph.h
-    ${DXI_SRC_DIR}/PSO.h
-    ${DXI_SRC_DIR}/pch.h
-    ${DXI_SRC_DIR}/JobLambda.h
-    ${DXI_SRC_DIR}/D3D12Texture.h
-    ${DXI_SRC_DIR}/D3D12Texture.h
-    ${DXI_SRC_DIR}/D3D12Texture.h
-    ${DXI_SRC_DIR}/D3D12Texture.h
-    ${DXI_SRC_DIR}/D3D12ShaderCompiler.h
-    ${DXI_SRC_DIR}/D3D12Math.h
-    ${DXI_SRC_DIR}/D3D12Helpers.h
-    ${DXI_SRC_DIR}/D3D12Buffer.h
-    ${DXI_SRC_DIR}/D3D12App.h
+file(GLOB_RECURSE REMOVE_HEADERS "${DXI_SRC_DIR}/libs/*.h")
+
+# remove DXC headers from the list of IDE-visible headers (they are included via target_include_directories)
+list(REMOVE_ITEM DXI_HEADERS 
+    ${REMOVE_HEADERS} # files to remove
 )
+
+if(NOT DXI_HEADERS)
+    message(FATAL_ERROR "No header files found under ${DXI_HEADERS}")
+endif()
 
 # Detect WinMain sources and ensure at most one entry point
 file(GLOB_RECURSE DXI_WINMAINS CONFIGURE_DEPENDS
