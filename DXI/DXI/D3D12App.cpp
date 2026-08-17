@@ -386,8 +386,8 @@ void D3D12App::Initialize()
 		{
 			//Cube1.Init(Device,			CommandList);
 			//Cube2.Init(Device,			CommandList);
-			MainTexture.Load(Device,		CommandList,	L"D://igr//DirectX//DXI//DXI//bryanzar.png",	MainDescriptorHeap, IncrementDescriptorSize, 0);
-			MeganeTexture.Load(Device,	CommandList,	L"D://igr//DirectX//DXI//DXI//megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
+			MainTexture.Load(Device,		CommandList,	L"E://!!PROJECTS_VS//DirectX//DXI//DXI//bryanzar.png",		MainDescriptorHeap, IncrementDescriptorSize, 0);
+			MeganeTexture.Load(Device,		CommandList,	L"E://!!PROJECTS_VS//DirectX//DXI//DXI//megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
 		});
 
 		/***************************
@@ -657,23 +657,12 @@ void D3D12App::InitializePerFrameResources()
 void D3D12App::InitalizeShaders()
 {
 	// Shaders defines
-	//constexpr DxcDefine ShaderDefines[] =
-	//{
-	//	L"PIXEL_SHADER_ENABLED", L"1",
-	//	NULL, NULL
-	//};
-	//struct DXShaderDefines
-	//{
-	//	DxcDefine Defines[2] = 
-	//	{ { L"PIXEL_SHADER_ENABLED", L"1" }, { NULL, NULL } };
-	//	SIZE_T Count;
-	//} ShaderDefines;
-
 	DXShaderDefines<1> ShaderDefines;
 	ShaderDefines.AddDefine({ L"USE_TEXCOORD", L"1" });
 
-	constexpr const wchar_t* VertexShaderPath	= L"D://igr//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath	= L"D://igr//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
+	// Shader paths
+	constexpr const wchar_t* VertexShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 	// String arguments

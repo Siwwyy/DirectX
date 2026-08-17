@@ -4,6 +4,9 @@
 #include "D3D12Math.h"
 
 ObjectMatrices::ObjectMatrices()
+    : RotVec(DX_IDENTITY_ROTATE4)
+    , ScaleVec(DX_IDENTITY_SCALE4)
+    , PositionVec(DX_IDENTITY_TRANSLATE4)
 {
     Transform();
 }
@@ -12,6 +15,7 @@ ObjectMatrices::ObjectMatrices()
 ObjectMatrices::ObjectMatrices(const DirectX::XMFLOAT3  InitRot,
                             const DirectX::XMFLOAT3     InitPosition,
                             const DirectX::XMFLOAT3     InitScale)
+    : ObjectMatrices()
 {
     Transform(InitRot, InitPosition, InitScale);
 }
