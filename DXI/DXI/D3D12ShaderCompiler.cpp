@@ -57,3 +57,7 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
 	}
 	return code;
 }
+
+
+// make it always last...
+D3D12ShaderCompiler DXIShaderCompiler = {};

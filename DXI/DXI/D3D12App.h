@@ -104,7 +104,6 @@ public:
 	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
 
 	// Shaders
-	D3D12ShaderCompiler									ShaderCompiler;
 	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
 	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
 
@@ -118,15 +117,15 @@ public:
 
 
 	//
-	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
-	UINT						IncrementDescriptorSize;
+	ComPtr<DXDescriptorHeap>							MainDescriptorHeap;
+	UINT												IncrementDescriptorSize;
 
 	// Texture class
-	Texture MainTexture;
-	Texture MeganeTexture;
+	Texture												MainTexture;
+	Texture												MeganeTexture;
 
 	// Timer
-	Helpers::StepTimer StepTimer;
+	Helpers::StepTimer									StepTimer;
 
 
 	// NEW SECTION

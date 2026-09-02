@@ -137,5 +137,7 @@ FORCEINLINE ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 }
 
 
+// extern
+extern D3D12ShaderCompiler DXIShaderCompiler;
 
 #endif // D3D12_SHADER_COMPILER_H_INCLUDED

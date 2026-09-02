@@ -689,8 +689,8 @@ void D3D12App::InitalizeShaders()
 	//	arguments.push_back(define.Value);
 	//}
 
-	VertexShader	= ShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
-	PixelShader		= ShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
+	VertexShader	= DXIShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PixelShader		= DXIShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 void D3D12App::InitializePSO()

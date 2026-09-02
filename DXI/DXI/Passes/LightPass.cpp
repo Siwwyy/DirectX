@@ -4,8 +4,8 @@
 LightPass::LightPass()
 {
 	// Init shaders
-	constexpr const wchar_t* VertexShaderPath = L"shaders//BasePass//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath = L"shaders//BasePass//pixel_shader.hlsl";
+	constexpr const wchar_t* VertexShaderPath = L"shaders//LightPass//vertex_shader.hlsl";
+	constexpr const wchar_t* PixelShaderPath = L"shaders//LightPass//pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 	// String arguments
@@ -23,8 +23,8 @@ LightPass::LightPass()
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	VertexShader = ShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments);
-	PixelShader = ShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments);
+	PSO.VertexShader	= DXIShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments);
+	PSO.PixelShader		= DXIShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments);
 }
 
 HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) noexcept

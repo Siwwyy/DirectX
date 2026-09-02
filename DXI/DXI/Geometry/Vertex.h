@@ -524,7 +524,7 @@ struct VertexInitData
 		const std::size_t NumIndices)
 	{
 		VertexInitData<TypeOfVertex> InitData;
-		InitData.Type				= TypeOfVertex::VertexTypeValue;
+		InitData.Type = TypeOfVertex::VertexTypeValue;
 
 		// Input Element Desc
 		InitData.InputElementDesc.insert(

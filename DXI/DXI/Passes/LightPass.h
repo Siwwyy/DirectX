@@ -11,6 +11,7 @@ class LightPass : public PassBase
 
 public:
 
+	// Ctors & DCtor
 	LightPass();
 	~LightPass() = default;
 	
@@ -19,6 +20,8 @@ public:
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept override; 
 
 private:
+
+
 };
 
 #endif // D3D12_LIGHTPASS_H_INCLUDED

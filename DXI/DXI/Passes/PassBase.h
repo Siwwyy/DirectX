@@ -6,6 +6,8 @@
 #include "../pch.h"
 #include "../D3D12ShaderCompiler.h"
 #include "../Objects/Primitive.h"
+#include "../PSO.h"
+
 
 class PassBase
 {
@@ -13,23 +15,21 @@ class PassBase
 
 public:
 
+	// Ctors & DCtor
 	PassBase() = default;
 	~PassBase() = default;
 
+	// Init
+	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
+
 	// Render
 	virtual void Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept = 0; // make this class abstract
-	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
+
 
 protected:
 
-	// Pipeline state and root signature	
-	ComPtr<ID3D12PipelineState>							PipelineState;
-	ComPtr<ID3D12RootSignature>							RootSignature;
-
-	// Shaders
-	D3D12ShaderCompiler									ShaderCompiler;
-	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
-	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
+	// Pipeline state
+	GraphicsPSO		PSO;
 };
 
 
