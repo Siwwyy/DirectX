@@ -480,7 +480,7 @@ void D3D12App::Render()
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
-		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * ConstantBufferPerObjectSize));
+		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * PrimitiveConstantBufferSize));
 		CommandList->IASetVertexBuffers(0, 1, &PlanePrimitive.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&PlanePrimitive.VertexFactory.IndexBufferView);
 		CommandList->DrawIndexedInstanced(PlanePrimitive.GetNumIndices(), 1, 0, 0, 0); // draw plane
@@ -541,7 +541,7 @@ void D3D12App::Update(float DeltaTime)
 		XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatPlane);							// store transposed wvp matrix in constant buffer
 
 		// copy our ConstantBuffer instance to the mapped constant buffer resource
-		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * ConstantBufferPerObjectSize), &CbvPerObject, sizeof(CbvPerObject));
+		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * PrimitiveConstantBufferSize), &CbvPerObject, sizeof(CbvPerObject));
 	}
 
 	// Primitives
@@ -632,7 +632,7 @@ void D3D12App::InitializePerFrameResources()
 		// CBV Upload heap
 		{		
 			// create resource for cubes
-			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(ConstantBufferPerObjectSize * 3); // HACK! THREE OBJECTS == 3x constant buffer which is per object!
+			const auto UploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(PrimitiveConstantBufferSize * 3); // HACK! THREE OBJECTS == 3x constant buffer which is per object!
 			ThrowIfFailed(Device->CreateCommittedResource(
 				&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the constant buffer data
 				D3D12_HEAP_FLAG_NONE,									// no flags

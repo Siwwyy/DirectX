@@ -112,14 +112,14 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 
 // Make sure Constant buffer is aligned to 256 bytes boundary
 // https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
-struct alignas(256) ConstantBufferPerObject 
-{
-	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
-	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
-};
-static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
-constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
-constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
+//struct alignas(256) ConstantBufferPerObject 
+//{
+//	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
+//	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
+//};
+//static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
+//constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
+//constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
 // Constant buffer per Primitive
 struct alignas(256) PrimitiveConstantBuffer
