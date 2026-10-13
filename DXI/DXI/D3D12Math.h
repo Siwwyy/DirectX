@@ -112,14 +112,14 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 
 // Make sure Constant buffer is aligned to 256 bytes boundary
 // https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
-struct alignas(256) ConstantBufferPerObject 
-{
-	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
-	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
-};
-static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
-constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
-constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
+//struct alignas(256) ConstantBufferPerObject 
+//{
+//	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
+//	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
+//};
+//static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
+//constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
+//constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
 // Constant buffer per Primitive
 struct alignas(256) PrimitiveConstantBuffer
@@ -187,20 +187,5 @@ struct alignas(256) ObjectMatrices
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");
 constexpr auto ObjectMatricesSize		= sizeof(ObjectMatrices);
 constexpr auto ObjectMatricesAlignment	= alignof(ObjectMatrices);
-
-
-// Compute pipeline
-// Make sure Constant buffer is aligned to 256 bytes boundary
-// https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
-struct alignas(256) ConstantBufferSoftwareRasterizer
-{
-	DirectX::XMFLOAT4X4 ViewMatrix;		// Camera matrix (View)
-	DirectX::XMFLOAT4X4 ProjMatrix;		// Projection Matrix (Clip)
-	DirectX::XMFLOAT4X4 ViewProjMatrix;	// View * Projection Matrix (View -> Clip)
-	DirectX::XMFLOAT4		ScreenSize;		// Screen Size (Width, Height, 0.0f, 0.0f)
-};
-static_assert((sizeof(ConstantBufferSoftwareRasterizer) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
-constexpr auto ConstantBufferSoftwareRasterizerSize				= sizeof(ConstantBufferSoftwareRasterizer);
-constexpr auto ConstantBufferSoftwareRasterizerAlignment		= alignof(ConstantBufferSoftwareRasterizer);
 
 #endif // D3D12_MATH_H_INCLUDED

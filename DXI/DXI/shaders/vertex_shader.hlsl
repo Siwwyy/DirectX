@@ -3,7 +3,7 @@
 
 #include "Common.hlsl"
 
-cbuffer ConstantBufferPerObject : register(b0)
+cbuffer PrimitiveConstantBuffer : register(b0)
 {
     float4x4 LocalToWorld;  // Only with per-object translation
     float4x4 WorldToClip;   // Translation * View * Proj (Clip)

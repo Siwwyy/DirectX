@@ -113,7 +113,7 @@ public:
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
 	Plane												PlanePrimitive;
 	Camera												Camera;
-	ConstantBufferPerObject								CbvPerObject;
+	PrimitiveConstantBuffer								CbvPerObject;
 
 
 
