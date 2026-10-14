@@ -32,10 +32,18 @@ public:
 		this->NumIndices = NumIndices;
 	}
 
-	// Material this primitive is drawn with, owned by whoever created it
+	// Material this primitive is drawn with, owned by whoever created it.
+	// Overrides the default, pass nullptr to fall back to it again.
 	void SetMaterial(Material * const InMaterial)
 	{
 		this->PrimitiveMaterial = InMaterial;
+	}
+
+	// Material every primitive without one of its own is drawn with. Registered once by
+	// whoever owns the materials, before anything is drawn.
+	static void SetDefaultMaterial(Material * const InDefaultMaterial)
+	{
+		DefaultMaterial = InDefaultMaterial;
 	}
 
 	// Main Transform of pritmitive
@@ -60,9 +68,14 @@ public:
 	{
 		return NumIndices;
 	}
+	// Falls back to the default, so a freshly created mesh is always drawable
 	_NODISCARD inline auto GetMaterial() const
 	{
-		return PrimitiveMaterial;
+		return PrimitiveMaterial ? PrimitiveMaterial : DefaultMaterial;
+	}
+	_NODISCARD inline bool HasOwnMaterial() const
+	{
+		return PrimitiveMaterial != nullptr;
 	}
 
 	// D3D12 Vertex data
@@ -84,8 +97,11 @@ private:
 	// Number of indices
 	UINT						NumIndices;
 
-	// Material of the primitive, not owned here
+	// Material of the primitive, not owned here. Null means use the default below.
 	Material *					PrimitiveMaterial = nullptr;
+
+	// Shared by every primitive, also not owned here
+	static Material *			DefaultMaterial;
 };
 
 #endif // D3D12_PRIMITIVE_H_INCLUDED

@@ -204,5 +204,3 @@ int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& DxgiFormat)
 	else if (DxgiFormat == DXGI_FORMAT_A8_UNORM) return 8;
 	return -1;
 }
-
-

@@ -78,16 +78,19 @@ void D3D12Renderer::InitializeScene()
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube2")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube3")));
 	Primitives.emplace_back(std::make_unique<::Plane>(TEXT("Ground")));
-
-	DXASSERT(Primitives.size() == Materials.size(), "Every primitive needs a material to be drawn with");
+	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube4")));
 
 	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 	{
 		// Init Vertex/Index Buffers
 		Primitives[PrimitiveIdx]->Init(Device.Get(), CommandList);
 
-		// One material per primitive, so no two objects look the same
-		Primitives[PrimitiveIdx]->SetMaterial(Materials[PrimitiveIdx].get());
+		// Materials are handed out by index, so no two objects look the same. Any
+		// primitive past the end of the list keeps the default material.
+		if (PrimitiveIdx < Materials.size())
+		{
+			Primitives[PrimitiveIdx]->SetMaterial(Materials[PrimitiveIdx].get());
+		}
 	}
 
 	// Cubes in a row, the last primitive is the ground laid out underneath them
@@ -95,6 +98,7 @@ void D3D12Renderer::InitializeScene()
 	Primitives[1]->Transform({ -1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
 	Primitives[2]->Transform({  1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
 	Primitives[3]->Transform({  0.0f, 0.0f, 3.0f }, { 90.f, 0.0f, 0.0f }, { 20.f, 20.f, 1.f });
+	Primitives[4]->Transform({  10.0f, 0.0f, 10.0f }, { 90.f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
 
 	/***************************
 	 ********** Lights *********
@@ -137,6 +141,15 @@ void D3D12Renderer::InitializeMaterials()
 {
 	// Every material takes its descriptors out of this single heap
 	SharedMaterialHeap.Initialize(Device.Get(), MAX_MATERIALS);
+
+	// Default first, so any mesh created without a material of its own still draws.
+	// Kept out of Materials, which stays one entry per primitive.
+	DefaultMaterial = std::make_unique<Material>(TEXT("Default Material"));
+	DefaultMaterial->Initialize(Device.Get(), SharedMaterialHeap);
+	DefaultMaterial->SetDefaults(Device.Get(), FrameContext.GetCommandList());
+
+	// Primitive::GetMaterial() falls back to this one
+	Primitive::SetDefaultMaterial(DefaultMaterial.get());
 
 	// All CC0 from Poly Haven, in the order the primitives are created below.
 	// The last one is the ground, the three before it are the cubes.
@@ -411,9 +424,10 @@ void D3D12Renderer::RenderBasePass()
 		{
 			const auto& Primitive = *Primitives[PrimitiveIdx];
 
-			// Every primitive carries its own material, so the table is rebound per draw
+			// Either the primitive's own material or the default it falls back to, so the
+			// table is rebound per draw
 			const auto * const PrimitiveMaterial = Primitive.GetMaterial();
-			DXASSERT(PrimitiveMaterial, "Primitive has no material assigned");
+			DXASSERT(PrimitiveMaterial, "No material and no default registered, call Primitive::SetDefaultMaterial first");
 
 			auto * const Pipeline = SceneBasePass.GetPipelineStateFor(PrimitiveMaterial->IsTwoSided());
 			if (Pipeline != BoundPipeline)

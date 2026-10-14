@@ -96,6 +96,15 @@ public:
 	// Loads a texture from disk into one of the slots, overwriting its null descriptor
 	void LoadTexture(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, std::wstring TexturePath);
 
+	// Fills a slot with a single colour instead of an image, which is how a material
+	// gets sensible values for a map it has no texture for
+	void SetSolidColor(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, const BYTE (&Rgba)[4]);
+
+	// Gives every slot a neutral value: mid grey surface, flat normal, no metal, half
+	// rough and unoccluded. A mesh drawn with this is visible and obviously untextured
+	// rather than black.
+	void SetDefaults(DXDevice * Device, DXGraphicsCommandList * CommandList);
+
 	// Descriptor table to bind for this material, covers every slot at once
 	_NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptorTable() const;
 
@@ -131,6 +140,15 @@ public:
 	}
 
 private:
+
+	// Creates the slot's texture, copies the given pixels into it and points the slot's
+	// descriptor at the result. Shared by both ways a slot can be filled.
+	void UploadSlotTexture(DXDevice * Device,
+							DXGraphicsCommandList * CommandList,
+							const MaterialTextureSlot Slot,
+							const D3D12_RESOURCE_DESC& TextureDesc,
+							const void * Pixels,
+							const SIZE_T RowPitch);
 
 	// Shared storage of the descriptors, not owned by the material
 	MaterialHeap *				Heap			= nullptr;

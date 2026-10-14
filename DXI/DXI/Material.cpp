@@ -119,15 +119,57 @@ void Material::LoadTexture(DXDevice * Device, DXGraphicsCommandList * CommandLis
 	DXASSERT(Slot < MaterialTextureSlot::Count, "Unknown material texture slot");
 	DXASSERT(!HasTexture(Slot), "Material slot has been already loaded");
 
-	const auto SlotIdx	= static_cast<UINT>(Slot);
-	auto& TextureBuffer	= TextureBuffers[SlotIdx];
-	auto& UploadHeap	= TextureUploadHeaps[SlotIdx];
-
 	// Decode the image off disk
 	D3D12_RESOURCE_DESC TextureDesc;
 	int ImageBytesPerRow = 0;
 	SimpleSmartPointer<BYTE> ImageData = nullptr;
 	LoadImageDataFromFile(ImageData, TextureDesc, TexturePath.c_str(), ImageBytesPerRow);
+
+	UploadSlotTexture(Device, CommandList, Slot, TextureDesc, ImageData.Get(), static_cast<SIZE_T>(ImageBytesPerRow));
+}
+
+void Material::SetSolidColor(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, const BYTE (&Rgba)[4])
+{
+	DXASSERT(Device && CommandList, "Device and command list can not be null for filling a material slot");
+	DXASSERT(IsInitialized(), "Material must be initialized before filling its slots");
+	DXASSERT(Slot < MaterialTextureSlot::Count, "Unknown material texture slot");
+	DXASSERT(!HasTexture(Slot), "Material slot has been already loaded");
+
+	// A single texel is enough, every uv lands on the same colour anyway
+	const auto TextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, 1);
+
+	UploadSlotTexture(Device, CommandList, Slot, TextureDesc, Rgba, sizeof(Rgba));
+}
+
+void Material::SetDefaults(DXDevice * Device, DXGraphicsCommandList * CommandList)
+{
+	// Neutral values for everything, so a mesh with no material of its own still shades
+	// correctly instead of coming out black or mirror smooth
+	BYTE Diffuse[4]		= { 204, 204, 204, 255 };	// 0.8 grey, obviously untextured
+	BYTE Normal[4]		= { 128, 128, 255, 255 };	// flat, pointing straight out of the surface
+	BYTE Specular[4]	= {  10,  10,  10, 255 };	// about 0.04, what a dielectric reflects head on
+	BYTE Metalness[4]	= {   0,   0,   0, 255 };	// not a metal
+	BYTE Roughness[4]	= { 128, 128, 128, 255 };	// half rough, neither mirror nor fully diffuse
+	BYTE Occlusion[4]	= { 255, 255, 255, 255 };	// nothing occluded
+
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::Diffuse,			Diffuse);
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::Normal,				Normal);
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::Specular,			Specular);
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::Metalness,			Metalness);
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::Roughness,			Roughness);
+	SetSolidColor(Device, CommandList, MaterialTextureSlot::AmbientOcclusion,	Occlusion);
+}
+
+void Material::UploadSlotTexture(DXDevice * Device,
+								DXGraphicsCommandList * CommandList,
+								const MaterialTextureSlot Slot,
+								const D3D12_RESOURCE_DESC& TextureDesc,
+								const void * Pixels,
+								const SIZE_T RowPitch)
+{
+	const auto SlotIdx	= static_cast<UINT>(Slot);
+	auto& TextureBuffer	= TextureBuffers[SlotIdx];
+	auto& UploadHeap	= TextureUploadHeaps[SlotIdx];
 
 	// create a default heap where the upload heap will copy its contents into (contents being the texture)
 	constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
@@ -160,9 +202,9 @@ void Material::LoadTexture(DXDevice * Device, DXGraphicsCommandList * CommandLis
 
 	// store the image in the upload heap
 	D3D12_SUBRESOURCE_DATA TextureData	= {};
-	TextureData.pData					= static_cast<void*>(ImageData.Get());			// pointer to our image data
-	TextureData.RowPitch				= ImageBytesPerRow;								// size of one row of the image
-	TextureData.SlicePitch				= ImageBytesPerRow * TextureDesc.Height;		// size of the whole image
+	TextureData.pData					= Pixels;								// pointer to our image data
+	TextureData.RowPitch				= RowPitch;								// size of one row of the image
+	TextureData.SlicePitch				= RowPitch * TextureDesc.Height;		// size of the whole image
 
 	// Now we copy the upload buffer contents to the default heap
 	UpdateSubresources(CommandList, TextureBuffer.Get(), UploadHeap.Get(), 0, 0, 1, &TextureData);

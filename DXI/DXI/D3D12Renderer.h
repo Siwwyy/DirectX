@@ -160,6 +160,9 @@ private:
 	MaterialHeap							SharedMaterialHeap;
 	std::vector<std::unique_ptr<Material>>	Materials;
 
+	// What a primitive is drawn with when nothing was assigned to it
+	std::unique_ptr<Material>				DefaultMaterial;
+
 	// Scene
 	Camera									Camera;
 	std::vector<std::unique_ptr<Primitive>>	Primitives;
