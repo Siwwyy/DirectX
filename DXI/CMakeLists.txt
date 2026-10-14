@@ -82,25 +82,20 @@ endif()
 # Create executable from all DXI sources (include headers for IDE)
 add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS})
 
-# Include DXI root and common subfolders (only add if they exist)
+# Include the DXI root plus every subfolder that actually holds a header.
+# Derived from DXI_HEADERS rather than hand listed, so adding a new folder such as
+# Core or LightTypes never needs an edit here. libs is left out on purpose, the DXC
+# headers there are stale and would shadow the ones FetchContent downloads below.
 set(DXI_PUBLIC_INCLUDES
     "${DXI_SRC_DIR}"
 )
 
-set(DXI_OPTIONAL_SUBDIRS
-    "Geometry"
-    "Objects"
-    "Passes"
-    "LightTypes"
-    "Core"
-)
-
-foreach(_sub ${DXI_OPTIONAL_SUBDIRS})
-    set(_full "${DXI_SRC_DIR}/${_sub}")
-    if(EXISTS "${_full}")
-        list(APPEND DXI_PUBLIC_INCLUDES "${_full}")
-    endif()
+foreach(_header IN LISTS DXI_HEADERS)
+    get_filename_component(_header_dir "${_header}" DIRECTORY)
+    list(APPEND DXI_PUBLIC_INCLUDES "${_header_dir}")
 endforeach()
+
+list(REMOVE_DUPLICATES DXI_PUBLIC_INCLUDES)
 
 # Add include directories to the target
 target_include_directories(DXIApp

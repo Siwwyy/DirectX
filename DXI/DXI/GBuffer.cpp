@@ -29,7 +29,7 @@ DXGI_FORMAT GBuffer::GetFormat(const GBufferTarget Target)
 	switch (Target)
 	{
 	case GBufferTarget::Albedo:			return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;			// colour, 8 bits per channel is plenty
-	case GBufferTarget::Normal:			return DXGI_FORMAT::DXGI_FORMAT_R16G16B16A16_FLOAT;		// signed, so it needs a float format
+	case GBufferTarget::Normal:			return DXGI_FORMAT::DXGI_FORMAT_R16G16B16A16_FLOAT;		// signed, so it needs a float format | maybe change to DXGI_FORMAT_R32G32B32A32_FLOAT for better precision
 	case GBufferTarget::WorldPosition:	return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;		// full precision, positions leave the unit range
 	case GBufferTarget::MaterialParams:	return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;			// three factors in the unit range
 	default:							return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;

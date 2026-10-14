@@ -11,10 +11,10 @@
 // i.e., Albedo is SV_Target0 and t0, Normal is SV_Target1 and t1 and so on.
 enum class GBufferTarget : UINT
 {
-	Albedo = 0,			// Surface colour straight out of the material diffuse slot
-	Normal,				// World space normal
-	WorldPosition,		// World space position, w is 1 where geometry was written and 0 for the background
-	MaterialParams,		// r metalness, g roughness, b ambient occlusion | what drives the reflections
+	Albedo = 0,				// Surface colour straight out of the material diffuse slot
+	Normal = 1,				// World space normal
+	WorldPosition = 2,		// World space position, w is 1 where geometry was written and 0 for the background
+	MaterialParams = 3,		// r metalness, g roughness, b ambient occlusion | what drives the reflections
 
 	Count
 };

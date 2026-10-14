@@ -157,11 +157,11 @@ private:
 
 	// Materials | Every material takes its descriptors out of the one shared heap,
 	// one per primitive so each object looks different
-	MaterialHeap			SharedMaterialHeap;
+	MaterialHeap							SharedMaterialHeap;
 	std::vector<std::unique_ptr<Material>>	Materials;
 
 	// Scene
-	Camera					Camera;
+	Camera									Camera;
 	std::vector<std::unique_ptr<Primitive>>	Primitives;
 	std::vector<std::unique_ptr<LightBase>>	Lights;
 
