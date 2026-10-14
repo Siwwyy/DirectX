@@ -91,6 +91,8 @@ set(DXI_OPTIONAL_SUBDIRS
     "Geometry"
     "Objects"
     "Passes"
+    "LightTypes"
+    "Core"
 )
 
 foreach(_sub ${DXI_OPTIONAL_SUBDIRS})

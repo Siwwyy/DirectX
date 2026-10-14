@@ -25,6 +25,16 @@ public:
 	// Render
 	virtual void Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept = 0; // make this class abstract
 
+	// Pipeline of the pass, the caller binds these before feeding it any work
+	_NODISCARD FORCEINLINE DXPipelineState* GetPipelineState() const noexcept
+	{
+		return PSO.PipelineState.Get();
+	}
+	_NODISCARD FORCEINLINE ID3D12RootSignature* GetRootSignature() const noexcept
+	{
+		return PSO.RootSignature.Get();
+	}
+
 
 protected:
 

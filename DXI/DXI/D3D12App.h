@@ -9,11 +9,22 @@
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
 #include "D3D12Texture.h"
+#include "Material.h"
+#include "GBuffer.h"
+
+// Passes
+#include "Passes/BasePass.h"
+#include "Passes/LightPass.h"
 
 // Objects
 #include "Objects/Camera.h"
 #include "Objects/Plane.h"
 #include "Objects/Cube.h"
+
+// Lights
+#include "LightTypes/DirectionalLight.h"
+#include "LightTypes/PointLight.h"
+#include "LightTypes/AreaLight.h"
 
 
 //APP
@@ -41,6 +52,7 @@ public:
 	// Movement of camera
 	void OnKeyDown(UINT8 key);
 	void OnKeyUp(UINT8 key);
+	void OnMouseMove(int DeltaX, int DeltaY);
 
 private:
 
@@ -110,19 +122,26 @@ public:
 	// Constant Buffers
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
+	std::vector<ComPtr<DXResource>>						CameraConstantBufferUploadHeaps;	// camera constant buffer for each frame, read by the pixel shader
+	std::vector<UINT8*>									CameraCbvGPUAddress;				// this is a pointer to each of the camera constant buffer resource heaps
+	std::vector<ComPtr<DXResource>>						LightsConstantBufferUploadHeaps;	// lights constant buffer for each frame, read by the pixel shader
+	std::vector<UINT8*>									LightsCbvGPUAddress;				// this is a pointer to each of the lights constant buffer resource heaps
 	Plane												PlanePrimitive;
 	Camera												Camera;
 	PrimitiveConstantBuffer								CbvPerObject;
 
 
 
-	//
-	ComPtr<DXDescriptorHeap>							MainDescriptorHeap;
-	UINT												IncrementDescriptorSize;
+	// Materials | Every material takes its descriptors out of the one shared heap
+	MaterialHeap										SharedMaterialHeap;
+	Material											PlaneMaterial;
+	Material											PrimitiveMaterial;
 
-	// Texture class
-	Texture												MainTexture;
-	Texture												MeganeTexture;
+	// Deferred rendering | BasePass writes the surface into the G-buffer, LightPass shades it
+	GBuffer												SceneGBuffer;
+	ComPtr<DXDescriptorHeap>							LightInputsHeap;	// everything LightPass samples, in one shader visible heap
+	BasePass											SceneBasePass;
+	LightPass											SceneLightPass;
 
 	// Timer
 	Helpers::StepTimer									StepTimer;
@@ -130,6 +149,9 @@ public:
 
 	// NEW SECTION
 	std::vector<std::unique_ptr<Primitive>>				Primitives;
+
+	// Lights of the scene, every one of them is packed into the lights constant buffer
+	std::vector<std::unique_ptr<LightBase>>				Lights;
 
 	// CBV section for primitives
 	UINT8*												PrimitivesConstantBufferPtr;

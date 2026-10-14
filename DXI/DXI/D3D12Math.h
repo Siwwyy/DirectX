@@ -124,12 +124,29 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 // Constant buffer per Primitive
 struct alignas(256) PrimitiveConstantBuffer
 {
-	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
-	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
+	DirectX::XMFLOAT4X4 LocalToWorld;		// Only with translation
+	DirectX::XMFLOAT4X4 WorldToClip;		// Translation * View * Proj (Clip)
+	DirectX::XMFLOAT4X4 LocalToLightClip;	// Translation * Light View * Light Proj | what ShadowPass renders with
+
+	// Normals can not use LocalToWorld. A non uniform scale shears a direction differently
+	// than it moves a point, so a normal scaled that way stops being perpendicular to its
+	// surface. The matrix that keeps it perpendicular is the inverse transpose of the
+	// world matrix, which equals the inverse scale times the rotation.
+	DirectX::XMFLOAT4X4 LocalToWorldNormal;
 };
 static_assert((sizeof(PrimitiveConstantBuffer) % 256) == 0, "Primitive Constant Buffer size must be aligned to 256-bytes boudary");
 constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
 constexpr auto PrimitiveConstantBufferAlignment = alignof(PrimitiveConstantBuffer);
+
+// Constant buffer per Camera | What the pixel shaders need to know about the view
+struct alignas(256) CameraConstantBuffer
+{
+	DirectX::XMFLOAT4	EyePosition;	// World space position of the camera
+	DirectX::XMFLOAT4X4 InvViewProj;	// Clip space back to world, the sky turns a pixel into a direction with it
+};
+static_assert((sizeof(CameraConstantBuffer) % 256) == 0, "Camera Constant Buffer size must be aligned to 256-bytes boudary");
+static_assert(offsetof(CameraConstantBuffer, InvViewProj) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+constexpr auto CameraConstantBufferSize = sizeof(CameraConstantBuffer);
 
 // Camera matrices
 struct alignas(256) CameraMatrices

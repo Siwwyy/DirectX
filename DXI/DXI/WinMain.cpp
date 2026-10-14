@@ -22,6 +22,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     LPSTR     lpCmdLine,
     int       nCmdShow)
 {
-    D3D12App dx12App(1280u, 720u, L"MyApp");
+    // Which app actually runs is the CurrentApp alias of Win32Proc.h
+    CurrentApp dx12App(1280u, 720u, L"MyApp");
     return Win32Proc::Run(hInstance, nCmdShow, &dx12App);
 }

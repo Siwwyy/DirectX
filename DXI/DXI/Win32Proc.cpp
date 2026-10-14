@@ -2,7 +2,11 @@
 
 #include "Win32Proc.h"
 
-HWND Win32Proc::hwnd = nullptr;
+#include <windowsx.h>	//for GET_X_LPARAM, LOWORD would break on the negative coordinates a captured drag can report
+
+HWND Win32Proc::hwnd			= nullptr;
+POINT Win32Proc::LastMousePos	= {};
+bool Win32Proc::bIsRotating		= false;
 
 int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 {
@@ -99,11 +103,36 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	return 0;
 
+	// Mouse look | Hold the right button and drag to rotate the camera
+	case WM_RBUTTONDOWN:
+	{
+		// Capture keeps the moves coming even when the drag leaves the window
+		SetCapture(hWnd);
+		LastMousePos	= { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+		bIsRotating		= true;
+	}
+	return 0;
+
+	case WM_RBUTTONUP:
+	{
+		ReleaseCapture();
+		bIsRotating = false;
+	}
+	return 0;
+
 	case WM_MOUSEMOVE:
 	{
+		const POINT MousePos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 
+		if (bIsRotating && dx12App)
+		{
+			dx12App->OnMouseMove(MousePos.x - LastMousePos.x, MousePos.y - LastMousePos.y);
+		}
+
+		// Tracked even while idle, otherwise the first move of a drag would jump
+		LastMousePos = MousePos;
 	}
-
+	return 0;
 
 	case WM_PAINT:
 	{

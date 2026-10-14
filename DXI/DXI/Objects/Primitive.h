@@ -8,6 +8,8 @@
 #include "../D3D12Math.h"
 #include "../Geometry/Vertex.h"
 
+class Material;
+
 class Primitive
 {
 	DISABLE_COPY(Primitive)
@@ -28,6 +30,12 @@ public:
 	void SetNumIndices(const UINT NumIndices)
 	{
 		this->NumIndices = NumIndices;
+	}
+
+	// Material this primitive is drawn with, owned by whoever created it
+	void SetMaterial(Material * const InMaterial)
+	{
+		this->PrimitiveMaterial = InMaterial;
 	}
 
 	// Main Transform of pritmitive
@@ -52,6 +60,10 @@ public:
 	{
 		return NumIndices;
 	}
+	_NODISCARD inline auto GetMaterial() const
+	{
+		return PrimitiveMaterial;
+	}
 
 	// D3D12 Vertex data
 	VertexFactory				VertexFactory;
@@ -71,6 +83,9 @@ private:
 
 	// Number of indices
 	UINT						NumIndices;
+
+	// Material of the primitive, not owned here
+	Material *					PrimitiveMaterial = nullptr;
 };
 
 #endif // D3D12_PRIMITIVE_H_INCLUDED

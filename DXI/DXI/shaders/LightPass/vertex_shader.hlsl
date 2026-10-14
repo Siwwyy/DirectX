@@ -3,38 +3,20 @@
 
 #include "../Common.hlsl"
 
-cbuffer ConstantBufferPerObject : register(b0)
+// Fullscreen triangle generated from the vertex id, so this pass needs no vertex
+// or index buffer at all. Draw it with DrawInstanced(3, 1, 0, 0).
+//
+//   id 0 -> uv (0,0) -> clip (-1,  1)
+//   id 1 -> uv (2,0) -> clip ( 3,  1)
+//   id 2 -> uv (0,2) -> clip (-1, -3)
+//
+// One oversized triangle covers the whole viewport and avoids the seam two quad halves would have.
+FullscreenPSInput main(uint vertex_id : SV_VertexID)
 {
-    float4x4 LocalToWorld;  // Only with per-object translation
-    float4x4 WorldToClip;   // Translation * View * Proj (Clip)
-};
+    FullscreenPSInput output;
 
-// cbuffer ConstantBufferPerCamera: register(b1)
-// {
-//     //
-//     // float4x4 WorldToView;   // World * View
-//     float4x4 ViewToClip;    // View * Clip
+    output.tex_coord    = float2((vertex_id << 1) & 2, vertex_id & 2);
+    output.position     = float4(output.tex_coord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
 
-//     //
-//     //float4x4 WorldToClip;   // World * View * Clip
-// };
-
-PSInput main(VSInput input)
-{
-    PSInput output;
-    //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
-    output.position             = mul(input.position, WorldToClip); 
-#if USE_TEXCOORD
-    output.tex_coord            = input.tex_coord;
-#else
-    output.color                = input.color;
-#endif
-    //output.normal       = input.normal;
-    // output.normal       = normalise(float4(input.normal, 1.f), LocalToWorld).xyz; 
-    float3 world_normal         = mul(float4(input.normal, 1.f), LocalToWorld).xyz;
-    //output.normal               = normalize(world_normal);
-    output.normal               = world_normal;
-
-    output.pixel_world_position = mul(input.position, LocalToWorld); 
     return output;
 }

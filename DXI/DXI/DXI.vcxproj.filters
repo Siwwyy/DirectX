@@ -43,6 +43,18 @@
     <Filter Include="Header Files\Geometry">
       <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\LightTypes">
+      <UniqueIdentifier>{2a1d5f3c-7b64-4f2a-9c18-5d3e4a6b7c81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{9c6b1e74-48d2-4a53-bf91-6e2d7a3c5f48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{d5a83f26-91b7-4c0e-8a64-3f7b2e9d14c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LightTypes">
+      <UniqueIdentifier>{7f4c2b9e-3a85-4d16-b2f7-9e1a8c5d4b32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
@@ -105,6 +117,51 @@
     <ClCompile Include="PSO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Paths.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\ShadowPass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D12Device.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D12SwapChain.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D12DepthBuffer.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D12FrameContext.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\LightBase.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\DirectionalLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\PointLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\AreaLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12App.h">
@@ -166,6 +223,51 @@
     </ClInclude>
     <ClInclude Include="PSO.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Paths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\ShadowPass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D12Device.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D12SwapChain.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D12DepthBuffer.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D12FrameContext.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\LightBase.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\DirectionalLight.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\PointLight.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\AreaLight.h">
+      <Filter>Header Files\LightTypes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

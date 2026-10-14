@@ -41,7 +41,7 @@ struct GraphicsPipelineStateDesc
 	D3D12_DEPTH_STENCIL_DESC								DepthStencilState		= CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	// Render target formats
 	std::vector<DXGI_FORMAT>								RenderTargetFormats;
-	DXGI_FORMAT												DepthStencilFormat;
+	DXGI_FORMAT												DepthStencilFormat		= DXGI_FORMAT_UNKNOWN;
 	// Sample description
 	DXGI_SAMPLE_DESC										SampleDesc;
 	// Primitive topology type
@@ -53,18 +53,19 @@ struct GraphicsPipelineStateDesc
 		using namespace Helpers;
 
 		// assertion if needed
-		DXASSERT(!InputLayout.empty(), "Input layout cannot be empty.");
+		// NOTE | An empty input layout is valid, a fullscreen pass builds its vertices out of SV_VertexID
+		// NOTE | A missing pixel shader and no render targets are valid too, a depth only pass has neither
 		DXASSERT(RootSignature, "Root signature must be set before creating the PSO.");
 		DXASSERT(VertexShaderBlob, "Vertex shader blob must be set before creating the PSO.");
-		DXASSERT(PixelShaderBlob, "Pixel shader blob must be set before creating the PSO.");
-		DXASSERT(!RenderTargetFormats.empty(), "Render target formats cannot be empty.");
+		DXASSERT(PixelShaderBlob || DepthStencilFormat != DXGI_FORMAT_UNKNOWN, "A PSO without a pixel shader must at least write depth.");
 
 		// Describe and create the graphics pipeline state object (PSO).
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
 		PsoDesc.InputLayout = { InputLayout.data(), static_cast<UINT>(InputLayout.size()) };
 		PsoDesc.pRootSignature = RootSignature.Get();
 		PsoDesc.VS = CD3DX12_SHADER_BYTECODE(VertexShaderBlob.Get());
-		PsoDesc.PS = CD3DX12_SHADER_BYTECODE(PixelShaderBlob.Get());
+		// A depth only pass has no pixel shader at all, leave the bytecode empty for it
+		PsoDesc.PS = PixelShaderBlob ? CD3DX12_SHADER_BYTECODE(PixelShaderBlob.Get()) : D3D12_SHADER_BYTECODE{};
 		PsoDesc.RasterizerState = RasterizerState;
 		PsoDesc.BlendState = BlendState;
 		PsoDesc.DepthStencilState = DepthStencilState;

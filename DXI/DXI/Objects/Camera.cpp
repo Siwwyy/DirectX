@@ -210,6 +210,15 @@ void Camera::OnKeyDown(WPARAM key)
 	}
 }
 
+void Camera::OnMouseMove(const int DeltaX, const int DeltaY) noexcept
+{
+	// Same convention as the arrow keys: turning right is where the yaw decreases, and
+	// the screen Y axis grows downwards so dragging down has to pitch down.
+	// Update() is what clamps the pitch and rebuilds the direction out of these.
+	Yaw		-= static_cast<float>(DeltaX) * MouseSensitivity;
+	Pitch	-= static_cast<float>(DeltaY) * MouseSensitivity;
+}
+
 void Camera::OnKeyUp(WPARAM key)
 {
 	switch (key)

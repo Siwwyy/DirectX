@@ -27,7 +27,20 @@ public:
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 
+	// Rotation | Takes how many pixels the cursor travelled since the last message
+	void OnMouseMove(const int DeltaX, const int DeltaY) noexcept;
+
+	// Setters
+	void SetMouseSensitivity(const float Sensitivity) noexcept
+	{
+		MouseSensitivity = Sensitivity;
+	}
+
 	// Getters
+	_NODISCARD inline auto GetMouseSensitivity() const noexcept
+	{
+		return MouseSensitivity;
+	}
 	_NODISCARD inline const auto GetViewMatrix() const
 	{
 		return XMLoadFloat4x4(&CameraMatrices.ViewMat);						// View mat
@@ -35,6 +48,10 @@ public:
 	_NODISCARD inline const auto GetProjMatrix() const
 	{
 		return XMLoadFloat4x4(&CameraMatrices.ProjMat);						// Proj mat
+	}
+	_NODISCARD inline const auto& GetPosition() const
+	{
+		return CameraMatrices.Position;										// World space position (eye)
 	}
 
 private:
@@ -61,6 +78,7 @@ private:
 	float Pitch;							// Relative to the xz plane.
 	float MoveSpeed;						// Speed at which the camera moves, in units per second.
 	float TurnSpeed;						// Speed at which the camera turns, in radians per second.
+	float MouseSensitivity = 0.2f;			// Degrees of rotation per pixel of cursor movement.
 
 	// Matrices
 	CameraMatrices	CameraMatrices;

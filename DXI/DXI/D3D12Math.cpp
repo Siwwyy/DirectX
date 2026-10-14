@@ -68,15 +68,15 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
     const auto ScaleMat = XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
 
     // Create offset of rotation
-    const auto RotationMatX     = XMMatrixRotationX(this->RotVec.x);
-    const auto RotationMatY     = XMMatrixRotationY(this->RotVec.y);
-    const auto RotationMatZ     = XMMatrixRotationZ(this->RotVec.z);
+    const auto RotationMatX     = XMMatrixRotationX(Helpers::ToRadians(this->RotVec.x));
+    const auto RotationMatY     = XMMatrixRotationY(Helpers::ToRadians(this->RotVec.y));
+    const auto RotationMatZ     = XMMatrixRotationZ(Helpers::ToRadians(this->RotVec.z));
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
     // create translation matrix                                                                           
     const auto TranslationMat = XMMatrixTranslation(this->PositionVec.x, this->PositionVec.y, this->PositionVec.z);
 
-    // Create World Matrix, Scale * Rotation
+    // Create Local Matrix, Scale * Rotation
     {
         const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
         XMStoreFloat4x4(&this->ScaleRotMat, ScaleRotMat);

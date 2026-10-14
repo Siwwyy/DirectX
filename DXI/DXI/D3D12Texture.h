@@ -115,26 +115,7 @@ SimpleSmartPointer<PtrType> make_simple_smart_pointer(const unsigned int size)
 }
 
 
-// Texture class
-class Texture
-{
-
-	DISABLE_COPY(Texture)
-
-public:
-
-	Texture()	= default;
-	~Texture()	= default;
-
-	void Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TexturePath, ComPtr<DXDescriptorHeap> & MainDescriptorHeap, UINT& IncrementDescriptorSize, const UINT TextureIdx, std::wstring TextureName = L"TextureBuffer");
-
-private:
-
-	ComPtr<DXResource>			TextureBuffer; // the resource heap containing our texture
-	ComPtr<DXResource>			TextureBufferUploadHeap;
-};
-
-// Functions
+// Functions | Image decoding, the GPU side lives in Material
 int LoadImageDataFromFile(SimpleSmartPointer<BYTE>& ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
 
 DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& WicFormatGUID);

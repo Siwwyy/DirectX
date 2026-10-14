@@ -1,4 +1,7 @@
 #include "BasePass.h"
+#include "../Paths.h"
+#include "../GBuffer.h"
+#include "../Material.h"
 
 #include <pix3.h>
 
@@ -10,8 +13,8 @@ BasePass::BasePass()
 	DXShaderDefines<1> ShaderDefines;
 	ShaderDefines.AddDefine({ L"BASE_PASS", L"1" });
 
-	constexpr const wchar_t* VertexShaderPath = L"shaders//BasePass//base_pass_vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath = L"shaders//BasePass//base_pass_pixel_shader.hlsl";
+	const DXIPATHS::FilePath VertexShaderPath = DXIPATHS::GetShaderDir / L"BasePass" / L"vertex_shader.hlsl";
+	const DXIPATHS::FilePath PixelShaderPath = DXIPATHS::GetShaderDir / L"BasePass" / L"pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 	// String arguments
@@ -41,7 +44,6 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 	using namespace Helpers;
 
 	//CONSTANTS
-	const DXGI_FORMAT						BACK_BUFFER_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
 	const DXGI_FORMAT						DEPTH_STENCIL_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
 	const DXGI_SAMPLE_DESC					SAMPLE_DESC				= SAMPLER_HELPER::CreateSampler(1, 0);
 
@@ -50,12 +52,12 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 		ComPtr<ID3D12RootSignature> RootSignature;
 		// CREATE ROOT SIGNATURE
 		// create a root descriptor, which explains where to find the data for this root parameter
-		const auto RootCBVDescriptor = CreateRootDescriptor(0, 0);
+		const auto RootCBVDescriptor = CreateRootDescriptor(0, 0);	// b0 | Per object
 
 		// create a descriptor table
 		// create a descriptor range (descriptor table) and fill it out
-		// this is a range of descriptors inside a descriptor heap
-		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+		// One range covering every texture slot of a material, so binding a material is a single call
+		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialTextureSlotCount, 0, 0);
 		D3D12_DESCRIPTOR_RANGE DescriptorRangesTable[1] = { DescriptorRange };
 		const auto DescriptorTable = CreateRootDescriptorTable(_countof(DescriptorRangesTable), DescriptorRangesTable);
 
@@ -70,7 +72,7 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
 			DescriptorTable);
 
-		// Create root parameters array
+		// Create root parameters array | Keep the order, the caller binds them by index
 		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV });
 
 		// create a static sampler
@@ -116,13 +118,24 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
+	// Render targets | One per G-buffer target, in the GBufferTarget order
+	for (UINT TargetIdx = 0; TargetIdx < GBufferTargetCount; ++TargetIdx)
+	{
+		PSO.RenderTargetFormats.push_back(GBuffer::GetFormat(static_cast<GBufferTarget>(TargetIdx)));
+	}
+
 	// Other things
-	PSO.RenderTargetFormats.push_back(BACK_BUFFER_FORMAT);
 	PSO.DepthStencilFormat	= DEPTH_STENCIL_FORMAT;
 	PSO.SampleDesc			= SAMPLE_DESC;
 	
 	// Setup PSO
 	PSO.SetupPSO(Device);
+
+	// Same thing with culling off, for two sided materials. The cull mode is part of the
+	// pipeline state, so a two sided surface needs its own PSO rather than a draw flag.
+	TwoSidedPSO							= PSO;
+	TwoSidedPSO.RasterizerState.CullMode= D3D12_CULL_MODE_NONE;
+	TwoSidedPSO.SetupPSO(Device);
 
 	// Return
 	return hr;
@@ -132,7 +145,6 @@ void BasePass::Render(DXGraphicsCommandList * const CommandList, const Primitive
 {
 	PIXBeginEvent(CommandList, 0, Primitive.Name.c_str());
 	{
-		//CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (0 * ConstantBufferPerObjectSize));
 		CommandList->IASetVertexBuffers(0, 1, &Primitive.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&Primitive.VertexFactory.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0); // draw cube

@@ -5,6 +5,7 @@
 #include "Win32Proc.h"
 #include "D3D12Math.h"
 #include "RenderGraph.h"
+#include "Paths.h"
 
 #include <string>
 #include <pix3.h>
@@ -21,6 +22,7 @@ const D3D_FEATURE_LEVEL					D3D12_FEATURE_LEVEL			= D3D_FEATURE_LEVEL::D3D_FEATU
 const DXGI_FORMAT						BACK_BUFFER_FORMAT			= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 const DXGI_FORMAT						DEPTH_STENCIL_FORMAT		= DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT;					//depth stencil format
 const DXGI_SAMPLE_DESC					SAMPLE_DESC					= SAMPLER_HELPER::CreateSampler(1, 0);
+const UINT								MAX_MATERIALS				= 10;					//how many materials fit in the shared descriptor heap
 
 //////////////////////////////////////////////////////////////////
 
@@ -108,6 +110,8 @@ D3D12App::D3D12App(const UINT WindowWidth, const UINT WindowHeight, const std::w
 	, CurrentFrameIdx(0)
 	, RtvIncrementDescriptorSize(0)
 	, Camera(WindowWidth, WindowHeight)
+	, PlaneMaterial(TEXT("Plane Material"))
+	, PrimitiveMaterial(TEXT("Primitive Material"))
 {
 	static_assert(BACK_BUFFER_COUNT > 0, "Back buffer count must be greater than 0!");
 
@@ -374,20 +378,27 @@ void D3D12App::Initialize()
 		/***************************
 		 **** TEXTURING & Cube *****
 		 ***************************/
-		constexpr auto DescriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
-		HeapDesc.NumDescriptors = 2;
-		HeapDesc.Flags			= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		HeapDesc.Type			= DescriptorHeapType;
-		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&MainDescriptorHeap)));
+		// Every material takes its descriptors out of this single heap
+		SharedMaterialHeap.Initialize(Device.Get(), MAX_MATERIALS);
+		PlaneMaterial.Initialize(Device.Get(), SharedMaterialHeap);
+		PrimitiveMaterial.Initialize(Device.Get(), SharedMaterialHeap);
 
 		// AddPass
 		Graph.AddPass(TEXT("Cubes Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{
 			//Cube1.Init(Device,			CommandList);
 			//Cube2.Init(Device,			CommandList);
-			MainTexture.Load(Device,		CommandList,	L"E://!!PROJECTS_VS//DirectX//DXI//DXI//bryanzar.png",		MainDescriptorHeap, IncrementDescriptorSize, 0);
-			MeganeTexture.Load(Device,		CommandList,	L"E://!!PROJECTS_VS//DirectX//DXI//DXI//megane.jpg",		MainDescriptorHeap, IncrementDescriptorSize, 1);
+			PlaneMaterial.LoadTexture(Device,		CommandList,	MaterialTextureSlot::Diffuse,			(DXIPATHS::GetTextureDir / L"bryanzar.png").Str());
+
+			// Full CC0 map set from Poly Haven, DirectX normal variant so the green channel needs no flip.
+			// Only Diffuse is sampled today, the rest sit in the table waiting for the shader to use them.
+			const auto MetalPlateDir = DXIPATHS::GetTextureDir / L"metal_plate";
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::Diffuse,			(MetalPlateDir / L"metal_plate_diff_1k.png").Str());
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::Normal,			(MetalPlateDir / L"metal_plate_nor_dx_1k.png").Str());
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::Specular,			(MetalPlateDir / L"metal_plate_spec_1k.png").Str());
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::Metalness,			(MetalPlateDir / L"metal_plate_metal_1k.png").Str());
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::Roughness,			(MetalPlateDir / L"metal_plate_rough_1k.png").Str());
+			PrimitiveMaterial.LoadTexture(Device,	CommandList,	MaterialTextureSlot::AmbientOcclusion,	(MetalPlateDir / L"metal_plate_ao_1k.png").Str());
 		});
 
 		/***************************
@@ -406,6 +417,86 @@ void D3D12App::Initialize()
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube2")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube3")));
 	Primitives.emplace_back(std::make_unique<::Plane>(TEXT("Plane1")));
+
+	/***************************
+	 ********** Lights *********
+	 ***************************/
+	// Place the lights of the scene, they get packed into the lights constant buffer every frame
+	{
+		// Sun above the scene, shining down from the left and behind
+		auto Sun = std::make_unique<DirectionalLight>(TEXT("Sun"));
+		Sun->SetDirection({ -0.5f, -1.0f, 0.5f });
+		Sun->SetColor({ 1.0f, 0.95f, 0.8f });
+		Sun->SetIntensity(0.6f);
+		Lights.emplace_back(std::move(Sun));
+
+		// Bulb sitting where the shader used to have its hardcoded light
+		auto Bulb = std::make_unique<PointLight>(TEXT("Bulb"));
+		Bulb->SetPosition({ 2.0f, 1.0f, -1.0f });
+		Bulb->SetColor({ 1.0f, 1.0f, 0.0f });
+		Bulb->SetIntensity(1.0f);
+		Bulb->SetRange(8.0f);
+		Lights.emplace_back(std::move(Bulb));
+
+		// Softbox hanging over the cubes, facing straight down
+		auto Softbox = std::make_unique<AreaLight>(TEXT("Softbox"));
+		Softbox->SetPosition({ -2.0f, 3.0f, 0.0f });
+		Softbox->SetDirection({ 0.0f, -1.0f, 0.0f });
+		Softbox->SetSize({ 2.0f, 2.0f });
+		Softbox->SetColor({ 0.4f, 0.6f, 1.0f });
+		Softbox->SetIntensity(1.0f);
+		Softbox->SetRange(12.0f);
+		Lights.emplace_back(std::move(Softbox));
+
+		DXASSERT(Lights.size() <= MAX_LIGHTS, "More lights placed in the scene than the constant buffer can hold");
+	}
+
+	/***************************
+	 ********** Passes *********
+	 ***************************/
+	// BasePass draws the primitives with their materials into the G-buffer,
+	// LightPass then shades that G-buffer with the lights placed above
+	SceneGBuffer.Initialize(Device.Get(), WindowWidth, WindowHeight);
+
+	// LightPass samples the G-buffer, a shadow map and two sky cubes out of one heap. This
+	// path has neither a shadow pass nor a sky, so those slots get null descriptors and
+	// the lights buffer below reports NO_SHADOW_CASTER to skip the lookup entirely.
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc	= {};
+		HeapDesc.NumDescriptors				= GBufferTargetCount + 3;
+		HeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		HeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&LightInputsHeap)));
+
+		const auto IncrementSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE SrvHandle(LightInputsHeap->GetCPUDescriptorHandleForHeapStart());
+
+		SceneGBuffer.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
+
+		// Shadow map slot
+		SrvHandle.Offset(GBufferTargetCount, IncrementSize);
+		D3D12_SHADER_RESOURCE_VIEW_DESC NullSrvDesc = {};
+		NullSrvDesc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		NullSrvDesc.Format					= DXGI_FORMAT_R32_FLOAT;
+		NullSrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
+		NullSrvDesc.Texture2D.MipLevels		= 1;
+		Device->CreateShaderResourceView(nullptr, &NullSrvDesc, SrvHandle);
+
+		// Sky cube slots, the dimension has to match what the shader declares
+		D3D12_SHADER_RESOURCE_VIEW_DESC NullCubeSrvDesc = {};
+		NullCubeSrvDesc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		NullCubeSrvDesc.Format					= DXGI_FORMAT_R8G8B8A8_UNORM;
+		NullCubeSrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURECUBE;
+		NullCubeSrvDesc.TextureCube.MipLevels	= 1;
+
+		SrvHandle.Offset(1, IncrementSize);
+		Device->CreateShaderResourceView(nullptr, &NullCubeSrvDesc, SrvHandle);
+
+		SrvHandle.Offset(1, IncrementSize);
+		Device->CreateShaderResourceView(nullptr, &NullCubeSrvDesc, SrvHandle);
+	}
+	SceneBasePass.Init(Device.Get(), CommandList.Get());
+	SceneLightPass.Init(Device.Get(), CommandList.Get());
 
 	/***************************
 	 ******* Primitives ********
@@ -468,40 +559,65 @@ void D3D12App::Render()
 
 	// Drawing
 
-	// Texture
-	{
-		// set the descriptor heap
-		DXDescriptorHeap* DescriptorHeaps[] = { MainDescriptorHeap.Get()};
-		CommandList->SetDescriptorHeaps(_countof(DescriptorHeaps), DescriptorHeaps);
-	}
+	// Handle of the depth buffer, BasePass renders against it
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE DsvHandle(DsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-	// Plane
-	PIXBeginEvent(CommandList.Get(), 0, L"Main Plane Rendering");
+	/***************************
+	 ********* BasePass ********
+	 ***************************/
+	// Surface only, every primitive lands in the G-buffer with its material applied and no lighting
+	PIXBeginEvent(CommandList.Get(), 0, L"Base Pass");
 	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		CommandList->SetGraphicsRootDescriptorTable(1, Handle);
+		SceneGBuffer.TransitionToRenderTarget(CommandList.Get());
+		SceneGBuffer.BindAsRenderTarget(CommandList.Get(), DsvHandle);
+		SceneGBuffer.Clear(CommandList.Get());
+
+		CommandList->SetGraphicsRootSignature(SceneBasePass.GetRootSignature());
+		CommandList->SetPipelineState(SceneBasePass.GetPipelineState());
+
+		// set the descriptor heap shared by every material
+		DXDescriptorHeap* MaterialHeaps[] = { SharedMaterialHeap.GetHeap() };
+		CommandList->SetDescriptorHeaps(_countof(MaterialHeaps), MaterialHeaps);
+
+		// Plane
+		CommandList->SetGraphicsRootDescriptorTable(1, PlaneMaterial.GetDescriptorTable());
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * PrimitiveConstantBufferSize));
-		CommandList->IASetVertexBuffers(0, 1, &PlanePrimitive.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-		CommandList->IASetIndexBuffer(&PlanePrimitive.VertexFactory.IndexBufferView);
-		CommandList->DrawIndexedInstanced(PlanePrimitive.GetNumIndices(), 1, 0, 0, 0); // draw plane
-	}
-	PIXEndEvent(CommandList.Get());
+		SceneBasePass.Render(CommandList.Get(), PlanePrimitive);
 
-	// Primitives
-	PIXBeginEvent(CommandList.Get(), 0, L"Primitives Rendering");
-	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		Handle.Offset(1, IncrementDescriptorSize);
+		// Primitives
+		CommandList->SetGraphicsRootDescriptorTable(1, PrimitiveMaterial.GetDescriptorTable());
 		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 		{
-			CommandList->SetGraphicsRootDescriptorTable(1, Handle);
 			CommandList->SetGraphicsRootConstantBufferView(0, PrimitiveCBV->GetGPUVirtualAddress() + (PrimitiveIdx * PrimitiveConstantBufferSize));
-			CommandList->IASetVertexBuffers(0, 1, &Primitives[PrimitiveIdx]->VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
-			CommandList->IASetIndexBuffer(&Primitives[PrimitiveIdx]->VertexFactory.IndexBufferView);
-			CommandList->DrawIndexedInstanced(Primitives[PrimitiveIdx]->GetNumIndices(), 1, 0, 0, 0); // draw primitive
+			SceneBasePass.Render(CommandList.Get(), *Primitives[PrimitiveIdx]);
 		}
 	}
 	PIXEndEvent(CommandList.Get());
+
+	/***************************
+	 ******** LightPass ********
+	 ***************************/
+	// Shades what BasePass wrote, straight into the back buffer
+	{
+		SceneGBuffer.TransitionToShaderResource(CommandList.Get());
+
+		// No depth here, the G-buffer already resolved which surface is visible
+		const CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), CurrentFrameIdx, RtvIncrementDescriptorSize);
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
+
+		CommandList->SetGraphicsRootSignature(SceneLightPass.GetRootSignature());
+		CommandList->SetPipelineState(SceneLightPass.GetPipelineState());
+
+		// the light pass inputs live in their own heap, so swap it in for the material one
+		DXDescriptorHeap* LightHeaps[] = { LightInputsHeap.Get() };
+		CommandList->SetDescriptorHeaps(_countof(LightHeaps), LightHeaps);
+
+		CommandList->SetGraphicsRootDescriptorTable(LightPass::GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
+		CommandList->SetGraphicsRootConstantBufferView(LightPass::CameraCBVIdx,	CameraConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+		CommandList->SetGraphicsRootConstantBufferView(LightPass::LightsCBVIdx,	LightsConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+
+		SceneLightPass.RenderFullscreen(CommandList.Get());
+	}
 
 	//Always EndFrame last
 	EndFrame();
@@ -529,6 +645,31 @@ void D3D12App::Update(float DeltaTime)
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 
+	// store camera's eye position for the pixel shader
+	{
+		const auto& EyePosition = Camera.GetPosition();
+
+		// copy camera's position to the mapped constant buffer resource
+		memcpy(CameraCbvGPUAddress[CurrentFrameIdx], &EyePosition, sizeof(EyePosition));
+	}
+
+	// store every light of the scene for the pixel shader
+	{
+		LightsConstantBuffer LightsCbv	= {};
+		LightsCbv.NumLights				= static_cast<UINT>(Lights.size() < MAX_LIGHTS ? Lights.size() : MAX_LIGHTS);
+
+		for (UINT LightIdx = 0; LightIdx < LightsCbv.NumLights; ++LightIdx)
+		{
+			LightsCbv.Lights[LightIdx] = Lights[LightIdx]->GetLightConstants();
+		}
+
+		// This path has no shadow pass, so nothing casts and the shader skips the lookup
+		LightsCbv.ShadowLightIdx = NO_SHADOW_CASTER;
+
+		// copy our LightsConstantBuffer instance to the mapped constant buffer resource
+		memcpy(LightsCbvGPUAddress[CurrentFrameIdx], &LightsCbv, sizeof(LightsCbv));
+	}
+
 	// store plane's world matrix
 	{
 		// create the wvp matrix and store in constant buffer
@@ -539,6 +680,10 @@ void D3D12App::Update(float DeltaTime)
 		XMMATRIX TransposedMVPMatPlane			= XMMatrixTranspose(MVPMatPlane);							// must transpose wvp matrix for the gpu
 		XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedPlaneScaleRotMatrix);							// store transposed world matrix in constant buffer
 		XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatPlane);							// store transposed wvp matrix in constant buffer
+
+		// Normal matrix, see D3D12Math.h. The inverse transpose and the transpose every
+		// matrix gets on the way to the GPU cancel, so the plain inverse is stored.
+		XMStoreFloat4x4(&CbvPerObject.LocalToWorldNormal, XMMatrixInverse(nullptr, XMLoadFloat4x4(&PlaneScaleRotMatrix)));
 
 		// copy our ConstantBuffer instance to the mapped constant buffer resource
 		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * PrimitiveConstantBufferSize), &CbvPerObject, sizeof(CbvPerObject));
@@ -588,6 +733,11 @@ void D3D12App::OnKeyUp(UINT8 key)
 	Camera.OnKeyUp(key);
 }
 
+void D3D12App::OnMouseMove(int DeltaX, int DeltaY)
+{
+	Camera.OnMouseMove(DeltaX, DeltaY);
+}
+
 void D3D12App::InitializePerFrameResources()
 {
 	DXASSERT(Device && SwapChain, "Device can not be null for Initialization per frame resources");
@@ -607,6 +757,10 @@ void D3D12App::InitializePerFrameResources()
 	//Constant Buffers
 	ConstantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
 	CbvGPUAddress.resize(BACK_BUFFER_COUNT);
+	CameraConstantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
+	CameraCbvGPUAddress.resize(BACK_BUFFER_COUNT);
+	LightsConstantBufferUploadHeaps.resize(BACK_BUFFER_COUNT);
+	LightsCbvGPUAddress.resize(BACK_BUFFER_COUNT);
 
 	// Loop
 	for (UINT i = 0; i < BACK_BUFFER_COUNT; ++i)
@@ -651,6 +805,45 @@ void D3D12App::InitializePerFrameResources()
 			// so we need to add spacing between the two buffers, so that the second buffer starts at 256 bits from the beginning of the resource heap.
 			memcpy(CbvGPUAddress[i], &CbvPerObject, sizeof(CbvPerObject));											// objects's constant buffer data
 		}
+
+		// Camera CBV Upload heap | One camera per frame, every draw of that frame reads the same one
+		{
+			// Holds the eye position only, padded up to the constant buffer alignment
+			const auto CameraUploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+			ThrowIfFailed(Device->CreateCommittedResource(
+				&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the camera constant buffer data
+				D3D12_HEAP_FLAG_NONE,									// no flags
+				&CameraUploadBufferDesc,								// size of the resource heap
+				D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state
+				nullptr,												// we do not have use an optimized clear value for constant buffers
+				IID_PPV_ARGS(&CameraConstantBufferUploadHeaps[i])));
+			NAME_D3D12_OBJECT(CameraConstantBufferUploadHeaps[i], L"Camera Constant Buffer Upload Resource Heap");
+
+			CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
+			ThrowIfFailed(CameraConstantBufferUploadHeaps[i]->Map(0, &readRange, reinterpret_cast<void**>(&CameraCbvGPUAddress[i])));
+
+			const auto& EyePosition = Camera.GetPosition();
+			memcpy(CameraCbvGPUAddress[i], &EyePosition, sizeof(EyePosition));										// camera's constant buffer data
+		}
+
+		// Lights CBV Upload heap | Every light of the scene, shared by every draw of the frame
+		{
+			const auto LightsUploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(LightsConstantBufferSize);
+			ThrowIfFailed(Device->CreateCommittedResource(
+				&DX_HEAP_PROPERTY_UPLOAD,								// this heap will be used to upload the lights constant buffer data
+				D3D12_HEAP_FLAG_NONE,									// no flags
+				&LightsUploadBufferDesc,								// size of the resource heap
+				D3D12_RESOURCE_STATE_GENERIC_READ,						// will be data that is read from so we keep it in the generic read state
+				nullptr,												// we do not have use an optimized clear value for constant buffers
+				IID_PPV_ARGS(&LightsConstantBufferUploadHeaps[i])));
+			NAME_D3D12_OBJECT(LightsConstantBufferUploadHeaps[i], L"Lights Constant Buffer Upload Resource Heap");
+
+			CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
+			ThrowIfFailed(LightsConstantBufferUploadHeaps[i]->Map(0, &readRange, reinterpret_cast<void**>(&LightsCbvGPUAddress[i])));
+
+			LightsConstantBuffer LightsCbv = {};
+			memcpy(LightsCbvGPUAddress[i], &LightsCbv, sizeof(LightsCbv));											// lights's constant buffer data
+		}
 	}
 }
 
@@ -661,8 +854,8 @@ void D3D12App::InitalizeShaders()
 	ShaderDefines.AddDefine({ L"USE_TEXCOORD", L"1" });
 
 	// Shader paths
-	constexpr const wchar_t* VertexShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//vertex_shader.hlsl";
-	constexpr const wchar_t* PixelShaderPath	= L"E://!!PROJECTS_VS//DirectX//DXI//DXI//shaders//pixel_shader.hlsl";
+	const DXIPATHS::FilePath VertexShaderPath	= DXIPATHS::GetShaderDir / L"vertex_shader.hlsl";
+	const DXIPATHS::FilePath PixelShaderPath	= DXIPATHS::GetShaderDir / L"pixel_shader.hlsl";
 
 	std::vector<LPCWSTR> arguments;
 	// String arguments
@@ -708,12 +901,15 @@ void D3D12App::InitializePSO()
 	{
 		// CREATE ROOT SIGNATURE
 		// create a root descriptor, which explains where to find the data for this root parameter
-		const auto RootCBVDescriptor = CreateRootDescriptor(0, 0);
+		const auto RootCBVDescriptor		= CreateRootDescriptor(0, 0);	// b0 | Per object
+		const auto RootCameraCBVDescriptor	= CreateRootDescriptor(0, 1);	// b1 | Per camera
+		const auto RootLightsCBVDescriptor	= CreateRootDescriptor(0, 2);	// b2 | Per lights of the scene
 
 		// create a descriptor table
 		// create a descriptor range (descriptor table) and fill it out
 		// this is a range of descriptors inside a descriptor heap
-		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+		// One range covering every texture slot of a material, so binding a material is a single call
+		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialTextureSlotCount, 0, 0);
 		D3D12_DESCRIPTOR_RANGE DescriptorRangesTable[1] = { DescriptorRange };
 		const auto DescriptorTable = CreateRootDescriptorTable(_countof(DescriptorRangesTable), DescriptorRangesTable);
 
@@ -728,8 +924,18 @@ void D3D12App::InitializePSO()
 								D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
 								DescriptorTable);
 
-		// Create root parameters array
-		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV });
+		// Camera CBV | Pixel shader reads the eye position out of it for specular lighting
+		RootParamHelper ParamCameraCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
+								D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
+								RootCameraCBVDescriptor);
+
+		// Lights CBV | Pixel shader shades with every light of the scene out of it
+		RootParamHelper ParamLightsCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
+								D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
+								RootLightsCBVDescriptor);
+
+		// Create root parameters array | Keep the order, Render() binds them by index
+		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV, ParamCameraCBV, ParamLightsCBV });
 
 		// create a static sampler
 		D3D12_STATIC_SAMPLER_DESC sampler	= {};
@@ -748,7 +954,7 @@ void D3D12App::InitializePSO()
 		sampler.ShaderVisibility			= D3D12_SHADER_VISIBILITY_PIXEL;
 
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(	RootParameters.size(), // we have 2 root parameters
+		RootSignatureDesc.Init(	RootParameters.size(), // we have 4 root parameters
 								RootParameters.data(), // a pointer to the beginning of our root parameters array
 								1, // we have one static sampler
 								&sampler, // a pointer to our static sampler (array)
@@ -808,7 +1014,7 @@ void D3D12App::BeginFrame()
 	CommandList->ResourceBarrier(1, &BarrierPresentToRTV);
 
 	// Set necessary state.
-	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	// NOTE | Each pass binds its own root signature, pipeline state and render targets in Render()
 	CommandList->RSSetViewports(1, &ViewPort);
 	CommandList->RSSetScissorRects(1, &ScissorRect);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -816,12 +1022,6 @@ void D3D12App::BeginFrame()
 	// get a handle to the depth/stencil buffer
 	CD3DX12_CPU_DESCRIPTOR_HANDLE DsvHandle(DsvHeap->GetCPUDescriptorHandleForHeapStart());
 	CommandList->ClearDepthStencilView(DsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	// SV TARGET
-	constexpr float ClearColor[] = { 0.0f, 0.5f, 1.0f, 1.0f };
-	const CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), CurrentFrameIdx, RtvIncrementDescriptorSize);
-	CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
-	CommandList->ClearRenderTargetView(RtvHandle, ClearColor, 0, nullptr);
 }
 
 void D3D12App::EndFrame()
@@ -888,6 +1088,10 @@ void D3D12App::StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT P
 	PrimitiveConstantBuffer PrimitiveCBVData = {};
 	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorld,		XMMatrixTranspose(LocalToWorld));
 	XMStoreFloat4x4(&PrimitiveCBVData.WorldToClip,		XMMatrixTranspose(WorldToClip));
+
+	// Normal matrix, see D3D12Math.h. The inverse transpose and the transpose every matrix
+	// gets on the way to the GPU cancel, so the plain inverse is what is stored.
+	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorldNormal, XMMatrixInverse(nullptr, LocalToWorld));
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(PrimitivesConstantBufferPtr + (PrimitiveIdx * PrimitiveConstantBufferSize), &PrimitiveCBVData, PrimitiveConstantBufferSize /* size of */);
