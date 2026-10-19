@@ -40,6 +40,9 @@ void D3D12Renderer::Initialize()
 	InitializeConstantBuffers();
 	InitializePasses();
 
+	// Debug panel. It uploads a font atlas of its own, so it goes in before the flush.
+	SceneDebugUI.Initialize(Device.Get(), Win32Proc::GetHwnd(), D3D12SwapChain::GetFormat(), BACK_BUFFER_COUNT);
+
 	// Push the vertex, index and texture uploads to the GPU and wait them out
 	FrameContext.Flush(Device, CurrentFrameIdx);
 }
@@ -233,9 +236,9 @@ void D3D12Renderer::InitializeConstantBuffers()
 
 	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(Primitives.size()) * PrimitiveConstantBufferSize;
 
-	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,			PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
-	CreateMappedBuffer(UINT64(CAMERA_CBV_STRIDE) * BACK_BUFFER_COUNT,	CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
-	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT, LightsCBV,	&LightsCbvAddress,		L"Lights Constant Buffer");
+	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
+	CreateMappedBuffer(UINT64(CAMERA_CBV_STRIDE) * BACK_BUFFER_COUNT,			CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
+	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT,	LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
 
 	// Fill the first frame so nothing reads uninitialized memory before Update() runs
 	UploadCameraConstants();
@@ -251,7 +254,7 @@ void D3D12Renderer::InitializePasses()
 	// ShadowPass writes the depth of the scene from the light, BasePass draws the
 	// primitives with their materials into the G-buffer, LightPass shades the result
 	SceneGBuffer.Initialize(Device.Get(), WindowWidth, WindowHeight);
-	SceneShadowMap.Initialize(Device.Get(), SHADOW_MAP_RESOLUTION);
+	SceneShadowAtlas.Initialize(Device.Get(), SHADOW_MAP_RESOLUTION, SHADOW_CUBE_RESOLUTION);
 
 	SceneShadowPass.Init(Device.Get(), FrameContext.GetCommandList());
 	SceneBasePass.Init(Device.Get(), FrameContext.GetCommandList());
@@ -260,7 +263,7 @@ void D3D12Renderer::InitializePasses()
 	// Only one CBV/SRV/UAV heap can be bound at a time, so everything LightPass samples
 	// goes into a single heap: the G-buffer targets, the shadow map, then both sky cubes
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc	= {};
-	HeapDesc.NumDescriptors				= GBufferTargetCount + 3;
+	HeapDesc.NumDescriptors				= GBufferTargetCount + ShadowAtlas::GetSrvCount() + 2;
 	HeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	HeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(Device.Get()->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&LightInputsHeap)));
@@ -272,30 +275,33 @@ void D3D12Renderer::InitializePasses()
 	SceneGBuffer.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
 	SrvHandle.Offset(GBufferTargetCount, IncrementSize);
-	SceneShadowMap.CreateShaderResourceView(Device.Get(), SrvHandle);
+	SceneShadowAtlas.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
-	SrvHandle.Offset(1, IncrementSize);
+	SrvHandle.Offset(ShadowAtlas::GetSrvCount(), IncrementSize);
 	SkyRadianceMap.CreateShaderResourceView(Device.Get(), SrvHandle);
 
 	SrvHandle.Offset(1, IncrementSize);
 	SkyIrradianceMap.CreateShaderResourceView(Device.Get(), SrvHandle);
 }
 
-const DirectionalLight* D3D12Renderer::GetShadowCaster(INT& OutLightIdx) const
+XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx) const
 {
-	// First directional light wins. A point light would need a cube map and an area
-	// light more than that, so neither casts for now.
-	for (SIZE_T LightIdx = 0; LightIdx < Lights.size(); ++LightIdx)
+	// Each type aims its shadow camera differently, and only the point light has more
+	// than one view to aim
+	switch (Light.GetLightType())
 	{
-		if (Lights[LightIdx]->GetLightType() == LightType::Directional)
-		{
-			OutLightIdx = static_cast<INT>(LightIdx);
-			return static_cast<const DirectionalLight*>(Lights[LightIdx].get());
-		}
-	}
+	case LightType::Directional:
+		return static_cast<const DirectionalLight&>(Light).GetShadowViewProj();
 
-	OutLightIdx = NO_SHADOW_CASTER;
-	return nullptr;
+	case LightType::Point:
+		return static_cast<const PointLight&>(Light).GetShadowViewProj(FaceIdx);
+
+	case LightType::Area:
+		return static_cast<const AreaLight&>(Light).GetShadowViewProj();
+
+	default:
+		return XMMatrixIdentity();
+	}
 }
 
 void D3D12Renderer::Update(float DeltaTime)
@@ -336,6 +342,7 @@ void D3D12Renderer::Render()
 	RenderShadowPass();
 	RenderBasePass();
 	RenderLightPass();
+	RenderDebugUI();
 
 	//Always EndFrame last
 	EndFrame();
@@ -359,37 +366,80 @@ void D3D12Renderer::BeginFrame()
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	DepthBuffer.Clear(CommandList);
+
+	// Opens the UI frame, the widgets are filled in once the passes are done
+	SceneDebugUI.BeginFrame();
 }
 
 void D3D12Renderer::RenderShadowPass()
 {
-	INT ShadowLightIdx = NO_SHADOW_CASTER;
-	if (!GetShadowCaster(ShadowLightIdx))
+	if (Lights.empty())
 	{
-		// Nothing casts, LightPass sees NO_SHADOW_CASTER and skips the lookup
 		return;
 	}
 
 	auto * const CommandList = FrameContext.GetCommandList();
 
-	// Depth of the scene from the light, no colour and no material involved
+	// The scene from every light in turn. A directional or area light is one depth view,
+	// a point light is six faces of a cube, so this is up to MAX_LIGHTS * 6 draws of the
+	// whole scene per frame.
 	PIXBeginEvent(CommandList, 0, L"Shadow Pass");
 	{
-		SceneShadowMap.TransitionToDepthWrite(CommandList);
-		SceneShadowMap.BindAsDepthTarget(CommandList);
-		SceneShadowMap.Clear(CommandList);
+		SceneShadowAtlas.TransitionToWrite(CommandList);
 
-		// The shadow map has its own resolution, so it needs its own viewport
-		CommandList->RSSetViewports(1, &SceneShadowMap.GetViewPort());
-		CommandList->RSSetScissorRects(1, &SceneShadowMap.GetScissorRect());
-
+		// Both pipelines share the root signature, only the pipeline state changes
 		CommandList->SetGraphicsRootSignature(SceneShadowPass.GetRootSignature());
-		CommandList->SetPipelineState(SceneShadowPass.GetPipelineState());
 
-		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+		// Records one view: aim the shadow camera, then draw the scene into it
+		const auto RenderView = [&](const LightBase& Light, const UINT FaceIdx)
 		{
-			CommandList->SetGraphicsRootConstantBufferView(ShadowPass::PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
-			SceneShadowPass.Render(CommandList, *Primitives[PrimitiveIdx]);
+			ShadowViewConstants ViewConstants = {};
+			XMStoreFloat4x4(&ViewConstants.WorldToLightClip, XMMatrixTranspose(GetLightShadowViewProj(Light, FaceIdx)));
+
+			// Only a cube face reads these, it needs them to store a normalized distance
+			if (Light.GetLightType() == LightType::Point)
+			{
+				const auto& PointLightRef		= static_cast<const PointLight&>(Light);
+				ViewConstants.LightPosition		= PointLightRef.GetPosition();
+				ViewConstants.LightRange		= PointLightRef.GetRange();
+			}
+
+			CommandList->SetGraphicsRoot32BitConstants(ShadowPass::ShadowViewIdx, ShadowViewConstantCount, &ViewConstants, 0);
+
+			for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+			{
+				CommandList->SetGraphicsRootConstantBufferView(ShadowPass::PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
+				SceneShadowPass.Render(CommandList, *Primitives[PrimitiveIdx]);
+			}
+		};
+
+		const auto CasterCount = Lights.size() < MAX_LIGHTS ? Lights.size() : MAX_LIGHTS;
+
+		for (UINT LightIdx = 0; LightIdx < static_cast<UINT>(CasterCount); ++LightIdx)
+		{
+			const auto& Light = *Lights[LightIdx];
+
+			PIXBeginEvent(CommandList, 0, Light.GetName().c_str());
+			if (Light.GetLightType() == LightType::Point)
+			{
+				// Distance into a colour target, one face at a time
+				CommandList->SetPipelineState(SceneShadowPass.GetDistancePipelineState());
+
+				for (UINT FaceIdx = 0; FaceIdx < ShadowAtlas::CUBE_FACE_COUNT; ++FaceIdx)
+				{
+					SceneShadowAtlas.BindCubeFace(CommandList, LightIdx, FaceIdx);
+					RenderView(Light, FaceIdx);
+				}
+			}
+			else
+			{
+				// Depth only, a single view is enough
+				CommandList->SetPipelineState(SceneShadowPass.GetPipelineState());
+
+				SceneShadowAtlas.BindDepthSlice(CommandList, LightIdx);
+				RenderView(Light, 0);
+			}
+			PIXEndEvent(CommandList);
 		}
 
 		// Back to the screen sized viewport for the rest of the frame
@@ -416,6 +466,9 @@ void D3D12Renderer::RenderBasePass()
 		DXDescriptorHeap* MaterialHeaps[] = { SharedMaterialHeap.GetHeap() };
 		CommandList->SetDescriptorHeaps(_countof(MaterialHeaps), MaterialHeaps);
 
+		// Which debug view the panel asked for, the same for every primitive
+		CommandList->SetGraphicsRoot32BitConstant(BasePass::DebugModeIdx, static_cast<UINT>(SceneDebugUI.GetBasePassDebugMode()), 0);
+
 		// Both variants share the root signature, only the pipeline differs, so the
 		// state is swapped lazily instead of once per draw
 		DXPipelineState* BoundPipeline = nullptr;
@@ -436,8 +489,8 @@ void D3D12Renderer::RenderBasePass()
 				BoundPipeline = Pipeline;
 			}
 
-			CommandList->SetGraphicsRootDescriptorTable(1, PrimitiveMaterial->GetDescriptorTable());
-			CommandList->SetGraphicsRootConstantBufferView(0, GetPrimitiveCbvAddress(PrimitiveIdx));
+			CommandList->SetGraphicsRootDescriptorTable(BasePass::MaterialTableIdx, PrimitiveMaterial->GetDescriptorTable());
+			CommandList->SetGraphicsRootConstantBufferView(BasePass::PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
 			SceneBasePass.Render(CommandList, Primitive);
 		}
 	}
@@ -450,7 +503,7 @@ void D3D12Renderer::RenderLightPass()
 
 	// Shades what BasePass wrote, straight into the back buffer
 	SceneGBuffer.TransitionToShaderResource(CommandList);
-	SceneShadowMap.TransitionToShaderResource(CommandList);
+	SceneShadowAtlas.TransitionToShaderResource(CommandList);
 
 	// No depth here, the G-buffer already resolved which surface is visible
 	const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
@@ -468,6 +521,14 @@ void D3D12Renderer::RenderLightPass()
 	CommandList->SetGraphicsRootConstantBufferView(LightPass::LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
 
 	SceneLightPass.RenderFullscreen(CommandList);
+}
+
+void D3D12Renderer::RenderDebugUI()
+{
+	// Straight over the shaded frame. LightPass already left the back buffer bound and
+	// there is no depth, so the panel is simply drawn on top.
+	SceneDebugUI.Draw(Camera, Primitives, Lights, Materials, DefaultMaterial.get(), StepTimer.GetFramesPerSecond());
+	SceneDebugUI.Render(FrameContext.GetCommandList());
 }
 
 void D3D12Renderer::EndFrame()
@@ -508,16 +569,25 @@ void D3D12Renderer::UploadLightConstants()
 
 	for (UINT LightIdx = 0; LightIdx < LightsCbv.NumLights; ++LightIdx)
 	{
-		LightsCbv.Lights[LightIdx] = Lights[LightIdx]->GetLightConstants();
-	}
+		const auto& Light = *Lights[LightIdx];
 
-	// Shadow caster, the matrix goes up transposed like every other matrix on the GPU
-	INT ShadowLightIdx = NO_SHADOW_CASTER;
-	if (const auto * const ShadowCaster = GetShadowCaster(ShadowLightIdx))
-	{
-		XMStoreFloat4x4(&LightsCbv.ShadowViewProj, XMMatrixTranspose(ShadowCaster->GetShadowViewProj()));
+		LightsCbv.Lights[LightIdx] = Light.GetLightConstants();
+
+		// Every light casts, and the atlas has a slice per light of either kind, so the
+		// light's own index is its slot. No allocator needed.
+		LightsCbv.Lights[LightIdx].ShadowSlot = static_cast<INT>(LightIdx);
+
+		// Only the single view kinds need a matrix here. A point light is looked up by
+		// direction, so its six face matrices never leave the shadow pass.
+		if (Light.GetLightType() != LightType::Point)
+		{
+			XMStoreFloat4x4(&LightsCbv.ShadowViewProj[LightIdx], XMMatrixTranspose(GetLightShadowViewProj(Light)));
+		}
+		else
+		{
+			XMStoreFloat4x4(&LightsCbv.ShadowViewProj[LightIdx], XMMatrixIdentity());
+		}
 	}
-	LightsCbv.ShadowLightIdx = ShadowLightIdx;
 
 	memcpy(LightsCbvAddress + (SIZE_T(CurrentFrameIdx) * LightsConstantBufferSize), &LightsCbv, sizeof(LightsCbv));
 }
@@ -545,13 +615,8 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// what gets stored. It looks like a missing transpose but it is not.
 	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldNormal, XMMatrixInverse(nullptr, LocalToWorld));
 
-	// Same primitive seen from the shadow casting light, this is what ShadowPass renders with
-	INT ShadowLightIdx = NO_SHADOW_CASTER;
-	if (const auto * const ShadowCaster = GetShadowCaster(ShadowLightIdx))
-	{
-		const XMMATRIX LocalToLightClip = LocalToWorld * ShadowCaster->GetShadowViewProj();
-		XMStoreFloat4x4(&PrimitiveCbv.LocalToLightClip, XMMatrixTranspose(LocalToLightClip));
-	}
+	// No light matrix here any more. ShadowPass renders the same object from several
+	// lights per frame, so it takes the light half as root constants instead.
 
 	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * Primitives.size() * PrimitiveConstantBufferSize;
 	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveConstantBufferSize), &PrimitiveCbv, PrimitiveConstantBufferSize);

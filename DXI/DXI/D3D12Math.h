@@ -126,7 +126,6 @@ struct alignas(256) PrimitiveConstantBuffer
 {
 	DirectX::XMFLOAT4X4 LocalToWorld;		// Only with translation
 	DirectX::XMFLOAT4X4 WorldToClip;		// Translation * View * Proj (Clip)
-	DirectX::XMFLOAT4X4 LocalToLightClip;	// Translation * Light View * Light Proj | what ShadowPass renders with
 
 	// Normals can not use LocalToWorld. A non uniform scale shears a direction differently
 	// than it moves a point, so a normal scaled that way stops being perpendicular to its
@@ -180,10 +179,17 @@ struct alignas(256) ObjectMatrices
 	DirectX::XMFLOAT4X4 ScaleRotMat;						// transformation matrix scale+rot
 	DirectX::XMFLOAT4X4 WorldMat;							// transformation matrix scale+rot+translation
 	
-	// Init Function
+	// Init Function | Translation and rotation are added to whatever is already there,
+	// scale replaces it. Handy for setting a scene up from the identity.
 	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 					const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 					const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3) noexcept;
+
+	// Replaces all three outright. An editor needs this, it hands over where the object
+	// should end up rather than how far to nudge it.
+	void SetTransform(const XMFLOAT3 Translation,
+					const XMFLOAT3 Rotation,
+					const XMFLOAT3 Scale) noexcept;
 
 };
 

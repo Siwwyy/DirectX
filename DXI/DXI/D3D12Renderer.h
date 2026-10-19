@@ -8,7 +8,7 @@
 #include "D3D12Math.h"
 #include "Material.h"
 #include "GBuffer.h"
-#include "ShadowMap.h"
+#include "ShadowAtlas.h"
 #include "CubeMap.h"
 
 // Core | Everything every D3D12 app would otherwise duplicate
@@ -31,6 +31,9 @@
 #include "Passes/ShadowPass.h"
 #include "Passes/BasePass.h"
 #include "Passes/LightPass.h"
+
+// UI
+#include "UI/DebugUI.h"
 
 
 // Deferred renderer.
@@ -97,9 +100,11 @@ private:
 	void RenderShadowPass();
 	void RenderBasePass();
 	void RenderLightPass();
+	void RenderDebugUI();
 
-	// Light of the scene the shadow map is rendered from, null when nothing casts
-	_NODISCARD const DirectionalLight* GetShadowCaster(INT& OutLightIdx) const;
+	// World to clip for one light, and whether it needs the cube pipeline.
+	// A point light has six of these, one per cube face.
+	_NODISCARD XMMATRIX GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx = 0) const;
 
 	// Uploads
 	void UploadCameraConstants();
@@ -115,7 +120,8 @@ private:
 	static constexpr UINT	CAMERA_CBV_STRIDE	= CameraConstantBufferSize;							//already a multiple of the constant buffer alignment
 	static constexpr UINT	SKY_FACE_RESOLUTION	= 512;												//per radiance cube face, projected out of the panorama on the CPU
 	static constexpr UINT	SKY_IRRADIANCE_RESOLUTION = 32;											//irradiance barely varies with direction, so it stays tiny
-	static constexpr UINT	SHADOW_MAP_RESOLUTION = 2048;										//square shadow map covering the whole scene
+	static constexpr UINT	SHADOW_MAP_RESOLUTION = 2048;										//per slice, for directional and area lights
+	static constexpr UINT	SHADOW_CUBE_RESOLUTION = 512;										//per cube face, six of them add up fast
 
 	// Window Properties
 	UINT					WindowWidth;
@@ -141,7 +147,7 @@ private:
 	// Deferred rendering | ShadowPass writes depth from the light, BasePass writes the
 	// surface, LightPass shades it and looks the occlusion up in the shadow map
 	GBuffer					SceneGBuffer;
-	ShadowMap				SceneShadowMap;
+	ShadowAtlas				SceneShadowAtlas;
 
 	// Sky of the scene. The radiance cube is both the background and what the specular
 	// reflection reads, the irradiance cube is what the diffuse reflection reads.
@@ -178,6 +184,9 @@ private:
 
 	// Timer | Win32Proc hands Update() a zero delta, so the timer is what actually drives movement
 	Helpers::StepTimer		StepTimer;
+
+	// Debug panel drawn over the finished frame
+	DebugUI					SceneDebugUI;
 };
 
 #endif // D3D12_RENDERER_H_INCLUDED

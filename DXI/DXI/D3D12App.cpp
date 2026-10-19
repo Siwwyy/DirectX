@@ -663,8 +663,12 @@ void D3D12App::Update(float DeltaTime)
 			LightsCbv.Lights[LightIdx] = Lights[LightIdx]->GetLightConstants();
 		}
 
-		// This path has no shadow pass, so nothing casts and the shader skips the lookup
-		LightsCbv.ShadowLightIdx = NO_SHADOW_CASTER;
+		// This path has no shadow pass, so no light owns a slice and the shader skips
+		// the lookup for all of them
+		for (UINT LightIdx = 0; LightIdx < LightsCbv.NumLights; ++LightIdx)
+		{
+			LightsCbv.Lights[LightIdx].ShadowSlot = NO_SHADOW_CASTER;
+		}
 
 		// copy our LightsConstantBuffer instance to the mapped constant buffer resource
 		memcpy(LightsCbvGPUAddress[CurrentFrameIdx], &LightsCbv, sizeof(LightsCbv));

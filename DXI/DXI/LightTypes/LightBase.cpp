@@ -28,6 +28,6 @@ LightConstants LightBase::MakeBaseConstants() const noexcept
 	Constants.Color				= Color;
 	Constants.Type				= static_cast<UINT>(GetLightType());
 	Constants.Size				= XMFLOAT2(0.f, 0.f);
-	Constants.Padding			= XMFLOAT2(0.f, 0.f);
+	Constants.ShadowSlot		= NO_SHADOW_CASTER;		// the renderer fills this once it hands out atlas slices
 	return Constants;
 }

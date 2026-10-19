@@ -42,6 +42,17 @@ public:
 		return Range;
 	}
 
+	// A point light shines everywhere, so its shadow needs all six directions.
+	// FaceIdx follows the D3D cube order +X -X +Y -Y +Z -Z, and each face is a 90 degree
+	// perspective, which is exactly what tiles a cube without gaps or overlap.
+	_NODISCARD XMMATRIX GetShadowViewProj(const UINT FaceIdx) const noexcept;
+
+	// Near plane the shadow faces are rendered with, the lighting needs it to match
+	_NODISCARD static constexpr float GetShadowNearPlane() noexcept
+	{
+		return 0.05f;
+	}
+
 private:
 
 	// World space position of the bulb

@@ -18,10 +18,10 @@ cbuffer ConstantBufferPerCamera : register(b1)
 float4 main(PSInput input) : SV_TARGET
 {
 #if USE_TEXCOORD
-    // Forward path, there is no shadow map bound here so nothing is occluded
+    // Forward path. The shadow atlas is not bound here, and ShadeSurface needs it, so this
+    // path is no longer wired up. The deferred LightPass is what runs.
     float3 albedo       = t0.Sample(s1, input.tex_coord).xyz;
-    float3 output_color = ShadeSurface(albedo, input.normal, input.pixel_world_position.xyz, EyePosition.xyz, 1.0);
-    return float4(output_color, 1.0);
+    return float4(albedo, 1.0);
 #else
     return input.color;
 #endif

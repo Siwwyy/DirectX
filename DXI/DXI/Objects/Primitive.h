@@ -8,8 +8,10 @@
 #include "../D3D12Math.h"
 #include "../Geometry/Vertex.h"
 
+// FWD
 class Material;
 
+// Primitive class
 class Primitive
 {
 	DISABLE_COPY(Primitive)
@@ -46,10 +48,16 @@ public:
 		DefaultMaterial = InDefaultMaterial;
 	}
 
-	// Main Transform of pritmitive
+	// Main Transform of pritmitive | Nudges position and rotation, replaces scale
 	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
+
+	// Replaces the whole transform, which is what an editor hands over
+	void SetTransform(const XMFLOAT3 Translation, const XMFLOAT3 Rotation, const XMFLOAT3 Scale)
+	{
+		Matrices.SetTransform(Translation, Rotation, Scale);
+	}
 	
 	// Getters
 	_NODISCARD inline const auto GetWorldMatrixNoTranslation() const
@@ -63,6 +71,14 @@ public:
 	_NODISCARD inline const auto GetPosVector() const
 	{
 		return Matrices.PositionVec;
+	}
+	_NODISCARD inline const auto GetRotVector() const
+	{
+		return Matrices.RotVec;
+	}
+	_NODISCARD inline const auto GetScaleVector() const
+	{
+		return Matrices.ScaleVec;
 	}
 	_NODISCARD inline const auto GetNumIndices() const
 	{

@@ -20,6 +20,18 @@ ObjectMatrices::ObjectMatrices(const DirectX::XMFLOAT3  InitRot,
     Transform(InitRot, InitPosition, InitScale);
 }
 
+void ObjectMatrices::SetTransform(const XMFLOAT3 Translation,
+    const XMFLOAT3 Rotation,
+    const XMFLOAT3 Scale) noexcept
+{
+    // Zero everything out, then let Transform() add the absolute values onto nothing.
+    // Keeps the matrix rebuilding in one place instead of repeating it here.
+    this->PositionVec   = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+    this->RotVec        = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+
+    Transform(Translation, Rotation, Scale);
+}
+
 void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
     const XMFLOAT3 ScaleTransform) noexcept

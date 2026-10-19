@@ -10,9 +10,10 @@ Texture2D GBufferAlbedo         : register(t0);
 Texture2D GBufferNormal         : register(t1);
 Texture2D GBufferWorldPosition  : register(t2);
 Texture2D GBufferMaterialParams : register(t3);
-Texture2D ShadowDepth           : register(t4);
-TextureCube SkyRadiance         : register(t5);     // the sky itself, mipped for roughness
-TextureCube SkyIrradiance       : register(t6);     // the sky gathered over the hemisphere
+Texture2DArray ShadowDepth      : register(t4);     // one depth slice per directional or area light
+TextureCubeArray ShadowDistance : register(t5);     // six distance faces per point light
+TextureCube SkyRadiance         : register(t6);     // the sky itself, mipped for roughness
+TextureCube SkyIrradiance       : register(t7);     // the sky gathered over the hemisphere
 
 SamplerState GBufferSampler     : register(s0);     // point, for the buffers above
 SamplerState SkySampler         : register(s1);     // linear, the cubes are direction lookups
@@ -35,7 +36,8 @@ float3 GetViewRay(float2 TexCoord)
 
 float4 main(FullscreenPSInput input) : SV_TARGET
 {
-    float3 albedo       = GBufferAlbedo.Sample(GBufferSampler, input.tex_coord).xyz;
+    float4 albedo_sample = GBufferAlbedo.Sample(GBufferSampler, input.tex_coord);
+    float3 albedo       = albedo_sample.xyz;
     float4 world_pos    = GBufferWorldPosition.Sample(GBufferSampler, input.tex_coord);
 
     // BasePass marks written pixels with w of 1, everything else is background, which is
@@ -44,6 +46,13 @@ float4 main(FullscreenPSInput input) : SV_TARGET
     if (world_pos.w == 0.0)
     {
         return float4(SkyRadiance.Sample(SkySampler, GetViewRay(input.tex_coord)).xyz, 1.0);
+    }
+
+    // A debug view of BasePass already decided the colour, shading it would hide whatever
+    // is being inspected
+    if (albedo_sample.a == SURFACE_UNLIT)
+    {
+        return float4(albedo, 1.0);
     }
 
     float3 normal       = GBufferNormal.Sample(GBufferSampler, input.tex_coord).xyz;
@@ -56,9 +65,9 @@ float4 main(FullscreenPSInput input) : SV_TARGET
     float roughness     = max(params.g, 0.04);
     float occlusion     = params.b;
 
-    // Direct lighting from the lights placed in the scene
-    float shadow        = GetShadowFactor(ShadowDepth, GBufferSampler, world_pos.xyz, normal);
-    float3 direct       = ShadeSurface(albedo, normal, world_pos.xyz, EyePosition.xyz, shadow);
+    // Direct lighting from the lights placed in the scene, each one occluded by its own
+    // slice of the shadow atlas
+    float3 direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, albedo, normal, world_pos.xyz, EyePosition.xyz);
 
     // How many mips the radiance cube has decides how blurred the roughest reflection
     // can get. Asking the texture avoids a constant that has to be kept in sync.

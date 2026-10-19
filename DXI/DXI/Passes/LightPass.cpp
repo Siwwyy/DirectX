@@ -1,6 +1,7 @@
 #include "LightPass.h"
 #include "../Paths.h"
 #include "../GBuffer.h"
+#include "../ShadowAtlas.h"
 
 #include <pix3.h>
 
@@ -48,9 +49,9 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 	{
 		ComPtr<ID3D12RootSignature> RootSignature;
 
-		// One range covering every G-buffer target, then the shadow map and both sky cubes,
-		// so binding everything this pass reads is a single call
-		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GBufferTargetCount + 3, 0, 0);
+		// One range covering every G-buffer target, then the shadow atlas and both sky
+		// cubes, so binding everything this pass reads is a single call
+		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GBufferTargetCount + ShadowAtlas::GetSrvCount() + 2, 0, 0);
 		D3D12_DESCRIPTOR_RANGE DescriptorRangesTable[1] = { DescriptorRange };
 		const auto DescriptorTable = CreateRootDescriptorTable(_countof(DescriptorRangesTable), DescriptorRangesTable);
 

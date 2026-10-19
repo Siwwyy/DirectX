@@ -30,8 +30,13 @@ _NODISCARD const wchar_t* ToString(const LightType Type);
 
 // A single light as the shaders see it. Not every field matters for every type,
 // e.g., Range is point only and Size is area only, the shader branches on Type.
-// Mirrors the Light struct of shaders/Common.hlsl, mind the 16 bytes rows when editing.
-struct LightConstants
+// Mirrors the Light struct of shaders/Lighting.hlsl, mind the 16 bytes rows when editing.
+//
+// alignas rounds the size up to the next 16 instead of a trailing padding member. It only
+// does that at the end though, it will not insert padding in the middle, so a field that
+// would straddle a 16 bytes row still has to be placed by hand. The asserts below are
+// what catch it when it is not.
+struct alignas(16) LightConstants
 {
 	DirectX::XMFLOAT3	Position;		// World space position | Point, Area
 	float				Intensity;		// Brightness multiplier
@@ -43,26 +48,26 @@ struct LightConstants
 	UINT				Type;			// LightType
 
 	DirectX::XMFLOAT2	Size;			// Width and height of the emitting surface | Area
-	DirectX::XMFLOAT2	Padding;		// Keeps the struct at a 16 bytes boundary
+	INT					ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
 };
 
 static_assert((sizeof(LightConstants) % 16) == 0, "LightConstants must be aligned to 16-bytes rows to match the HLSL packing");
+static_assert(sizeof(LightConstants) == 64, "HLSL pads this struct to 64 inside an array, both sides have to agree on the stride");
 
 
 // Constant buffer holding every light of the scene.
-// Only one light casts a shadow for now, a point light would need a cube map and an
-// area light more than that, so the shadow matrix is stored once instead of per light.
+// Every light can cast, each one owning a slice of the shadow atlas. Directional and area
+// lights render a single depth view, a point light renders six faces of a cube, so only
+// the first kind needs a matrix here: a cube is looked up by direction instead.
 struct alignas(256) LightsConstantBuffer
 {
-	LightConstants		Lights[MAX_LIGHTS];	// All lights of the scene
-	UINT				NumLights;			// How many entries of Lights are filled
-	INT					ShadowLightIdx;		// Index into Lights of the shadow caster, -1 when nothing casts
-	DirectX::XMFLOAT2	Padding;			// Keeps the matrix below on a 16 bytes boundary
-	DirectX::XMFLOAT4X4 ShadowViewProj;		// World to the shadow caster's clip space, already transposed for HLSL
+	LightConstants		Lights[MAX_LIGHTS];					// All lights of the scene
+	DirectX::XMFLOAT4X4 ShadowViewProj[MAX_LIGHTS];			// World to that light's clip space | Directional, Area
+	UINT				NumLights;							// How many entries of Lights are filled
 };
 
 static_assert((sizeof(LightsConstantBuffer) % 256) == 0, "Lights Constant Buffer size must be aligned to 256-bytes boudary");
-static_assert(offsetof(LightsConstantBuffer, ShadowViewProj) % 16 == 0, "HLSL starts a matrix on a 16-bytes row, the padding above it must keep that");
+static_assert(offsetof(LightsConstantBuffer, ShadowViewProj) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
 constexpr auto LightsConstantBufferSize			= sizeof(LightsConstantBuffer);
 constexpr auto LightsConstantBufferAlignment	= alignof(LightsConstantBuffer);
 

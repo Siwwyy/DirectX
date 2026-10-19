@@ -7,7 +7,6 @@ cbuffer ConstantBufferPerObject : register(b0)
 {
     float4x4 LocalToWorld;          // Only with per-object translation
     float4x4 WorldToClip;           // Translation * View * Proj (Clip)
-    float4x4 LocalToLightClip;      // Translation * Light View * Light Proj | ShadowPass uses it
     float4x4 LocalToWorldNormal;    // Inverse transpose of LocalToWorld, see D3D12Math.h
 };
 

@@ -72,8 +72,16 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
 			DescriptorTable);
 
-		// Create root parameters array | Keep the order, the caller binds them by index
-		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV });
+		// Debug mode | A single value, so it rides in the root signature itself rather
+		// than in a constant buffer of its own
+		const auto RootDebugConstant = CreateRootConstant(0, 1, 1);	// b1 | One uint
+
+		RootParamHelper ParamDebugMode(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
+			RootDebugConstant);
+
+		// Create root parameters array | Keep the order, it has to match RootParamIdx
+		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV, ParamDebugMode });
 
 		// create a static sampler
 		D3D12_STATIC_SAMPLER_DESC sampler = {};
@@ -92,7 +100,7 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(RootParameters.size(), // we have 2 root parameters
+		RootSignatureDesc.Init(RootParameters.size(), // we have 3 root parameters
 			RootParameters.data(), // a pointer to the beginning of our root parameters array
 			1, // we have one static sampler
 			&sampler, // a pointer to our static sampler (array)

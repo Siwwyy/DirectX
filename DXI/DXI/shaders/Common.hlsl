@@ -72,9 +72,64 @@ struct GBufferOutput
 };
 
 
+// What BasePass writes into the albedo target instead of the surface colour.
+// Keep in sync with BasePassDebugMode of Passes/BasePass.h.
+#define BASE_PASS_DEBUG_OFF                 0
+#define BASE_PASS_DEBUG_UV_DENSITY          1
+#define BASE_PASS_DEBUG_UV_DDX              2
+#define BASE_PASS_DEBUG_UV_DDY              3
+#define BASE_PASS_DEBUG_MIP_LEVEL           4
+#define BASE_PASS_DEBUG_WORLD_DERIVATIVES   5
+#define BASE_PASS_DEBUG_NORMAL_DERIVATIVES  6
+
+// Derivatives are tiny numbers, these only exist to bring them into a visible range
+#define DEBUG_UV_SCALE                      200.0
+#define DEBUG_WORLD_SCALE                   20.0
+#define DEBUG_MIP_RANGE                     8.0
+
+// Derivatives are signed, the albedo target is UNORM and clamps anything negative to
+// black. Remapping around this puts zero at mid grey so the sign stays visible.
+#define DEBUG_SIGNED_BIAS                   0.5
+
+// Albedo alpha doubles as a flag for LightPass. A debug view has already decided what
+// colour the pixel should be, so shading it again would hide the very thing being looked at.
+#define SURFACE_LIT                         1.0
+#define SURFACE_UNLIT                       0.0
+
+
 // Input of a fullscreen pass, LightPass builds it straight out of SV_VertexID
 struct FullscreenPSInput
 {
     float4 position                     : SV_POSITION;
     float2 tex_coord                    : TEXCOORD;
 };
+
+
+#ifdef SHADOW_PASS
+
+// Per object matrices. Only LocalToWorld is used here, the light half comes separately
+// because the same object is rendered from several lights within one frame.
+cbuffer ConstantBufferPerObject : register(b0)
+{
+    float4x4 LocalToWorld;
+    float4x4 WorldToClip;           // the camera, unused here
+    float4x4 LocalToWorldNormal;    // unused here, depth and distance only
+};
+
+// The view being rendered, as root constants so switching views costs nothing
+cbuffer ConstantBufferPerShadowView : register(b1)
+{
+    float4x4 WorldToLightClip;      // World straight into this light's clip space
+    float3   LightPosition;         // World space, a cube face measures distance from it
+    float    LightRange;            // Distance is stored divided by this
+};
+
+// Output of the distance pass. A cube face needs the world position in the pixel shader,
+// which a depth only pass never has to carry.
+struct ShadowDistancePSInput
+{
+    float4 position                     : SV_POSITION;
+    float3 world_position               : POSITION;
+};
+
+#endif // SHADOW_PASS

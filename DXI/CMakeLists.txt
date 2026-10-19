@@ -97,6 +97,33 @@ endforeach()
 
 list(REMOVE_DUPLICATES DXI_PUBLIC_INCLUDES)
 
+# Dear ImGui | Debug panel. Fetched as a zip like DXC below, so no git is needed.
+# Pinned on purpose, the DX12 backend changed its Init signature across releases.
+set(IMGUI_VERSION_TAG   "v1.90.9")
+set(IMGUI_RELEASE_URL   "https://github.com/ocornut/imgui/archive/refs/tags/${IMGUI_VERSION_TAG}.zip")
+
+message(STATUS "FetchContent: requesting Dear ImGui from ${IMGUI_RELEASE_URL}")
+FetchContent_Declare(imgui URL ${IMGUI_RELEASE_URL})
+FetchContent_MakeAvailable(imgui)
+message(STATUS "Dear ImGui extracted to: ${imgui_SOURCE_DIR}")
+
+# ImGui ships as plain sources, there is no CMake target to link against
+target_sources(DXIApp
+    PRIVATE
+        "${imgui_SOURCE_DIR}/imgui.cpp"
+        "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+        "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+        "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+        "${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp"
+        "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
+)
+
+target_include_directories(DXIApp
+    PRIVATE
+        "${imgui_SOURCE_DIR}"
+        "${imgui_SOURCE_DIR}/backends"
+)
+
 # Add include directories to the target
 target_include_directories(DXIApp
     PRIVATE

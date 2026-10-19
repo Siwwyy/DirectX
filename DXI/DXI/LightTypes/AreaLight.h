@@ -52,6 +52,11 @@ public:
 		return Range;
 	}
 
+	// Shadow camera sitting at the centre of the rectangle, looking along its normal.
+	// This gives a hard shadow: the occlusion is right, but a real area light would have
+	// a penumbra widening with Size, which a single view cannot produce.
+	_NODISCARD XMMATRIX GetShadowViewProj() const noexcept;
+
 private:
 
 	// World space centre of the emitting rectangle

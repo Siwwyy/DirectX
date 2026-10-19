@@ -40,16 +40,14 @@ struct Light
     uint    Type;           // One of LIGHT_TYPE_*
 
     float2  Size;           // Width and height of the emitting surface | Area
-    float2  Padding;        // Keeps the struct at a 16 bytes boundary
+    int     ShadowSlot;     // Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
 };
 
 cbuffer ConstantBufferPerLights : register(b2)
 {
-    Light    Lights[MAX_LIGHTS];    // Every light placed in the scene
-    uint     NumLights;             // How many entries of Lights are filled
-    int      ShadowLightIdx;        // Which light the shadow map belongs to, NO_SHADOW_CASTER when none
-    float2   LightsPadding;         // Keeps the matrix below on a 16 bytes row
-    float4x4 ShadowViewProj;        // World to the shadow caster's clip space
+    Light    Lights[MAX_LIGHTS];                // Every light placed in the scene
+    float4x4 ShadowViewProj[MAX_LIGHTS];        // World to that light's clip space | Directional, Area
+    uint     NumLights;                         // How many entries of Lights are filled
 };
 
 // Direction from the shaded pixel towards the light, plus how much of it reaches the pixel.
@@ -80,47 +78,109 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     return ToLight / max(Distance, 1e-4);
 }
 
-// How much of the shadow casting light reaches this pixel, 1 is lit and 0 is fully occluded.
-// Samples a 3x3 neighbourhood so the edge is not a hard staircase.
-float GetShadowFactor(Texture2D ShadowDepth, SamplerState ShadowSampler, float3 WorldPosition, float3 Normal)
+// Bias scaled by how side on the surface is to the light. A grazing surface spans more
+// depth per texel, so it needs more slack before it stops shadowing itself.
+float GetShadowBias(float3 Normal, float3 LightDir, float Scale)
 {
-    if (ShadowLightIdx < 0)
+    float NdotL = saturate(dot(normalize(Normal), LightDir));
+    return max(0.0005, Scale * (1.0 - NdotL));
+}
+
+// Directional and area lights | One depth slice each, so the pixel is projected into the
+// light's clip space and compared against what was closest from there.
+// Samples a 3x3 neighbourhood so the edge is not a hard staircase.
+float GetShadowFactor2D(Texture2DArray ShadowDepth,
+                        SamplerState ShadowSampler,
+                        uint LightIdx,
+                        float3 WorldPosition,
+                        float3 Normal)
+{
+    int Slot = Lights[LightIdx].ShadowSlot;
+    if (Slot < 0)
     {
         return 1.0;
     }
 
     // Project the pixel into the light's clip space, then into [0,1] texture space
-    float4 LightClip    = mul(float4(WorldPosition, 1.0), ShadowViewProj);
+    float4 LightClip    = mul(float4(WorldPosition, 1.0), ShadowViewProj[LightIdx]);
     float3 LightNDC     = LightClip.xyz / LightClip.w;
     float2 ShadowUV     = LightNDC.xy * float2(0.5, -0.5) + 0.5;
 
-    // Nothing outside the shadow box was rendered into the map, so treat it as lit
-    if (any(ShadowUV < 0.0) || any(ShadowUV > 1.0) || LightNDC.z > 1.0)
+    // Nothing outside the view was rendered into the slice, and nothing behind the light
+    // is in front of anything, so both count as lit
+    if (LightClip.w <= 0.0 || any(ShadowUV < 0.0) || any(ShadowUV > 1.0) || LightNDC.z > 1.0)
     {
         return 1.0;
     }
 
-    // Surfaces at a grazing angle to the light need a larger bias, otherwise their own
-    // depth quantization makes them shadow themselves
-    float3 LightDir     = -Lights[ShadowLightIdx].Direction;
-    float  NdotL        = saturate(dot(normalize(Normal), LightDir));
-    float  Bias         = max(0.0005, 0.0025 * (1.0 - NdotL));
+    float Bias = GetShadowBias(Normal, -Lights[LightIdx].Direction, 0.0025);
 
-    uint Width, Height;
-    ShadowDepth.GetDimensions(Width, Height);
-    float2 TexelSize    = 1.0 / float2(Width, Height);
+    uint Width, Height, Slices;
+    ShadowDepth.GetDimensions(Width, Height, Slices);
+    float2 TexelSize = 1.0 / float2(Width, Height);
 
     float Lit = 0.0;
     for (int y = -1; y <= 1; ++y)
     {
         for (int x = -1; x <= 1; ++x)
         {
-            float Occluder = ShadowDepth.SampleLevel(ShadowSampler, ShadowUV + float2(x, y) * TexelSize, 0).r;
+            float3 SampleUV = float3(ShadowUV + float2(x, y) * TexelSize, float(Slot));
+            float  Occluder = ShadowDepth.SampleLevel(ShadowSampler, SampleUV, 0).r;
             Lit += ((LightNDC.z - Bias) <= Occluder) ? 1.0 : 0.0;
         }
     }
 
     return Lit / 9.0;
+}
+
+// Point lights | Six faces of a cube holding the distance the light reached, so the
+// lookup is one sample along the direction to the pixel. No projection, no face maths,
+// the cube sampler picks the face that rendered that direction.
+float GetShadowFactorCube(TextureCubeArray ShadowDistance,
+                          SamplerState ShadowSampler,
+                          uint LightIdx,
+                          float3 WorldPosition,
+                          float3 Normal)
+{
+    int Slot = Lights[LightIdx].ShadowSlot;
+    if (Slot < 0)
+    {
+        return 1.0;
+    }
+
+    float3 ToPixel      = WorldPosition - Lights[LightIdx].Position;
+    float  Distance     = length(ToPixel);
+    float  Range        = max(Lights[LightIdx].Range, 1e-4);
+
+    // Past the range the light contributes nothing anyway
+    if (Distance >= Range)
+    {
+        return 1.0;
+    }
+
+    // Both sides of the compare are distance over range, which is what the face stored
+    float Current       = Distance / Range;
+    float Bias          = GetShadowBias(Normal, -ToPixel / max(Distance, 1e-4), 0.02) / Range;
+
+    float Occluder      = ShadowDistance.SampleLevel(ShadowSampler, float4(ToPixel, float(Slot)), 0).r;
+
+    return ((Current - Bias) <= Occluder) ? 1.0 : 0.0;
+}
+
+// Shadow for whichever light this is, picking the storage its type was rendered into
+float GetShadowFactor(Texture2DArray ShadowDepth,
+                      TextureCubeArray ShadowDistance,
+                      SamplerState ShadowSampler,
+                      uint LightIdx,
+                      float3 WorldPosition,
+                      float3 Normal)
+{
+    if (Lights[LightIdx].Type == LIGHT_TYPE_POINT)
+    {
+        return GetShadowFactorCube(ShadowDistance, ShadowSampler, LightIdx, WorldPosition, Normal);
+    }
+
+    return GetShadowFactor2D(ShadowDepth, ShadowSampler, LightIdx, WorldPosition, Normal);
 }
 
 // Reflectance of a dielectric looked at head on. Metals take their tint from the albedo
@@ -179,8 +239,15 @@ float3 ShadeReflections(TextureCube Radiance,
 }
 
 // Accumulates every light of the scene over a single surface sample.
-// ShadowFactor only dims the light at ShadowLightIdx, pass 1 to shade everything unoccluded.
-float3 ShadeSurface(float3 Albedo, float3 Normal, float3 WorldPosition, float3 EyePosition, float ShadowFactor)
+// Every light is shadowed by its own slice of the atlas, so the shadow storage is passed
+// in rather than a single precomputed factor.
+float3 ShadeSurface(Texture2DArray ShadowDepth,
+                    TextureCubeArray ShadowDistance,
+                    SamplerState ShadowSampler,
+                    float3 Albedo,
+                    float3 Normal,
+                    float3 WorldPosition,
+                    float3 EyePosition)
 {
     float3 SurfaceNormal    = normalize(Normal);
     float3 EyeDirection     = normalize(EyePosition - WorldPosition);
@@ -195,10 +262,11 @@ float3 ShadeSurface(float3 Albedo, float3 Normal, float3 WorldPosition, float3 E
         float Attenuation   = 0.0;
         float3 LightDir     = GetLightDirection(CurrentLight, WorldPosition, Attenuation);
 
-        // Only the caster is shadowed, the rest of the lights have no map of their own
-        if (int(LightIdx) == ShadowLightIdx)
+        // Every light has a slice of its own now, so each one is occluded independently.
+        // Skipped when the light already reaches nothing here.
+        if (Attenuation > 0.0)
         {
-            Attenuation *= ShadowFactor;
+            Attenuation *= GetShadowFactor(ShadowDepth, ShadowDistance, ShadowSampler, LightIdx, WorldPosition, SurfaceNormal);
         }
 
         float3 Radiance     = CurrentLight.Color * CurrentLight.Intensity * Attenuation;

@@ -4,6 +4,8 @@
 
 #include <windowsx.h>	//for GET_X_LPARAM, LOWORD would break on the negative coordinates a captured drag can report
 
+#include "UI/DebugUI.h"
+
 HWND Win32Proc::hwnd			= nullptr;
 POINT Win32Proc::LastMousePos	= {};
 bool Win32Proc::bIsRotating		= false;
@@ -75,6 +77,13 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	CurrentApp* dx12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	//DXASSERT(dx12App == nullptr, "Can not retrieve app pointer");
 
+	// The debug UI gets first look at every message. When it takes one, the camera must
+	// not act on it too, otherwise dragging a slider would also spin the view.
+	if (DebugUI::HandleWindowMessage(hWnd, message, wParam, lParam))
+	{
+		return 0;
+	}
+
 	// create an instance of timer
 	//Helpers::Timer timer;
 	switch (message)
@@ -91,7 +100,11 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	// WM_KEYDOWN
 	case WM_KEYDOWN:
 	{
-		dx12App->OnKeyDown(static_cast<UINT8>(wParam));
+		// Typing into a widget should not also drive the camera
+		if (!DebugUI::WantsKeyboard())
+		{
+			dx12App->OnKeyDown(static_cast<UINT8>(wParam));
+		}
 	}
 	return 0;
 
@@ -106,6 +119,12 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	// Mouse look | Hold the right button and drag to rotate the camera
 	case WM_RBUTTONDOWN:
 	{
+		// Not while the cursor is over a panel, that click belongs to the UI
+		if (DebugUI::WantsMouse())
+		{
+			return 0;
+		}
+
 		// Capture keeps the moves coming even when the drag leaves the window
 		SetCapture(hWnd);
 		LastMousePos	= { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
