@@ -122,6 +122,28 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
         normal = -normal;
     }
 
+    // Normal mapping. The map stores a direction in tangent space, where z points out of
+    // the surface, so it has to be rotated into world space by the basis the surface
+    // carries. Tangent, bitangent and normal are the three axes of that basis.
+    {
+        // Re-orthogonalize, the interpolation and the normal flip above can leave the
+        // tangent slightly off perpendicular
+        float3 tangent      = normalize(input.tangent.xyz - normal * dot(normal, input.tangent.xyz));
+        float3 bitangent    = cross(normal, tangent) * input.tangent.w;
+
+        // Unpack from the 0 to 1 the texture holds back to a signed direction
+        float3 tangent_normal = MaterialNormal.Sample(MaterialSampler, input.tex_coord).xyz * 2.0 - 1.0;
+
+        // A slot with no map reads as zero, which unpacks to (-1,-1,-1) and is not a
+        // direction at all. The default material fills it with a flat normal, but a
+        // material loaded without one still has to come out of here unchanged.
+        if (dot(tangent_normal, tangent_normal) > 0.01)
+        {
+            float3x3 TangentToWorld = float3x3(tangent, bitangent, normal);
+            normal = normalize(mul(normalize(tangent_normal), TangentToWorld));
+        }
+    }
+
     output.Normal           = float4(normal, 0.0);
 
     // w of 1 tells LightPass that geometry was written here, the cleared background keeps 0

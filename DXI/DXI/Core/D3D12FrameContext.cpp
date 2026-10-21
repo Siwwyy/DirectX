@@ -50,23 +50,34 @@ void D3D12FrameContext::Initialize(const D3D12Device& Device, const UINT FrameCo
 	NAME_D3D12_OBJECT(CommandList, L"Main Command List");
 }
 
-void D3D12FrameContext::BeginFrame(const UINT FrameIdx)
+void D3D12FrameContext::BeginFrame(const D3D12Device& Device, const UINT FrameIdx)
 {
 	DXASSERT(CommandList, "Frame context must be initialized before recording a frame");
 	DXASSERT(FrameIdx < CommandAllocators.size(), "Frame index is out of range");
+
+	// An allocator can only be reset once the GPU is done with everything recorded from
+	// it, so this is the point the CPU has to catch up. With BACK_BUFFER_COUNT frames in
+	// flight it is usually already finished and this returns straight away.
+	WaitForFrame(Device, FrameIdx);
 
 	ThrowIfFailed(CommandAllocators[FrameIdx]->Reset());
 	ThrowIfFailed(CommandList->Reset(CommandAllocators[FrameIdx].Get(), nullptr));
 }
 
-void D3D12FrameContext::Execute(const D3D12Device& Device) const
+void D3D12FrameContext::Execute(const D3D12Device& Device, const UINT FrameIdx)
 {
 	DXASSERT(CommandList, "Frame context must be initialized before submitting a frame");
+	DXASSERT(FrameIdx < Fences.size(), "Frame index is out of range");
 
 	ThrowIfFailed(CommandList->Close()); //close command list for execution
 
 	DXCommandList* CommandLists[] = { CommandList.Get() };
 	Device.GetCommandQueue()->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+
+	// Mark where this frame ends on the queue. Nothing blocks here, the wait happens when
+	// this frame index comes back around in BeginFrame().
+	FenceValues[FrameIdx] = FenceValues[FrameIdx] + 1;
+	ThrowIfFailed(Device.GetCommandQueue()->Signal(Fences[FrameIdx].Get(), FenceValues[FrameIdx]));
 }
 
 void D3D12FrameContext::Flush(const D3D12Device& Device, const UINT FrameIdx)
@@ -75,20 +86,31 @@ void D3D12FrameContext::Flush(const D3D12Device& Device, const UINT FrameIdx)
 
 	// Leaves the list closed on purpose. Reset() only accepts a closed list, so the
 	// next BeginFrame() is what reopens it and reclaims that frame's allocator.
-	Execute(Device);
+	Execute(Device, FrameIdx);
 	WaitForFrame(Device, FrameIdx);
+}
+
+void D3D12FrameContext::WaitForGpuIdle(const D3D12Device& Device)
+{
+	if (!FenceEvent)
+	{
+		return;
+	}
+
+	// The queue runs in order, so waiting for the last thing signalled on every frame
+	// covers everything still in flight
+	for (UINT FrameIdx = 0; FrameIdx < static_cast<UINT>(Fences.size()); ++FrameIdx)
+	{
+		WaitForFrame(Device, FrameIdx);
+	}
 }
 
 void D3D12FrameContext::WaitForFrame(const D3D12Device& Device, const UINT FrameIdx)
 {
 	DXASSERT(FrameIdx < Fences.size(), "Frame index is out of range");
 
-	// Signal and increment the fence value.
-	// Fence keeps the previous value until every command is done, hence the increment first
-	FenceValues[FrameIdx] = FenceValues[FrameIdx] + 1;
-	ThrowIfFailed(Device.GetCommandQueue()->Signal(Fences[FrameIdx].Get(), FenceValues[FrameIdx]));
-
-	// Wait until recorded commands are processed by GPU.
+	// Execute() is what signals, this only blocks until that point is reached.
+	// A frame that has never been submitted has a value of 0 and never waits.
 	if (Fences[FrameIdx]->GetCompletedValue() < FenceValues[FrameIdx])
 	{
 		ThrowIfFailed(Fences[FrameIdx]->SetEventOnCompletion(FenceValues[FrameIdx], FenceEvent));

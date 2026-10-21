@@ -22,6 +22,10 @@ PSInput main(VSInput input)
     // scale. w of 0 keeps the translation out of it, a normal is a direction not a point.
     output.normal               = mul(float4(input.normal, 0.f), LocalToWorldNormal).xyz;
 
+    // The tangent lies along the surface, so it transforms like a position direction
+    // rather than like a normal. Handedness is carried through untouched.
+    output.tangent              = float4(mul(float4(input.tangent.xyz, 0.f), LocalToWorld).xyz, input.tangent.w);
+
     output.pixel_world_position = mul(input.position, LocalToWorld);
     return output;
 }

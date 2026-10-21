@@ -222,6 +222,16 @@ void DebugUI::DrawLightProperties(LightBase& Light)
 		{
 			Point.SetRange(Range);
 		}
+
+		// Size of the emitter. The falloff stops climbing inside it, so a larger radius
+		// is a softer, dimmer core and a smaller one a harsher hotspot.
+		float SourceRadius = Point.GetSourceRadius();
+		if (ImGui::DragFloat("Source radius", &SourceRadius, 0.01f, 0.01f, 10.f))
+		{
+			Point.SetSourceRadius(SourceRadius);
+		}
+
+		ImGui::TextWrapped("Falloff is inverse square, so intensity is energy at the source and not brightness at the surface.");
 		break;
 	}
 

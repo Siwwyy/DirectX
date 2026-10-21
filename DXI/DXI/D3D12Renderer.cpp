@@ -122,8 +122,12 @@ void D3D12Renderer::InitializeScene()
 		auto Bulb = std::make_unique<PointLight>(TEXT("PointLight1"));
 		Bulb->SetPosition({ 2.0f, 1.0f, -1.0f });
 		Bulb->SetColor({ 1.0f, 1.0f, 0.0f });
-		Bulb->SetIntensity(1.0f);
+
+		// Intensity is now divided by the distance squared, so it is no longer roughly
+		// the brightness at the surface. These are starting points, tune them in the panel.
+		Bulb->SetIntensity(6.0f);
 		Bulb->SetRange(8.0f);
+		Bulb->SetSourceRadius(0.2f);
 		Lights.emplace_back(std::move(Bulb));
 
 		// Softbox hanging over the cubes, facing straight down
@@ -132,7 +136,9 @@ void D3D12Renderer::InitializeScene()
 		Softbox->SetDirection({ 0.0f, -1.0f, 0.0f });
 		Softbox->SetSize({ 2.0f, 2.0f });
 		Softbox->SetColor({ 0.4f, 0.6f, 1.0f });
-		Softbox->SetIntensity(1.0f);
+
+		// Same inverse square scale, and it sits further from the cubes than the bulb
+		Softbox->SetIntensity(12.0f);
 		Softbox->SetRange(12.0f);
 		Lights.emplace_back(std::move(Softbox));
 
@@ -306,6 +312,11 @@ XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UIN
 
 void D3D12Renderer::Update(float DeltaTime)
 {
+	if (bDestroyed)
+	{
+		return;
+	}
+
 	// Win32Proc hands us a zero delta, so the timer is the real source of elapsed time
 	StepTimer.Tick(NULL);
 	const auto ElapsedSeconds = static_cast<float>(StepTimer.GetElapsedSeconds());
@@ -325,19 +336,29 @@ void D3D12Renderer::Update(float DeltaTime)
 	// Camera matrices
 	Camera.Update(ElapsedSeconds);
 
-	// Constants for the frame about to be recorded
+	// NOTE | The constant uploads deliberately do not happen here. Update() runs before
+	// BeginFrame() picks the frame index, so writing them now would target the region the
+	// GPU may still be reading. Render() uploads them once the index is known.
+}
+
+void D3D12Renderer::Render()
+{
+	if (bDestroyed)
+	{
+		return;
+	}
+
+	//Always BeginFrame first
+	BeginFrame();
+
+	// Now that the frame index is settled and the GPU is known to be done with that
+	// frame's region, its constants can be written
 	UploadCameraConstants();
 	UploadLightConstants();
 	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 	{
 		UploadPrimitiveConstants(*Primitives[PrimitiveIdx], static_cast<UINT>(PrimitiveIdx));
 	}
-}
-
-void D3D12Renderer::Render()
-{
-	//Always BeginFrame first
-	BeginFrame();
 
 	RenderShadowPass();
 	RenderBasePass();
@@ -352,7 +373,7 @@ void D3D12Renderer::BeginFrame()
 {
 	// Pick the frame first, then reset the resources belonging to it
 	CurrentFrameIdx = SwapChain.GetCurrentBackBufferIdx();
-	FrameContext.BeginFrame(CurrentFrameIdx);
+	FrameContext.BeginFrame(Device, CurrentFrameIdx);
 
 	auto * const CommandList = FrameContext.GetCommandList();
 
@@ -538,11 +559,12 @@ void D3D12Renderer::EndFrame()
 	// Indicate that the back buffer will now be used to present
 	SwapChain.TransitionToPresent(CommandList, CurrentFrameIdx);
 
-	FrameContext.Execute(Device);
+	FrameContext.Execute(Device, CurrentFrameIdx);
 	SwapChain.Present(bVSyncEnabled ? 1 : 0);
 
-	// Move Fence / Wait for the frame to end
-	FrameContext.WaitForFrame(Device, CurrentFrameIdx);
+	// No wait here on purpose. Execute() signalled this frame's fence, and BeginFrame()
+	// blocks on it only once this frame index comes back around, which leaves the CPU
+	// free to record the next frames in the meantime.
 }
 
 void D3D12Renderer::UploadCameraConstants()
@@ -633,6 +655,16 @@ D3D12_GPU_VIRTUAL_ADDRESS D3D12Renderer::GetPrimitiveCbvAddress(const SIZE_T Pri
 
 void D3D12Renderer::Destroy()
 {
+	// Nothing may be released while the GPU is still reading it. Frames are no longer
+	// waited on after Present, so on the way out there can be several still in flight,
+	// and letting the swap chain or any resource go here would be reading freed memory.
+	FrameContext.WaitForGpuIdle(Device);
+
+	// Stops Update() and Render() from touching anything after this point. A WM_PAINT can
+	// still be sitting in the queue when WM_DESTROY arrives, and rendering from it would
+	// use constant buffers that have just been unmapped.
+	bDestroyed = true;
+
 	// Win32Proc calls Destroy() on WM_DESTROY and again once the message loop ends,
 	// so every step here has to tolerate running twice
 	const auto UnmapBuffer = [](ComPtr<DXResource>& Buffer, UINT8** Address)

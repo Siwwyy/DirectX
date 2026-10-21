@@ -171,25 +171,38 @@ void Material::UploadSlotTexture(DXDevice * Device,
 	auto& TextureBuffer	= TextureBuffers[SlotIdx];
 	auto& UploadHeap	= TextureUploadHeaps[SlotIdx];
 
+	const auto Width	= static_cast<UINT>(TextureDesc.Width);
+	const auto Height	= TextureDesc.Height;
+
+	// Box filter the image down the whole way. Without mips a texture is sampled at full
+	// resolution however few pixels it covers, which is what makes a surface shimmer in
+	// the distance, and it is exactly what the mip debug view of BasePass reports.
+	const auto Mips			= GenerateMipChain(static_cast<const BYTE*>(Pixels), Width, Height, static_cast<UINT>(RowPitch), TextureDesc.Format);
+	const auto MipCount		= static_cast<UINT>(Mips.size());
+
+	// Texel size comes from the format, a grayscale map is one byte and not four.
+	// Asking the format rather than dividing the row pitch keeps this agreeing with the
+	// mip generator even if the pitch ever carries padding.
+	const auto BytesPerTexel = GetFormatBytesPerTexel(TextureDesc.Format);
+	DXASSERT(BytesPerTexel > 0, "Material slot has a format the texel size is unknown for");
+
 	// create a default heap where the upload heap will copy its contents into (contents being the texture)
+	auto MippedDesc			= TextureDesc;
+	MippedDesc.MipLevels	= static_cast<UINT16>(MipCount);
+
 	constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
 	constexpr auto StateAfter	= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	ThrowIfFailed(Device->CreateCommittedResource(
 		&DX_HEAP_PROPERTY_DEFAULT,	// a default heap
 		D3D12_HEAP_FLAG_NONE,		// no flags
-		&TextureDesc,				// the description of our texture
+		&MippedDesc,				// the description of our texture
 		StateBefore,				// We will copy the texture from the upload heap to here, so we start it out in a copy dest state
 		nullptr,					// used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&TextureBuffer)));
 	TextureBuffer->SetName((Name + L" " + ToString(Slot)).c_str());
 
-	UINT64 TextureUploadBufferSize = 0;
-	// this function gets the size an upload buffer needs to be to upload a texture to the gpu.
-	// each row must be 256 byte aligned except for the last row, which can just be the size in bytes of the row
-	// eg. textureUploadBufferSize = ((((width * numBytesPerPixel) + 255) & ~255) * (height - 1)) + (width * numBytesPerPixel);
-	Device->GetCopyableFootprints(&TextureDesc, 0, 1, 0, nullptr, nullptr, nullptr, &TextureUploadBufferSize);
-
-	// now we create an upload heap to upload our texture to the GPU
+	// now we create an upload heap big enough for every mip at once
+	const UINT64 TextureUploadBufferSize = GetRequiredIntermediateSize(TextureBuffer.Get(), 0, MipCount);
 	const auto TextureBufferUploadDesc = CD3DX12_RESOURCE_DESC::Buffer(TextureUploadBufferSize);
 	ThrowIfFailed(Device->CreateCommittedResource(
 		&DX_HEAP_PROPERTY_UPLOAD,			// upload heap
@@ -200,14 +213,26 @@ void Material::UploadSlotTexture(DXDevice * Device,
 		IID_PPV_ARGS(&UploadHeap)));
 	UploadHeap->SetName((Name + L" " + ToString(Slot) + L" Upload Resource Heap").c_str());
 
-	// store the image in the upload heap
-	D3D12_SUBRESOURCE_DATA TextureData	= {};
-	TextureData.pData					= Pixels;								// pointer to our image data
-	TextureData.RowPitch				= RowPitch;								// size of one row of the image
-	TextureData.SlicePitch				= RowPitch * TextureDesc.Height;		// size of the whole image
+	// store every mip in the upload heap
+	std::vector<D3D12_SUBRESOURCE_DATA> Subresources(MipCount);
+
+	UINT MipWidth	= Width;
+	UINT MipHeight	= Height;
+
+	for (UINT MipIdx = 0; MipIdx < MipCount; ++MipIdx)
+	{
+		const SIZE_T MipPitch			= SIZE_T(MipWidth) * BytesPerTexel;
+
+		Subresources[MipIdx].pData		= Mips[MipIdx].data();
+		Subresources[MipIdx].RowPitch	= MipPitch;
+		Subresources[MipIdx].SlicePitch	= MipPitch * MipHeight;
+
+		MipWidth	= MipWidth > 1 ? MipWidth / 2 : 1;
+		MipHeight	= MipHeight > 1 ? MipHeight / 2 : 1;
+	}
 
 	// Now we copy the upload buffer contents to the default heap
-	UpdateSubresources(CommandList, TextureBuffer.Get(), UploadHeap.Get(), 0, 0, 1, &TextureData);
+	UpdateSubresources(CommandList, TextureBuffer.Get(), UploadHeap.Get(), 0, 0, MipCount, Subresources.data());
 
 	// transition the texture default heap to a pixel shader resource (we will be sampling from this heap in the pixel shader to get the color of pixels)
 	const auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), StateBefore, StateAfter);
@@ -218,7 +243,7 @@ void Material::UploadSlotTexture(DXDevice * Device,
 	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	SrvDesc.Format					= TextureDesc.Format;
 	SrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
-	SrvDesc.Texture2D.MipLevels		= 1;
+	SrvDesc.Texture2D.MipLevels		= MipCount;
 	Device->CreateShaderResourceView(TextureBuffer.Get(), &SrvDesc, Heap->GetCPUHandle(MaterialIdx, Slot));
 }
 

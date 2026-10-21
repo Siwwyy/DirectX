@@ -69,7 +69,7 @@ static TypeOfIndice IndicesList[] =
 };
 
 using TypeOfVertex = VertexPositionTexCoordNormal;
-static const auto TexNormalVertexList   = ComputeFaceNormal<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
+static const auto TexNormalVertexList   = ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
 static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
 static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(TypeOfIndice);

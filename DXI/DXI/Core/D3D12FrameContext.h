@@ -23,18 +23,25 @@ public:
 	// Leaves the command list recording, so startup uploads can go in right away.
 	void Initialize(const D3D12Device& Device, const UINT FrameCount);
 
-	// Reclaims the frame's allocator and reopens the command list for recording.
+	// Waits until the GPU is done with this frame's previous turn, then reclaims its
+	// allocator and reopens the command list. Waiting here rather than after Present is
+	// what lets the CPU run ahead: it only blocks once the frame comes around again.
 	// The list has to be closed when this is called, Reset() rejects a recording list.
-	void BeginFrame(const UINT FrameIdx);
+	void BeginFrame(const D3D12Device& Device, const UINT FrameIdx);
 
-	// Closes the command list and submits it, leaving it closed
-	void Execute(const D3D12Device& Device) const;
+	// Closes the command list, submits it and signals this frame's fence
+	void Execute(const D3D12Device& Device, const UINT FrameIdx);
 
 	// Submits whatever has been recorded so far and waits it out, leaving the list closed
 	void Flush(const D3D12Device& Device, const UINT FrameIdx);
 
-	// Blocks until the GPU is done with the given frame
+	// Blocks until the GPU is done with whatever was last signalled for this frame
 	void WaitForFrame(const D3D12Device& Device, const UINT FrameIdx);
+
+	// Blocks until the GPU has finished everything that was ever submitted.
+	// Shutting down without this releases resources the GPU is still reading, which the
+	// debug layer reports as an error and which can fault outright.
+	void WaitForGpuIdle(const D3D12Device& Device);
 
 	// Getters
 	_NODISCARD FORCEINLINE DXGraphicsCommandList* GetCommandList() const noexcept

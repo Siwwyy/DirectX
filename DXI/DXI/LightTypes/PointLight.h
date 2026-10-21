@@ -32,6 +32,10 @@ public:
 	}
 	void SetRange(const float Range) noexcept;
 
+	// Radius of the emitter itself. A real bulb is not a mathematical point, and the
+	// inverse square falloff runs to infinity at one, so this is where it stops climbing.
+	void SetSourceRadius(const float SourceRadius) noexcept;
+
 	// Getters
 	_NODISCARD inline const auto& GetPosition() const noexcept
 	{
@@ -40,6 +44,10 @@ public:
 	_NODISCARD inline auto GetRange() const noexcept
 	{
 		return Range;
+	}
+	_NODISCARD inline auto GetSourceRadius() const noexcept
+	{
+		return SourceRadius;
 	}
 
 	// A point light shines everywhere, so its shadow needs all six directions.
@@ -60,6 +68,9 @@ private:
 
 	// Distance at which the light stops contributing
 	float		Range		= 10.f;
+
+	// Size of the emitter, small but not zero
+	float		SourceRadius = 0.1f;
 };
 
 #endif // D3D12_POINTLIGHT_H_INCLUDED

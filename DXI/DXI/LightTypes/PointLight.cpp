@@ -18,6 +18,12 @@ void PointLight::SetRange(const float Range) noexcept
 	this->Range = Range;
 }
 
+void PointLight::SetSourceRadius(const float SourceRadius) noexcept
+{
+	DXASSERT(SourceRadius > 0.f, "Source radius must be greater than zero, it is what keeps the falloff finite");
+	this->SourceRadius = SourceRadius;
+}
+
 XMMATRIX PointLight::GetShadowViewProj(const UINT FaceIdx) const noexcept
 {
 	DXASSERT(FaceIdx < 6, "A cube has six faces, the index has to be one of them");
@@ -59,5 +65,6 @@ LightConstants PointLight::GetLightConstants() const noexcept
 	LightConstants Constants	= MakeBaseConstants();
 	Constants.Position			= Position;
 	Constants.Range				= Range;
+	Constants.SourceRadius		= SourceRadius;
 	return Constants;
 }

@@ -324,12 +324,13 @@ struct VertexPositionTexCoord
 struct VertexPositionTexCoordNormal
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionTexCoordNormal;
-	constexpr static uint32_t InputElementCount = 3;
+	constexpr static uint32_t InputElementCount = 4;
 	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
 	{
 		{ "POSITION",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD",	0,		DXGI_FORMAT_R32G32_FLOAT,		0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	/// 3D position (W component typically set to 1.0f)
@@ -341,6 +342,12 @@ struct VertexPositionTexCoordNormal
 	/// Surface normal vector (W component unused)
 	DirectX::XMFLOAT4 Normal;
 
+	/// Surface tangent, pointing along growing U. W carries the handedness, which is the
+	/// sign the bitangent has to be flipped by. Needed to read a tangent space normal map:
+	/// the map stores directions relative to the surface, and this is what relates them
+	/// back to world space.
+	DirectX::XMFLOAT4 Tangent;
+
 	/// ctor: position (x,y,z[,pw]), texcoord (u,v), normal (nx,ny,nz[,nw])
 	VertexPositionTexCoordNormal(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 								float u = 0.0f, float v = 0.0f,
@@ -349,6 +356,7 @@ struct VertexPositionTexCoordNormal
 		: Position(x, y, z, pw)
 		, TexCoord(u, v)
 		, Normal(nx, ny, nz, nw)
+		, Tangent(1.0f, 0.0f, 0.0f, 1.0f)
 	{
 	}
 
@@ -392,6 +400,102 @@ const uint64_t VertexTypeSizes[] = {
 	sizeof(VertexPositionTexCoord),			/// VertexType::PositionTexcoord
 	sizeof(VertexPositionTexCoordNormal)	/// VertexType::PositionTexcoordNormal
 };
+
+/// <summary>
+/// Per face normal and tangent for every vertex of a mesh.
+///
+/// The normal is the triangle plane, as ComputeFaceNormal does it. The tangent is the
+/// direction U grows in across that triangle, found by solving the two triangle edges
+/// against their uv deltas. Together with the bitangent they form the basis a tangent
+/// space normal map is expressed in, which is what lets the map be read in world space.
+///
+/// Flat faces on purpose, matching the nointerpolation normals the shaders already use.
+/// </summary>
+template<typename In, typename Out, size_t N, size_t M>
+std::array<Out, N> ComputeFaceNormalTangent(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])
+{
+	constexpr size_t NumVerticesPerTriangle	= 3;
+	constexpr size_t NumTriangles			= M / NumVerticesPerTriangle;
+
+	std::array<Out, N> out{};
+
+	for (size_t TriangleIdx = 0; TriangleIdx < NumTriangles; ++TriangleIdx)
+	{
+		const TypeOfIndice Indices[3] =
+		{
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 0],
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 1],
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 2]
+		};
+
+		const In& Vertex0 = VertexArray[Indices[0]];
+		const In& Vertex1 = VertexArray[Indices[1]];
+		const In& Vertex2 = VertexArray[Indices[2]];
+
+		const auto Pos0 = DirectX::XMVectorSet(Vertex0.Position.x, Vertex0.Position.y, Vertex0.Position.z, 0.f);
+		const auto Pos1 = DirectX::XMVectorSet(Vertex1.Position.x, Vertex1.Position.y, Vertex1.Position.z, 0.f);
+		const auto Pos2 = DirectX::XMVectorSet(Vertex2.Position.x, Vertex2.Position.y, Vertex2.Position.z, 0.f);
+
+		const auto Edge1 = DirectX::XMVectorSubtract(Pos1, Pos0);
+		const auto Edge2 = DirectX::XMVectorSubtract(Pos2, Pos0);
+
+		const auto Normal = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(Edge1, Edge2));
+		DXASSERT(!DirectX::XMVector3NearEqual(Normal, DirectX::XMVectorZero(), DirectX::XMVectorSplatEpsilon()), "Normal vector can not be zero vector");
+
+		// How far the uv travels along each edge
+		const float DeltaU1 = Vertex1.TexCoord.x - Vertex0.TexCoord.x;
+		const float DeltaV1 = Vertex1.TexCoord.y - Vertex0.TexCoord.y;
+		const float DeltaU2 = Vertex2.TexCoord.x - Vertex0.TexCoord.x;
+		const float DeltaV2 = Vertex2.TexCoord.y - Vertex0.TexCoord.y;
+
+		// Solving the two edges against those deltas gives the direction U grows in.
+		// A zero determinant means the triangle has no uv area, so there is nothing to
+		// solve and any perpendicular will do.
+		const float Determinant = (DeltaU1 * DeltaV2) - (DeltaU2 * DeltaV1);
+
+		DirectX::XMVECTOR Tangent;
+		if (fabsf(Determinant) < 1e-8f)
+		{
+			const auto Reference = fabsf(DirectX::XMVectorGetY(Normal)) > 0.99f
+									? DirectX::XMVectorSet(1.f, 0.f, 0.f, 0.f)
+									: DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f);
+			Tangent = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(Reference, Normal));
+		}
+		else
+		{
+			const float InvDeterminant = 1.f / Determinant;
+
+			Tangent = DirectX::XMVectorScale(
+				DirectX::XMVectorSubtract(DirectX::XMVectorScale(Edge1, DeltaV2),
+											DirectX::XMVectorScale(Edge2, DeltaV1)),
+				InvDeterminant);
+
+			// Gram-Schmidt, the tangent has to sit in the plane perpendicular to the normal
+			Tangent = DirectX::XMVector3Normalize(
+				DirectX::XMVectorSubtract(Tangent,
+					DirectX::XMVectorScale(Normal, DirectX::XMVectorGetX(DirectX::XMVector3Dot(Normal, Tangent)))));
+		}
+
+		// Which way the bitangent has to point, mirrored uvs flip it
+		const auto Bitangent = DirectX::XMVectorScale(
+			DirectX::XMVectorSubtract(DirectX::XMVectorScale(Edge2, DeltaU1),
+										DirectX::XMVectorScale(Edge1, DeltaU2)),
+			fabsf(Determinant) < 1e-8f ? 0.f : 1.f / Determinant);
+
+		const float Handedness = DirectX::XMVectorGetX(
+			DirectX::XMVector3Dot(DirectX::XMVector3Cross(Normal, Tangent), Bitangent)) < 0.f ? -1.f : 1.f;
+
+		for (const TypeOfIndice Index : Indices)
+		{
+			out[Index].Position	= DirectX::XMFLOAT4(VertexArray[Index].Position.x, VertexArray[Index].Position.y, VertexArray[Index].Position.z, 1.f);
+			out[Index].TexCoord	= DirectX::XMFLOAT2(VertexArray[Index].TexCoord.x, VertexArray[Index].TexCoord.y);
+			out[Index].Normal	= DirectX::XMFLOAT4(DirectX::XMVectorGetX(Normal), DirectX::XMVectorGetY(Normal), DirectX::XMVectorGetZ(Normal), 0.f);
+			out[Index].Tangent	= DirectX::XMFLOAT4(DirectX::XMVectorGetX(Tangent), DirectX::XMVectorGetY(Tangent), DirectX::XMVectorGetZ(Tangent), Handedness);
+		}
+	}
+
+	return out;
+}
 
 template<typename In, typename Out, size_t N, size_t M>
 std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])

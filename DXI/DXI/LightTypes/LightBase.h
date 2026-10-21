@@ -49,6 +49,7 @@ struct alignas(16) LightConstants
 
 	DirectX::XMFLOAT2	Size;			// Width and height of the emitting surface | Area
 	INT					ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
+	float				SourceRadius;	// How big the emitter is | Point, keeps the falloff finite at the centre
 };
 
 static_assert((sizeof(LightConstants) % 16) == 0, "LightConstants must be aligned to 16-bytes rows to match the HLSL packing");

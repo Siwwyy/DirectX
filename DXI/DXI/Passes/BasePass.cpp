@@ -84,11 +84,13 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 		auto RootParameters = CreateRootParameters({ ParamCBV, ParamSRV, ParamDebugMode });
 
 		// create a static sampler
+		// Linear on all three, including the mip axis. Material textures carry a full mip
+		// chain now, and point filtering between mips would make them pop as they change.
 		D3D12_STATIC_SAMPLER_DESC sampler = {};
-		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 		sampler.MipLODBias = 0;
 		sampler.MaxAnisotropy = 0;
 		sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
@@ -118,12 +120,13 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 		PSO.RootSignature = RootSignature;
 	}
 
-	// Input Layout
+	// Input Layout | Matches VertexPositionTexCoordNormal, tangent included
 	PSO.InputLayout = 
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	// Render targets | One per G-buffer target, in the GBufferTarget order

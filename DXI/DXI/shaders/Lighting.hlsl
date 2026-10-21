@@ -41,6 +41,7 @@ struct Light
 
     float2  Size;           // Width and height of the emitting surface | Area
     int     ShadowSlot;     // Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
+    float   SourceRadius;   // How big the emitter is | Point, keeps the falloff finite at the centre
 };
 
 cbuffer ConstantBufferPerLights : register(b2)
@@ -50,12 +51,38 @@ cbuffer ConstantBufferPerLights : register(b2)
     uint     NumLights;                         // How many entries of Lights are filled
 };
 
+// How much of a positional light reaches a point this far away.
+//
+// Light spreads over a sphere, and that sphere's area grows with the square of the
+// distance, so the same energy is spread thinner by exactly 1/d squared. That is the
+// physical falloff, but on its own it has two problems: it runs to infinity at the centre
+// and it never quite reaches zero, so a light could never be bounded by its range.
+//
+// SourceRadius fixes the first. A real emitter has size, and once inside it the intensity
+// stops climbing. The windowing term fixes the second by easing the curve down to exactly
+// nothing at the range, which keeps the cut off invisible while still making it finite.
+float GetDistanceAttenuation(Light InLight, float DistanceSqr)
+{
+    // Clamped inverse square
+    float RadiusSqr     = max(InLight.SourceRadius * InLight.SourceRadius, 1e-4);
+    float Attenuation   = 1.0 / max(DistanceSqr, RadiusSqr);
+
+    // Window, falling off as the fourth power of the distance so it stays near 1 for most
+    // of the range and drops away only towards the edge
+    float RangeSqr      = max(InLight.Range * InLight.Range, 1e-4);
+    float Ratio         = saturate(DistanceSqr / RangeSqr);
+    float Window        = saturate(1.0 - (Ratio * Ratio));
+
+    return Attenuation * Window * Window;
+}
+
 // Direction from the shaded pixel towards the light, plus how much of it reaches the pixel.
 // Directional lights reach everything, the other types fade out with the distance.
 float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Attenuation)
 {
     if (InLight.Type == LIGHT_TYPE_DIRECTIONAL)
     {
+        // Parallel rays from infinitely far away, nothing to spread out
         Attenuation = 1.0;
         return -InLight.Direction;
     }
@@ -63,19 +90,18 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     // TODO | An area light should integrate over its rectangle, for now its centre is treated
     // as a point light, so Size only widens the falloff instead of softening the shape
     float3 ToLight      = InLight.Position - PixelWorldPosition;
-    float  Distance     = length(ToLight);
-    float  Reach        = max(InLight.Range, 1e-4);
+    float  DistanceSqr  = dot(ToLight, ToLight);
+    float  Distance     = sqrt(max(DistanceSqr, 1e-8));
 
-    Attenuation         = saturate(1.0 - (Distance / Reach));
-    Attenuation        *= Attenuation;
+    Attenuation         = GetDistanceAttenuation(InLight, DistanceSqr);
 
     if (InLight.Type == LIGHT_TYPE_AREA)
     {
         // Only the front side of the rectangle emits
-        Attenuation *= saturate(dot(InLight.Direction, -ToLight / max(Distance, 1e-4)));
+        Attenuation *= saturate(dot(InLight.Direction, -ToLight / Distance));
     }
 
-    return ToLight / max(Distance, 1e-4);
+    return ToLight / Distance;
 }
 
 // Bias scaled by how side on the surface is to the light. A grazing surface spans more

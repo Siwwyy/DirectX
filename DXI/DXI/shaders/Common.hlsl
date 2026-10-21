@@ -12,11 +12,12 @@ struct VSInput
 //     nointerpolation float3 normal       : NORMAL;
 
 #if defined(BASE_PASS) || defined(SHADOW_PASS)
-    // Matches the POSITION/TEXCOORD/NORMAL input layout BasePass and ShadowPass
+    // Matches the POSITION/TEXCOORD/NORMAL/TANGENT input layout BasePass and ShadowPass
     // build their PSOs with. ShadowPass only reads the position out of it.
     float4 position                     : POSITION;
     float2 tex_coord                    : TEXCOORD;
     nointerpolation float3 normal       : NORMAL;
+    nointerpolation float4 tangent      : TANGENT;      // w is the bitangent handedness
 #else
     float4 position                     : POSITION;
     #if USE_TEXCOORD
@@ -42,11 +43,13 @@ struct PSInput
 
 #ifdef BASE_PASS
     // BasePass writes the surface into the G-buffer, so it needs the material uv
-    // and the world position on top of the normal
+    // and the world position on top of the normal. The tangent rides along so the
+    // pixel shader can read a tangent space normal map.
     float4 position                     : SV_POSITION;
     float4 pixel_world_position         : POSITION;
     float2 tex_coord                    : TEXCOORD;
     nointerpolation float3 normal       : NORMAL;
+    nointerpolation float4 tangent      : TANGENT;      // w is the bitangent handedness
 #else
     float4 position                     : SV_POSITION;
     float4 pixel_world_position         : POSITION;

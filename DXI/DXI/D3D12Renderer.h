@@ -144,6 +144,9 @@ private:
 	// nothing about how long the frame actually takes
 	bool					bVSyncEnabled	= false;
 
+	// Set by Destroy(), after which Update() and Render() do nothing
+	bool					bDestroyed		= false;
+
 	// Deferred rendering | ShadowPass writes depth from the light, BasePass writes the
 	// surface, LightPass shades it and looks the occlusion up in the shadow map
 	GBuffer					SceneGBuffer;
