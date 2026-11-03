@@ -23,7 +23,7 @@ public:
 	Primitive(const XMFLOAT3 InitRot,
 			const XMFLOAT3 InitPosition,
 			const XMFLOAT3 InitScale);
-	~Primitive() = default;
+	virtual ~Primitive() = default;
 
 	// Init
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);

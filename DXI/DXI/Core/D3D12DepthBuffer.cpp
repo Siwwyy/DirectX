@@ -5,7 +5,7 @@
 // Namespaces
 using namespace Helpers;
 
-void D3D12DepthBuffer::Initialize(const D3D12Device& Device, const UINT Width, const UINT Height)
+void D3D12DepthBuffer::Init(const D3D12Device& Device, const UINT Width, const UINT Height)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the depth buffer");
 	DXASSERT(Width > 0 && Height > 0, "Depth buffer needs a non empty size");

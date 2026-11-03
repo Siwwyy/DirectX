@@ -1,5 +1,9 @@
 //Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
+// Which register holds what, shared by every pass. Mirrors ShaderRegisters.h on the root
+// signature side. Included here because every pass shader includes this file.
+#include "ShaderRegisters.hlsl"
+
 // Vertex Shader input
 struct VSInput
 {
@@ -12,12 +16,13 @@ struct VSInput
 //     nointerpolation float3 normal       : NORMAL;
 
 #if defined(BASE_PASS) || defined(SHADOW_PASS)
-    // Matches the POSITION/TEXCOORD/NORMAL/TANGENT input layout BasePass and ShadowPass
-    // build their PSOs with. ShadowPass only reads the position out of it.
+    // Matches the POSITION/TEXCOORD/NORMAL/TANGENT/BINORMAL input layout BasePass and
+    // ShadowPass build their PSOs with. ShadowPass only reads the position out of it.
     float4 position                     : POSITION;
     float2 tex_coord                    : TEXCOORD;
     nointerpolation float3 normal       : NORMAL;
     nointerpolation float4 tangent      : TANGENT;      // w is the bitangent handedness
+    nointerpolation float4 bitangent    : BINORMAL;     // w unused
 #else
     float4 position                     : POSITION;
     #if USE_TEXCOORD
@@ -50,6 +55,7 @@ struct PSInput
     float2 tex_coord                    : TEXCOORD;
     nointerpolation float3 normal       : NORMAL;
     nointerpolation float4 tangent      : TANGENT;      // w is the bitangent handedness
+    nointerpolation float4 bitangent    : BINORMAL;     // w unused
 #else
     float4 position                     : SV_POSITION;
     float4 pixel_world_position         : POSITION;
@@ -112,7 +118,7 @@ struct FullscreenPSInput
 
 // Per object matrices. Only LocalToWorld is used here, the light half comes separately
 // because the same object is rendered from several lights within one frame.
-cbuffer ConstantBufferPerObject : register(b0)
+cbuffer ConstantBufferPerObject : register(CB_PER_OBJECT)
 {
     float4x4 LocalToWorld;
     float4x4 WorldToClip;           // the camera, unused here
@@ -120,7 +126,7 @@ cbuffer ConstantBufferPerObject : register(b0)
 };
 
 // The view being rendered, as root constants so switching views costs nothing
-cbuffer ConstantBufferPerShadowView : register(b1)
+cbuffer ConstantBufferPerShadowView : register(CB_PER_VIEW)
 {
     float4x4 WorldToLightClip;      // World straight into this light's clip space
     float3   LightPosition;         // World space, a cube face measures distance from it

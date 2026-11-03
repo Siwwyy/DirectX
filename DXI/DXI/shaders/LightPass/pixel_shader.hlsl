@@ -18,7 +18,7 @@ TextureCube SkyIrradiance       : register(t7);     // the sky gathered over the
 SamplerState GBufferSampler     : register(s0);     // point, for the buffers above
 SamplerState SkySampler         : register(s1);     // linear, the cubes are direction lookups
 
-cbuffer ConstantBufferPerCamera : register(b1)
+cbuffer ConstantBufferPerCamera : register(CB_PER_VIEW)
 {
     float4   EyePosition;   // World space position of the camera, Camera::GetPosition()
     float4x4 InvViewProj;   // Clip space back to world

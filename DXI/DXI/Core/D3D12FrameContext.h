@@ -21,7 +21,7 @@ public:
 
 	// Creates an allocator and a fence per frame, the command list and the fence event.
 	// Leaves the command list recording, so startup uploads can go in right away.
-	void Initialize(const D3D12Device& Device, const UINT FrameCount);
+	void Init(const D3D12Device& Device, const UINT FrameCount);
 
 	// Waits until the GPU is done with this frame's previous turn, then reclaims its
 	// allocator and reopens the command list. Waiting here rather than after Present is

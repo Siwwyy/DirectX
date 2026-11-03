@@ -44,7 +44,7 @@ struct Light
     float   SourceRadius;   // How big the emitter is | Point, keeps the falloff finite at the centre
 };
 
-cbuffer ConstantBufferPerLights : register(b2)
+cbuffer ConstantBufferPerLights : register(CB_PER_LIGHTS)
 {
     Light    Lights[MAX_LIGHTS];                // Every light placed in the scene
     float4x4 ShadowViewProj[MAX_LIGHTS];        // World to that light's clip space | Directional, Area

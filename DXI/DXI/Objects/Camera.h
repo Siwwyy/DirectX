@@ -53,6 +53,26 @@ public:
 	{
 		return CameraMatrices.Position;										// World space position (eye)
 	}
+	_NODISCARD inline auto GetYaw() const noexcept
+	{
+		return Yaw;															// Degrees, turning right lowers it
+	}
+	_NODISCARD inline auto GetPitch() const noexcept
+	{
+		return Pitch;														// Degrees, clamped short of +/- 90
+	}
+	_NODISCARD inline const auto& GetDirection() const
+	{
+		return CameraMatrices.Direction;									// N | Forward, rebuilt from yaw and pitch
+	}
+	_NODISCARD inline const auto& GetUp() const
+	{
+		return CameraMatrices.Up;											// V
+	}
+	_NODISCARD inline const auto& GetRight() const
+	{
+		return CameraMatrices.Right;										// U
+	}
 
 private:
 

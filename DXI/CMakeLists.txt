@@ -55,8 +55,9 @@ file(GLOB_RECURSE DXI_WINMAINS CONFIGURE_DEPENDS
 )
 
 # SHADERS or KERNELS
-# Collect shader/kernel files
-file(GLOB_RECURSE DXI_SHADERS
+# Collect shader/kernel files. CONFIGURE_DEPENDS so a new .hlsl shows up in the solution
+# on the next build, the same way sources and headers do.
+file(GLOB_RECURSE DXI_SHADERS CONFIGURE_DEPENDS
     "${DXI_SRC_DIR}/shaders/*.glsl"
     "${DXI_SRC_DIR}/shaders/*.hlsl"
     "${DXI_SRC_DIR}/shaders/*.comp"

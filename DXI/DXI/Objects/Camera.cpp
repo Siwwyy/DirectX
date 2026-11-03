@@ -139,24 +139,25 @@ void Camera::Update(float ElapsedSeconds) noexcept
 
 	const XMFLOAT4 RotXYZW = XMFLOAT4(Helpers::ToRadians(Pitch), Helpers::ToRadians(Yaw), 0.0f, 0.0f);
 
-	// Normalize
-	XMStoreFloat4(&N, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Direction)));
-	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Up)));
-
-	// Calculate right vector
-	XMStoreFloat4(&U, XMVector3Normalize(XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N))));
-
-	// Rotate direction vector
+	// Rotate direction vector | Yaw and pitch describe it on their own, so the previous
+	// direction is not read here, and the result is already unit length
 	N.x = cosf(RotXYZW.y) * cosf(RotXYZW.x);
 	N.y = sinf(RotXYZW.x);
 	N.z = sinf(RotXYZW.y) * cosf(RotXYZW.x);
+
+	// Normalize
+	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Up)));
+
+	// Calculate right vector | Has to follow the rotation above. Crossing against the
+	// direction from the previous frame leaves strafing trailing the view by a frame.
+	XMStoreFloat4(&U, XMVector3Normalize(XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N))));
 
 	// Store NVU vectors
 	XMStoreFloat4(&CameraMatrices.Direction, XMLoadFloat4(&N));
 	XMStoreFloat4(&CameraMatrices.Up, XMLoadFloat4(&V));
 	XMStoreFloat4(&CameraMatrices.Right, XMLoadFloat4(&U));
 
-#if 1
+#if DEBUG_MODE
 	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
 	DXLOG("Rot X %f | Y %f\n", Pitch, Yaw)
 #endif

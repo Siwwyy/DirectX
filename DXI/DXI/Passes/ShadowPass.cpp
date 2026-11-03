@@ -48,40 +48,22 @@ HRESULT ShadowPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 
 	// Setup Root Signature | Per object matrices plus whichever view is being rendered
 	{
-		ComPtr<ID3D12RootSignature> RootSignature;
+		RootSignatureBuilder Builder;
 
-		const auto RootCBVDescriptor	= CreateRootDescriptor(0, 0);							// b0 | Per object
-		const auto RootViewConstants	= CreateRootConstant(0, 1, ShadowViewConstantCount);		// b1 | Per view
-
-		RootParamHelper ParamCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
-			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL,
-			RootCBVDescriptor);
+		PrimitiveCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerObject, D3D12_SHADER_VISIBILITY_ALL);
 
 		// The vertex shader projects with it, the pixel shader needs the range to
 		// normalize the distance, so this one is visible to both
-		RootParamHelper ParamViewConstants(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL,
-			RootViewConstants);
+		ShadowViewIdx	= Builder.AddRootConstants(ShaderRegister::PerView, ShadowViewConstantCount, D3D12_SHADER_VISIBILITY_ALL);
 
-		// Keep the order, it has to match RootParamIdx
-		auto RootParameters = CreateRootParameters({ ParamCBV, ParamViewConstants });
-
-		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(RootParameters.size(),	// we have 2 root parameters
-			RootParameters.data(),						// a pointer to the beginning of our root parameters array
-			0,											// no static samplers, a shadow pass samples nothing
-			nullptr,
+		// No static samplers, a shadow pass samples nothing
+		const auto RootSignature = Builder.Build(Device,
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
-		// Initialize Root Signature
-		ComPtr<ID3DBlob> signature;
-		ComPtr<ID3DBlob> error;
-		ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
-
+		// Both pipelines render the same geometry from the same view, only the targets differ
 		PSO.RootSignature			= RootSignature;
 		DistancePSO.RootSignature	= RootSignature;
 	}
@@ -94,7 +76,8 @@ HRESULT ShadowPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	// Front face culling trades surface acne for a bit of peter panning, which is the

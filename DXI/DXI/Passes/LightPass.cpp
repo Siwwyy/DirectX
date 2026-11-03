@@ -45,79 +45,29 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 	const DXGI_FORMAT						BACK_BUFFER_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;	//has to match the swap chain
 	const DXGI_SAMPLE_DESC					SAMPLE_DESC			= SAMPLER_HELPER::CreateSampler(1, 0);
 
-	// Setup Root Signature
+	// Setup Root Signature | Each Add hands back the index to bind that parameter against
 	{
-		ComPtr<ID3D12RootSignature> RootSignature;
+		RootSignatureBuilder Builder;
 
 		// One range covering every G-buffer target, then the shadow atlas and both sky
 		// cubes, so binding everything this pass reads is a single call
-		const auto DescriptorRange = CreateDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GBufferTargetCount + ShadowAtlas::GetSrvCount() + 2, 0, 0);
-		D3D12_DESCRIPTOR_RANGE DescriptorRangesTable[1] = { DescriptorRange };
-		const auto DescriptorTable = CreateRootDescriptorTable(_countof(DescriptorRangesTable), DescriptorRangesTable);
+		GBufferTableIdx	= Builder.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GetSrvCount(), ShaderRegister::TableBase, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		// Constant buffers, the lighting needs the eye position and every light of the scene
-		const auto RootCameraCBVDescriptor	= CreateRootDescriptor(0, 1);	// b1 | Per camera
-		const auto RootLightsCBVDescriptor	= CreateRootDescriptor(0, 2);	// b2 | Per lights of the scene
+		CameraCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerView, D3D12_SHADER_VISIBILITY_PIXEL);
+		LightsCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerLights, D3D12_SHADER_VISIBILITY_PIXEL);
 
-		// SRV | The G-buffer
-		RootParamHelper ParamGBuffer(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
-			DescriptorTable);
-
-		// Camera CBV
-		RootParamHelper ParamCameraCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
-			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
-			RootCameraCBVDescriptor);
-
-		// Lights CBV
-		RootParamHelper ParamLightsCBV(D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
-			D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
-			RootLightsCBVDescriptor);
-
-		// Create root parameters array | Keep the order, it has to match RootParamIdx
-		auto RootParameters = CreateRootParameters({ ParamGBuffer, ParamCameraCBV, ParamLightsCBV });
-
-		// Two static samplers.
 		// s0 is point clamp, the G-buffer and the shadow map are read one texel at a time.
 		// s1 is linear clamp, the sky is a direction lookup that would look blocky otherwise.
-		D3D12_STATIC_SAMPLER_DESC samplers[2] = {};
+		Builder.AddStaticSampler(ShaderRegister::SamplerBase,		D3D12_FILTER_MIN_MAG_MIP_POINT,		D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		Builder.AddStaticSampler(ShaderRegister::SamplerBase + 1,	D3D12_FILTER_MIN_MAG_MIP_LINEAR,	D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 
-		samplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-		samplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		samplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		samplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		samplers[0].MipLODBias = 0;
-		samplers[0].MaxAnisotropy = 0;
-		samplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-		samplers[0].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-		samplers[0].MinLOD = 0.0f;
-		samplers[0].MaxLOD = D3D12_FLOAT32_MAX;
-		samplers[0].ShaderRegister = 0;
-		samplers[0].RegisterSpace = 0;
-		samplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-		samplers[1] = samplers[0];
-		samplers[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		samplers[1].ShaderRegister = 1;
-
-		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(RootParameters.size(), // we have 3 root parameters
-			RootParameters.data(), // a pointer to the beginning of our root parameters array
-			_countof(samplers), // point for the buffers, linear for the sky
-			samplers, // a pointer to our static sampler (array)
+		PSO.RootSignature = Builder.Build(Device,
 			// No input assembler here, the fullscreen triangle comes out of SV_VertexID
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
-
-		// Initialize Root Signature
-		ComPtr<ID3DBlob> signature;
-		ComPtr<ID3DBlob> error;
-		ThrowIfFailed(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		ThrowIfFailed(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
-
-		PSO.RootSignature = RootSignature;
 	}
 
 	// No input layout, the vertex shader builds the triangle out of SV_VertexID

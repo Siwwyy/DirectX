@@ -134,6 +134,9 @@ struct alignas(256) PrimitiveConstantBuffer
 	DirectX::XMFLOAT4X4 LocalToWorldNormal;
 };
 static_assert((sizeof(PrimitiveConstantBuffer) % 256) == 0, "Primitive Constant Buffer size must be aligned to 256-bytes boudary");
+static_assert(offsetof(PrimitiveConstantBuffer, LocalToWorld) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+static_assert(offsetof(PrimitiveConstantBuffer, WorldToClip) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+static_assert(offsetof(PrimitiveConstantBuffer, LocalToWorldNormal) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
 constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
 constexpr auto PrimitiveConstantBufferAlignment = alignof(PrimitiveConstantBuffer);
 

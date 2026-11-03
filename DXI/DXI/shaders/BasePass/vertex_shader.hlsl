@@ -3,7 +3,7 @@
 
 #include "../Common.hlsl"
 
-cbuffer ConstantBufferPerObject : register(b0)
+cbuffer ConstantBufferPerObject : register(CB_PER_OBJECT)
 {
     float4x4 LocalToWorld;          // Only with per-object translation
     float4x4 WorldToClip;           // Translation * View * Proj (Clip)
@@ -25,6 +25,9 @@ PSInput main(VSInput input)
     // The tangent lies along the surface, so it transforms like a position direction
     // rather than like a normal. Handedness is carried through untouched.
     output.tangent              = float4(mul(float4(input.tangent.xyz, 0.f), LocalToWorld).xyz, input.tangent.w);
+
+    // Same for the bitangent, it is the other axis lying in the surface
+    output.bitangent            = float4(mul(float4(input.bitangent.xyz, 0.f), LocalToWorld).xyz, 0.f);
 
     output.pixel_world_position = mul(input.position, LocalToWorld);
     return output;

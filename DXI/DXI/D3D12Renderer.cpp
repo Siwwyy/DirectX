@@ -28,10 +28,10 @@ D3D12Renderer::D3D12Renderer(UINT WindowWidth, UINT WindowHeight, std::wstring W
 void D3D12Renderer::Initialize()
 {
 	// Core | Device first, everything else is built on top of it
-	Device.Initialize();
-	SwapChain.Initialize(Device, Win32Proc::GetHwnd(), WindowWidth, WindowHeight, BACK_BUFFER_COUNT);
-	DepthBuffer.Initialize(Device, WindowWidth, WindowHeight);
-	FrameContext.Initialize(Device, BACK_BUFFER_COUNT);
+	Device.Init();
+	SwapChain.Init(Device, Win32Proc::GetHwnd(), WindowWidth, WindowHeight, BACK_BUFFER_COUNT);
+	DepthBuffer.Init(Device, WindowWidth, WindowHeight);
+	FrameContext.Init(Device, BACK_BUFFER_COUNT);
 
 	CurrentFrameIdx = SwapChain.GetCurrentBackBufferIdx();
 
@@ -41,7 +41,7 @@ void D3D12Renderer::Initialize()
 	InitializePasses();
 
 	// Debug panel. It uploads a font atlas of its own, so it goes in before the flush.
-	SceneDebugUI.Initialize(Device.Get(), Win32Proc::GetHwnd(), D3D12SwapChain::GetFormat(), BACK_BUFFER_COUNT);
+	SceneDebugUI.Init(Device.Get(), Win32Proc::GetHwnd(), D3D12SwapChain::GetFormat(), BACK_BUFFER_COUNT);
 
 	// Push the vertex, index and texture uploads to the GPU and wait them out
 	FrameContext.Flush(Device, CurrentFrameIdx);
@@ -80,7 +80,7 @@ void D3D12Renderer::InitializeScene()
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube1")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube2")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube3")));
-	Primitives.emplace_back(std::make_unique<::Plane>(TEXT("Ground")));
+	Primitives.emplace_back(std::make_unique<Plane>(TEXT("Ground")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube4")));
 
 	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
@@ -149,12 +149,12 @@ void D3D12Renderer::InitializeScene()
 void D3D12Renderer::InitializeMaterials()
 {
 	// Every material takes its descriptors out of this single heap
-	SharedMaterialHeap.Initialize(Device.Get(), MAX_MATERIALS);
+	SharedMaterialHeap.Init(Device.Get(), MAX_MATERIALS);
 
 	// Default first, so any mesh created without a material of its own still draws.
 	// Kept out of Materials, which stays one entry per primitive.
 	DefaultMaterial = std::make_unique<Material>(TEXT("Default Material"));
-	DefaultMaterial->Initialize(Device.Get(), SharedMaterialHeap);
+	DefaultMaterial->Init(Device.Get(), SharedMaterialHeap);
 	DefaultMaterial->SetDefaults(Device.Get(), FrameContext.GetCommandList());
 
 	// Primitive::GetMaterial() falls back to this one
@@ -168,17 +168,17 @@ void D3D12Renderer::InitializeMaterials()
 
 	// The ground is a single quad with no thickness, so it has to survive being looked
 	// at from underneath
-	LoadMaterial(L"blue_floor_tiles_01")->SetTwoSided(true);
+	LoadMaterial(L"blue_floor_tiles_01").SetTwoSided(true);
 
 	DXASSERT(Materials.size() <= MAX_MATERIALS, "More materials loaded than the shared heap can hold");
 }
 
-Material* D3D12Renderer::LoadMaterial(const wchar_t* AssetName)
+Material& D3D12Renderer::LoadMaterial(const wchar_t* AssetName)
 {
 	DXASSERT(AssetName, "Material needs an asset name to load from");
 
 	auto NewMaterial = std::make_unique<Material>(AssetName);
-	NewMaterial->Initialize(Device.Get(), SharedMaterialHeap);
+	NewMaterial->Init(Device.Get(), SharedMaterialHeap);
 
 	// Poly Haven ships one file per map, all of them named after the asset.
 	// nor_dx is the DirectX normal variant, so the green channel needs no flip.
@@ -215,7 +215,7 @@ Material* D3D12Renderer::LoadMaterial(const wchar_t* AssetName)
 	DXASSERT(NewMaterial->HasTexture(MaterialTextureSlot::Diffuse), "Material has no diffuse map, check the asset folder next to the executable");
 
 	Materials.emplace_back(std::move(NewMaterial));
-	return Materials.back().get();
+	return *Materials.back();
 }
 
 void D3D12Renderer::InitializeConstantBuffers()
@@ -259,8 +259,8 @@ void D3D12Renderer::InitializePasses()
 {
 	// ShadowPass writes the depth of the scene from the light, BasePass draws the
 	// primitives with their materials into the G-buffer, LightPass shades the result
-	SceneGBuffer.Initialize(Device.Get(), WindowWidth, WindowHeight);
-	SceneShadowAtlas.Initialize(Device.Get(), SHADOW_MAP_RESOLUTION, SHADOW_CUBE_RESOLUTION);
+	SceneGBuffer.Init(Device.Get(), WindowWidth, WindowHeight);
+	SceneShadowAtlas.Init(Device.Get(), SHADOW_MAP_RESOLUTION, SHADOW_CUBE_RESOLUTION);
 
 	SceneShadowPass.Init(Device.Get(), FrameContext.GetCommandList());
 	SceneBasePass.Init(Device.Get(), FrameContext.GetCommandList());
@@ -269,7 +269,7 @@ void D3D12Renderer::InitializePasses()
 	// Only one CBV/SRV/UAV heap can be bound at a time, so everything LightPass samples
 	// goes into a single heap: the G-buffer targets, the shadow map, then both sky cubes
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc	= {};
-	HeapDesc.NumDescriptors				= GBufferTargetCount + ShadowAtlas::GetSrvCount() + 2;
+	HeapDesc.NumDescriptors				= LightPass::GetSrvCount();
 	HeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	HeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(Device.Get()->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&LightInputsHeap)));
@@ -425,11 +425,11 @@ void D3D12Renderer::RenderShadowPass()
 				ViewConstants.LightRange		= PointLightRef.GetRange();
 			}
 
-			CommandList->SetGraphicsRoot32BitConstants(ShadowPass::ShadowViewIdx, ShadowViewConstantCount, &ViewConstants, 0);
+			CommandList->SetGraphicsRoot32BitConstants(SceneShadowPass.ShadowViewIdx, ShadowViewConstantCount, &ViewConstants, 0);
 
 			for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 			{
-				CommandList->SetGraphicsRootConstantBufferView(ShadowPass::PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
+				CommandList->SetGraphicsRootConstantBufferView(SceneShadowPass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
 				SceneShadowPass.Render(CommandList, *Primitives[PrimitiveIdx]);
 			}
 		};
@@ -488,7 +488,7 @@ void D3D12Renderer::RenderBasePass()
 		CommandList->SetDescriptorHeaps(_countof(MaterialHeaps), MaterialHeaps);
 
 		// Which debug view the panel asked for, the same for every primitive
-		CommandList->SetGraphicsRoot32BitConstant(BasePass::DebugModeIdx, static_cast<UINT>(SceneDebugUI.GetBasePassDebugMode()), 0);
+		CommandList->SetGraphicsRoot32BitConstant(SceneBasePass.DebugModeIdx, static_cast<UINT>(SceneDebugUI.GetBasePassDebugMode()), 0);
 
 		// Both variants share the root signature, only the pipeline differs, so the
 		// state is swapped lazily instead of once per draw
@@ -510,8 +510,8 @@ void D3D12Renderer::RenderBasePass()
 				BoundPipeline = Pipeline;
 			}
 
-			CommandList->SetGraphicsRootDescriptorTable(BasePass::MaterialTableIdx, PrimitiveMaterial->GetDescriptorTable());
-			CommandList->SetGraphicsRootConstantBufferView(BasePass::PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
+			CommandList->SetGraphicsRootDescriptorTable(SceneBasePass.MaterialTableIdx, PrimitiveMaterial->GetDescriptorTable());
+			CommandList->SetGraphicsRootConstantBufferView(SceneBasePass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
 			SceneBasePass.Render(CommandList, Primitive);
 		}
 	}
@@ -537,9 +537,9 @@ void D3D12Renderer::RenderLightPass()
 	DXDescriptorHeap* LightHeaps[] = { LightInputsHeap.Get() };
 	CommandList->SetDescriptorHeaps(_countof(LightHeaps), LightHeaps);
 
-	CommandList->SetGraphicsRootDescriptorTable(LightPass::GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
-	CommandList->SetGraphicsRootConstantBufferView(LightPass::CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CAMERA_CBV_STRIDE));
-	CommandList->SetGraphicsRootConstantBufferView(LightPass::LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
+	CommandList->SetGraphicsRootDescriptorTable(SceneLightPass.GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
+	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CAMERA_CBV_STRIDE));
+	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
 
 	SceneLightPass.RenderFullscreen(CommandList);
 }

@@ -15,7 +15,7 @@ Texture2D MaterialAO        : register(t5);
 SamplerState MaterialSampler : register(s0);
 
 // A root constant, so switching views costs nothing per frame
-cbuffer ConstantBufferPerDebug : register(b1)
+cbuffer ConstantBufferPerDebug : register(CB_PER_VIEW)
 {
     uint DebugMode;     // One of BASE_PASS_DEBUG_*
 };
@@ -116,10 +116,14 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
 
     // A two sided surface keeps its back faces, and those point away from the viewer,
     // so their normal has to be flipped or the underside comes out unlit
-    float3 normal = normalize(input.normal);
+    float3 normal           = normalize(input.normal);
+    float3 vertex_bitangent = input.bitangent.xyz;
     if (!is_front_face)
     {
-        normal = -normal;
+        // The bitangent goes with it. It was built against the front facing normal, and
+        // cross(-N, T) is -cross(N, T), so leaving it alone would mirror the map in v.
+        normal           = -normal;
+        vertex_bitangent = -vertex_bitangent;
     }
 
     // Normal mapping. The map stores a direction in tangent space, where z points out of
@@ -129,7 +133,12 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
         // Re-orthogonalize, the interpolation and the normal flip above can leave the
         // tangent slightly off perpendicular
         float3 tangent      = normalize(input.tangent.xyz - normal * dot(normal, input.tangent.xyz));
-        float3 bitangent    = cross(normal, tangent) * input.tangent.w;
+
+        // The bitangent comes in from the vertex rather than out of a cross product. Only
+        // its normal component is removed, so whatever angle it makes with the tangent
+        // survives. That angle is the reason for storing it: on sheared uvs the two axes
+        // are not perpendicular, and squaring them up would put the error back.
+        float3 bitangent    = normalize(vertex_bitangent - normal * dot(normal, vertex_bitangent));
 
         // Unpack from the 0 to 1 the texture holds back to a signed direction
         float3 tangent_normal = MaterialNormal.Sample(MaterialSampler, input.tex_coord).xyz * 2.0 - 1.0;

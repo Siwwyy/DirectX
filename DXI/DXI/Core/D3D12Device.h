@@ -22,7 +22,7 @@ public:
 	// and creates the device along with its direct command queue.
 	// GPU based validation instruments every shader and commonly costs 10x or more,
 	// so it stays off unless something actually needs chasing down.
-	void Initialize(const D3D_FEATURE_LEVEL FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0,
+	void Init(const D3D_FEATURE_LEVEL FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0,
 					const bool bEnableGpuValidation = false);
 
 	// Reports whatever is still alive, call it once everything else has been released

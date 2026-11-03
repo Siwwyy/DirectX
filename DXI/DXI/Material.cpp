@@ -25,7 +25,7 @@ const wchar_t* ToString(const MaterialTextureSlot Slot)
 
 
 // Material Heap class
-void MaterialHeap::Initialize(DXDevice * Device, const UINT MaxMaterials)
+void MaterialHeap::Init(DXDevice * Device, const UINT MaxMaterials)
 {
 	DXASSERT(Device, "Device can not be null for Initialization of the material heap");
 	DXASSERT(MaxMaterials > 0, "Material heap needs room for at least one material");
@@ -89,7 +89,7 @@ Material::Material(std::wstring Name)
 {
 }
 
-void Material::Initialize(DXDevice * Device, MaterialHeap& InMaterialHeap)
+void Material::Init(DXDevice * Device, MaterialHeap& InMaterialHeap)
 {
 	DXASSERT(Device, "Device can not be null for Initialization of the material");
 	DXASSERT(!IsInitialized(), "Material has been already initialized");

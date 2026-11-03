@@ -17,7 +17,7 @@ D3D12FrameContext::~D3D12FrameContext()
 	}
 }
 
-void D3D12FrameContext::Initialize(const D3D12Device& Device, const UINT FrameCount)
+void D3D12FrameContext::Init(const D3D12Device& Device, const UINT FrameCount)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the frame context");
 	DXASSERT(FrameCount > 0, "Frame context needs at least one frame");

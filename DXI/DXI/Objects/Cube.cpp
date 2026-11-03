@@ -68,7 +68,7 @@ static TypeOfIndice IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-using TypeOfVertex = VertexPositionTexCoordNormal;
+using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
 static const auto TexNormalVertexList   = ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
 static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);

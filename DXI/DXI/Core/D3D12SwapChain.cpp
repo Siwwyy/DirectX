@@ -5,7 +5,7 @@
 // Namespaces
 using namespace Helpers;
 
-void D3D12SwapChain::Initialize(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount)
+void D3D12SwapChain::Init(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the swap chain");
 	DXASSERT(WindowHandle, "Swap chain needs a window to present into");

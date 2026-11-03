@@ -21,8 +21,8 @@ static constexpr DWORD IndicesList[] =
 	///////////////////////////////
 };
 
-using TypeOfVertex = VertexPositionTexCoordNormal;
-static const auto TexNormalVertexList           = ComputeFaceNormalTangent<VertexPositionTexCoord, VertexPositionTexCoordNormal>(VertexList, IndicesList);
+using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
+static const auto TexNormalVertexList           = ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
 static constexpr const UINT VertexBufferSize    = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
 static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(TypeOfIndice);

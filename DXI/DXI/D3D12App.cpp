@@ -379,9 +379,9 @@ void D3D12App::Initialize()
 		 **** TEXTURING & Cube *****
 		 ***************************/
 		// Every material takes its descriptors out of this single heap
-		SharedMaterialHeap.Initialize(Device.Get(), MAX_MATERIALS);
-		PlaneMaterial.Initialize(Device.Get(), SharedMaterialHeap);
-		PrimitiveMaterial.Initialize(Device.Get(), SharedMaterialHeap);
+		SharedMaterialHeap.Init(Device.Get(), MAX_MATERIALS);
+		PlaneMaterial.Init(Device.Get(), SharedMaterialHeap);
+		PrimitiveMaterial.Init(Device.Get(), SharedMaterialHeap);
 
 		// AddPass
 		Graph.AddPass(TEXT("Cubes Init"), {}, [=](DXDevice * Device, DXGraphicsCommandList * CommandList)
@@ -456,14 +456,14 @@ void D3D12App::Initialize()
 	 ***************************/
 	// BasePass draws the primitives with their materials into the G-buffer,
 	// LightPass then shades that G-buffer with the lights placed above
-	SceneGBuffer.Initialize(Device.Get(), WindowWidth, WindowHeight);
+	SceneGBuffer.Init(Device.Get(), WindowWidth, WindowHeight);
 
 	// LightPass samples the G-buffer, a shadow map and two sky cubes out of one heap. This
 	// path has neither a shadow pass nor a sky, so those slots get null descriptors and
 	// the lights buffer below reports NO_SHADOW_CASTER to skip the lookup entirely.
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC HeapDesc	= {};
-		HeapDesc.NumDescriptors				= GBufferTargetCount + 3;
+		HeapDesc.NumDescriptors				= LightPass::GetSrvCount();
 		HeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		HeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&LightInputsHeap)));
@@ -473,14 +473,25 @@ void D3D12App::Initialize()
 
 		SceneGBuffer.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
-		// Shadow map slot
+		// Shadow atlas slots. Every descriptor the bound range covers has to be written,
+		// and a null one still has to declare the dimension the shader reads it as.
 		SrvHandle.Offset(GBufferTargetCount, IncrementSize);
-		D3D12_SHADER_RESOURCE_VIEW_DESC NullSrvDesc = {};
-		NullSrvDesc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		NullSrvDesc.Format					= DXGI_FORMAT_R32_FLOAT;
-		NullSrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
-		NullSrvDesc.Texture2D.MipLevels		= 1;
-		Device->CreateShaderResourceView(nullptr, &NullSrvDesc, SrvHandle);
+		D3D12_SHADER_RESOURCE_VIEW_DESC NullDepthSrvDesc = {};
+		NullDepthSrvDesc.Shader4ComponentMapping	= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		NullDepthSrvDesc.Format						= DXGI_FORMAT_R32_FLOAT;
+		NullDepthSrvDesc.ViewDimension				= D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+		NullDepthSrvDesc.Texture2DArray.MipLevels	= 1;
+		NullDepthSrvDesc.Texture2DArray.ArraySize	= 1;
+		Device->CreateShaderResourceView(nullptr, &NullDepthSrvDesc, SrvHandle);
+
+		SrvHandle.Offset(1, IncrementSize);
+		D3D12_SHADER_RESOURCE_VIEW_DESC NullCubeArraySrvDesc = {};
+		NullCubeArraySrvDesc.Shader4ComponentMapping		= D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		NullCubeArraySrvDesc.Format							= DXGI_FORMAT_R32_FLOAT;
+		NullCubeArraySrvDesc.ViewDimension					= D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+		NullCubeArraySrvDesc.TextureCubeArray.MipLevels		= 1;
+		NullCubeArraySrvDesc.TextureCubeArray.NumCubes		= 1;
+		Device->CreateShaderResourceView(nullptr, &NullCubeArraySrvDesc, SrvHandle);
 
 		// Sky cube slots, the dimension has to match what the shader declares
 		D3D12_SHADER_RESOURCE_VIEW_DESC NullCubeSrvDesc = {};
@@ -489,11 +500,11 @@ void D3D12App::Initialize()
 		NullCubeSrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURECUBE;
 		NullCubeSrvDesc.TextureCube.MipLevels	= 1;
 
-		SrvHandle.Offset(1, IncrementSize);
-		Device->CreateShaderResourceView(nullptr, &NullCubeSrvDesc, SrvHandle);
-
-		SrvHandle.Offset(1, IncrementSize);
-		Device->CreateShaderResourceView(nullptr, &NullCubeSrvDesc, SrvHandle);
+		for (UINT SkyIdx = 0; SkyIdx < LightPass::SKY_SRV_COUNT; ++SkyIdx)
+		{
+			SrvHandle.Offset(1, IncrementSize);
+			Device->CreateShaderResourceView(nullptr, &NullCubeSrvDesc, SrvHandle);
+		}
 	}
 	SceneBasePass.Init(Device.Get(), CommandList.Get());
 	SceneLightPass.Init(Device.Get(), CommandList.Get());
@@ -612,9 +623,9 @@ void D3D12App::Render()
 		DXDescriptorHeap* LightHeaps[] = { LightInputsHeap.Get() };
 		CommandList->SetDescriptorHeaps(_countof(LightHeaps), LightHeaps);
 
-		CommandList->SetGraphicsRootDescriptorTable(LightPass::GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
-		CommandList->SetGraphicsRootConstantBufferView(LightPass::CameraCBVIdx,	CameraConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
-		CommandList->SetGraphicsRootConstantBufferView(LightPass::LightsCBVIdx,	LightsConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+		CommandList->SetGraphicsRootDescriptorTable(SceneLightPass.GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
+		CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
+		CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
 
 		SceneLightPass.RenderFullscreen(CommandList.Get());
 	}

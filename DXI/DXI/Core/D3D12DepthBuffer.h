@@ -18,7 +18,7 @@ public:
 	~D3D12DepthBuffer()	= default;
 
 	// Creates the depth texture and its view
-	void Initialize(const D3D12Device& Device, const UINT Width, const UINT Height);
+	void Init(const D3D12Device& Device, const UINT Width, const UINT Height);
 
 	// Format the depth target is created with, the passes need it for their PSOs
 	_NODISCARD static DXGI_FORMAT GetFormat() noexcept

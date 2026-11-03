@@ -9,7 +9,7 @@ using namespace Helpers;
 // light reaches all the way out"
 static constexpr float DISTANCE_CLEAR_COLOR[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-void ShadowAtlas::Initialize(DXDevice * Device, const UINT Resolution, const UINT CubeResolution)
+void ShadowAtlas::Init(DXDevice * Device, const UINT Resolution, const UINT CubeResolution)
 {
 	DXASSERT(Device, "Device can not be null for Initialization of the shadow atlas");
 	DXASSERT(Resolution > 0 && CubeResolution > 0, "Shadow atlas needs a non empty resolution");

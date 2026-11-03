@@ -80,7 +80,6 @@ struct GraphicsPipelineStateDesc
 		{
 			PsoDesc.RTVFormats[i] = RenderTargetFormats[i];
 		}
-	
 
 		// Create the graphics pipeline state
 		ThrowIfFailed(Device->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));

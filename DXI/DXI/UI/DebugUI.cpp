@@ -53,7 +53,7 @@ DebugUI::~DebugUI()
 	ImGui::DestroyContext();
 }
 
-void DebugUI::Initialize(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount)
+void DebugUI::Init(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount)
 {
 	DXASSERT(Device, "Device can not be null for Initialization of the debug UI");
 	DXASSERT(WindowHandle, "Debug UI needs the window it draws into");
@@ -96,6 +96,12 @@ void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 									const std::vector<std::unique_ptr<Material>>& Materials,
 									Material * const DefaultMaterial)
 {
+	// ImGui identifies a widget by hashing its label, and the light panel below has a
+	// "Position" of its own in the same window. Without a scope here the two hash to one
+	// id and dragging either moves whichever was submitted first. Keying the scope on the
+	// object also keeps a half finished edit from following the selection to the next one.
+	ImGui::PushID(&Primitive);
+
 	// Transform. The matrices are rebuilt from these three, so editing any of them shows
 	// up on the next upload the renderer does.
 	auto Position	= Primitive.GetPosVector();
@@ -167,10 +173,15 @@ void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 	}
 
 	ImGui::Text("Two sided  %s", Primitive.GetMaterial() && Primitive.GetMaterial()->IsTwoSided() ? "yes" : "no");
+
+	ImGui::PopID();
 }
 
 void DebugUI::DrawLightProperties(LightBase& Light)
 {
+	// Scope of its own, for the same reason the primitive panel has one above
+	ImGui::PushID(&Light);
+
 	// Shared by every type
 	auto Color = Light.GetColor();
 	float ColorRgb[3] = { Color.x, Color.y, Color.z };
@@ -274,9 +285,11 @@ void DebugUI::DrawLightProperties(LightBase& Light)
 	default:
 		break;
 	}
+
+	ImGui::PopID();
 }
 
-void DebugUI::Draw(const Camera& Camera,
+void DebugUI::Draw(Camera& Camera,
 					std::vector<std::unique_ptr<Primitive>>& Primitives,
 					std::vector<std::unique_ptr<LightBase>>& Lights,
 					const std::vector<std::unique_ptr<Material>>& Materials,
@@ -359,6 +372,25 @@ void DebugUI::Draw(const Camera& Camera,
 	{
 		const auto& Position = Camera.GetPosition();
 		ImGui::Text("Position  x %8.3f  y %8.3f  z %8.3f", Position.x, Position.y, Position.z);
+
+		// Degrees, which is the unit the camera stores them in. Pitch stops short of
+		// straight up, otherwise the up vector and the direction line up and the view
+		// matrix has no way left to tell which way is up.
+		ImGui::Text("Rotation  yaw %7.2f  pitch %7.2f", Camera.GetYaw(), Camera.GetPitch());
+
+		// The basis the view matrix is built from, rebuilt out of yaw and pitch each frame
+		const auto& Forward	= Camera.GetDirection();
+		const auto& Up		= Camera.GetUp();
+		const auto& Right	= Camera.GetRight();
+		ImGui::Text("Forward   x %8.3f  y %8.3f  z %8.3f", Forward.x, Forward.y, Forward.z);
+		ImGui::Text("Up        x %8.3f  y %8.3f  z %8.3f", Up.x, Up.y, Up.z);
+		ImGui::Text("Right     x %8.3f  y %8.3f  z %8.3f", Right.x, Right.y, Right.z);
+
+		float Sensitivity = Camera.GetMouseSensitivity();
+		if (ImGui::DragFloat("Mouse sensitivity", &Sensitivity, 0.01f, 0.01f, 2.0f, "%.2f deg/px"))
+		{
+			Camera.SetMouseSensitivity(Sensitivity);
+		}
 	}
 
 	// 1 | Projection matrix
@@ -367,6 +399,15 @@ void DebugUI::Draw(const Camera& Camera,
 		XMFLOAT4X4 ProjMat;
 		XMStoreFloat4x4(&ProjMat, Camera.GetProjMatrix());
 		DrawMatrix(ProjMat);
+	}
+
+	// The other half of what turns a world position into clip space, handy next to the
+	// NDC readout further down when a vertex lands somewhere unexpected
+	if (ImGui::CollapsingHeader("View Matrix"))
+	{
+		XMFLOAT4X4 ViewMat;
+		XMStoreFloat4x4(&ViewMat, Camera.GetViewMatrix());
+		DrawMatrix(ViewMat);
 	}
 
 	// 3 and 4 | Pick an object out of the scene and look at where it is, in world space

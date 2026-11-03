@@ -54,12 +54,11 @@ public:
 	}
 
 	// Root parameter indices, the caller binds them before Render
-	enum RootParamIdx : UINT
-	{
-		PrimitiveCBVIdx = 0,	// b0 | Per object
-		MaterialTableIdx,		// Descriptor table covering every material slot
-		DebugModeIdx			// b1 | One BasePassDebugMode, set as a root constant
-	};
+	// Assigned by the builder in Init rather than written out here, so they cannot
+	// disagree with the order the root signature was actually assembled in.
+	UINT PrimitiveCBVIdx	= 0;	// b0 | Per object
+	UINT MaterialTableIdx	= 0;	// Descriptor table covering every material slot
+	UINT DebugModeIdx		= 0;	// b1 | One BasePassDebugMode, set as a root constant
 
 private:
 

@@ -41,7 +41,7 @@ public:
 	~MaterialHeap() = default;
 
 	// Creates the heap with room for MaxMaterials materials
-	void Initialize(DXDevice * Device, const UINT MaxMaterials);
+	void Init(DXDevice * Device, const UINT MaxMaterials);
 
 	// Reserves the descriptor range of one material and returns its index
 	_NODISCARD UINT Allocate();
@@ -91,7 +91,7 @@ public:
 	~Material()	= default;
 
 	// Reserves this material's range in the shared heap and points every slot at a null descriptor
-	void Initialize(DXDevice * Device, MaterialHeap& InMaterialHeap);
+	void Init(DXDevice * Device, MaterialHeap& InMaterialHeap);
 
 	// Loads a texture from disk into one of the slots, overwriting its null descriptor
 	void LoadTexture(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, std::wstring TexturePath);

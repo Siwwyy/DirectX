@@ -30,7 +30,7 @@ public:
 	~ShadowAtlas()	= default;
 
 	// Creates both arrays with room for MAX_LIGHTS casters of either kind
-	void Initialize(DXDevice * Device, const UINT Resolution, const UINT CubeResolution);
+	void Init(DXDevice * Device, const UINT Resolution, const UINT CubeResolution);
 
 	// Formats the passes need for their PSOs
 	_NODISCARD static DXGI_FORMAT GetDepthFormat() noexcept

@@ -89,8 +89,9 @@ private:
 
 	// Loads one material out of a Poly Haven style folder, where every map is named
 	// <AssetName>_<suffix>_1k.png, appends it to Materials and hands it back.
-	// Missing maps keep their null descriptor.
-	Material* LoadMaterial(const wchar_t* AssetName);
+	// Missing maps keep their null descriptor. Ownership stays in Materials, the
+	// reference is there so the caller can keep setting properties on what it just made.
+	Material& LoadMaterial(const wchar_t* AssetName);
 
 	// Frame
 	void BeginFrame();

@@ -8,7 +8,7 @@ using namespace Helpers;
 // Direct queue, everything this engine submits is graphics work
 static constexpr D3D12_COMMAND_LIST_TYPE COMMAND_LIST_TYPE = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-void D3D12Device::Initialize(const D3D_FEATURE_LEVEL FeatureLevel, const bool bEnableGpuValidation)
+void D3D12Device::Init(const D3D_FEATURE_LEVEL FeatureLevel, const bool bEnableGpuValidation)
 {
 	DXASSERT(!IsValid(), "Device has been already initialized");
 

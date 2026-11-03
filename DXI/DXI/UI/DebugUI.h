@@ -28,15 +28,15 @@ public:
 
 	// Hooks ImGui up to the window and the device. The back buffer format has to match
 	// what the UI is drawn into, and FrameCount the number of frames in flight.
-	void Initialize(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount);
+	void Init(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount);
 
 	// Starts a UI frame, call it before Draw()
 	void BeginFrame();
 
-	// Fills the panel out of the live scene state. Primitives and lights come in by
-	// non const reference because the panel edits them in place, the renderer picks the
-	// changes up on its next upload.
-	void Draw(const Camera& Camera,
+	// Fills the panel out of the live scene state. The camera, primitives and lights come
+	// in by non const reference because the panel edits them in place, the renderer picks
+	// the changes up on its next upload.
+	void Draw(Camera& Camera,
 				std::vector<std::unique_ptr<Primitive>>& Primitives,
 				std::vector<std::unique_ptr<LightBase>>& Lights,
 				const std::vector<std::unique_ptr<Material>>& Materials,

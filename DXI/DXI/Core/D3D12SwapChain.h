@@ -19,7 +19,7 @@ public:
 	~D3D12SwapChain()	= default;
 
 	// Creates the swap chain for the given window and a render target view per back buffer
-	void Initialize(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
+	void Init(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
 
 	// Format every back buffer is created with
 	_NODISCARD static DXGI_FORMAT GetFormat() noexcept

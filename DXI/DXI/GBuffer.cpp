@@ -36,7 +36,7 @@ DXGI_FORMAT GBuffer::GetFormat(const GBufferTarget Target)
 	}
 }
 
-void GBuffer::Initialize(DXDevice * Device, const UINT Width, const UINT Height)
+void GBuffer::Init(DXDevice * Device, const UINT Width, const UINT Height)
 {
 	DXASSERT(Device, "Device can not be null for Initialization of the G-buffer");
 	DXASSERT(Width > 0 && Height > 0, "G-buffer needs a non empty size");

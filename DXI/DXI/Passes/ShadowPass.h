@@ -15,6 +15,9 @@ struct alignas(16) ShadowViewConstants
 };
 
 static_assert((sizeof(ShadowViewConstants) % 4) == 0, "Root constants are counted in 32 bit values");
+static_assert(offsetof(ShadowViewConstants, WorldToLightClip) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+static_assert(offsetof(ShadowViewConstants, LightRange) == offsetof(ShadowViewConstants, LightPosition) + sizeof(DirectX::XMFLOAT3),
+			  "LightRange has to fill the row the float3 leaves open, which is where HLSL puts it");
 constexpr UINT ShadowViewConstantCount = sizeof(ShadowViewConstants) / sizeof(UINT32);
 
 
@@ -47,11 +50,10 @@ public:
 	}
 
 	// Root parameter indices, the caller binds them before Render
-	enum RootParamIdx : UINT
-	{
-		PrimitiveCBVIdx = 0,	// b0 | Per object, only LocalToWorld is read
-		ShadowViewIdx			// b1 | One ShadowViewConstants, set as root constants
-	};
+	// Assigned by the builder in Init rather than written out here, so they cannot
+	// disagree with the order the root signature was actually assembled in.
+	UINT PrimitiveCBVIdx	= 0;	// b0 | Per object, only LocalToWorld is read
+	UINT ShadowViewIdx		= 0;	// b1 | One ShadowViewConstants, set as root constants
 
 private:
 

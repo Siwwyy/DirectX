@@ -39,7 +39,7 @@ public:
 	~GBuffer()	= default;
 
 	// Creates the targets at the given size along with their descriptors
-	void Initialize(DXDevice * Device, const UINT Width, const UINT Height);
+	void Init(DXDevice * Device, const UINT Width, const UINT Height);
 
 	// Format of a target, the passes need these to build their PSOs
 	_NODISCARD static DXGI_FORMAT GetFormat(const GBufferTarget Target);

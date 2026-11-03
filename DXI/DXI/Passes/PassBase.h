@@ -5,6 +5,8 @@
 
 #include "../pch.h"
 #include "../D3D12ShaderCompiler.h"
+#include "../ShaderRegisters.h"
+#include "../Core/RootSignatureBuilder.h"
 #include "../Objects/Primitive.h"
 #include "../PSO.h"
 
@@ -17,7 +19,7 @@ public:
 
 	// Ctors & DCtor
 	PassBase() = default;
-	~PassBase() = default;
+	virtual ~PassBase() = default;
 
 	// Init
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
