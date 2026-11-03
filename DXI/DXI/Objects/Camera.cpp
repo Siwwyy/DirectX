@@ -3,9 +3,17 @@
 // Global Constants
 static constexpr bool LHCameraCoordinateSystem = true;
 
+// Where the camera starts out, and what Reset() puts it back to. A yaw of 90 degrees is
+// what aims the forward vector down +Z, which is why it is not zero: Update() builds the
+// direction as (cos yaw, sin pitch, sin yaw) scaled by cos pitch, and a yaw of zero would
+// aim it down +X instead. Both places take the numbers from here so they cannot drift.
+static constexpr float INITIAL_YAW		= 90.0f;	// degrees
+static constexpr float INITIAL_PITCH	= 0.0f;		// degrees
+static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 0.0f, -1.0f, 1.0f);
+
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
-	: Yaw(90.0f)
-	, Pitch(0.0f)
+	: Yaw(INITIAL_YAW)
+	, Pitch(INITIAL_PITCH)
 	, MoveSpeed(5.0f)
 	, TurnSpeed(XM_PIDIV2)
 	, CameraMatrices{}
@@ -37,8 +45,8 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
 
 	//// set starting camera state
-	CameraMatrices.Position		= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
-	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	CameraMatrices.Position		= INITIAL_POSITION;
+	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);	// what INITIAL_YAW works out to
 	CameraMatrices.Up			= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	CameraMatrices.Right		= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 
@@ -59,9 +67,13 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 
 void Camera::Reset()
 {
-	Yaw			= 0.0f;
-	Pitch		= 0.0f;
-	KeysPressed = {};
+	// Position too, otherwise a reset leaves the camera wherever it had been flown to.
+	// Direction, up, right and the view matrix are all rebuilt from these by Update(),
+	// so there is nothing else to put back.
+	Yaw						= INITIAL_YAW;
+	Pitch					= INITIAL_PITCH;
+	CameraMatrices.Position	= INITIAL_POSITION;
+	KeysPressed				= {};
 }
 
 void Camera::Update(float ElapsedSeconds) noexcept

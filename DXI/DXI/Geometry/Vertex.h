@@ -582,6 +582,32 @@ struct HasBitangent : std::false_type {};
 template<typename T>
 struct HasBitangent<T, std::void_t<decltype(T::Bitangent)>> : std::true_type {};
 
+/// The basis one triangle gives its vertices.
+struct TriangleFrame
+{
+	DirectX::XMFLOAT4 Normal;		/// Plane of the triangle, w unused
+	DirectX::XMFLOAT4 Tangent;		/// Along growing U, w is the handedness
+	DirectX::XMFLOAT4 Bitangent;	/// Along growing V, w unused
+};
+
+/// <summary>
+/// Solves one triangle for its normal, tangent and bitangent.
+///
+/// The normal is the triangle plane. The tangent is the direction U grows in, found by
+/// solving the two edges against their uv deltas. The bitangent is the same for V, with
+/// only its normal component removed so a sheared uv keeps the angle between the two.
+///
+/// Pulled out of ComputeFaceNormalTangent so the mesh loader, which has no compile time
+/// vertex count to template on, solves triangles exactly the same way the built in
+/// primitives do.
+/// </summary>
+_NODISCARD TriangleFrame ComputeTriangleFrame(const DirectX::XMFLOAT3& Position0,
+											const DirectX::XMFLOAT3& Position1,
+											const DirectX::XMFLOAT3& Position2,
+											const DirectX::XMFLOAT2& TexCoord0,
+											const DirectX::XMFLOAT2& TexCoord1,
+											const DirectX::XMFLOAT2& TexCoord2);
+
 /// <summary>
 /// Per face normal, tangent and bitangent for every vertex of a mesh.
 ///
@@ -617,81 +643,22 @@ std::array<Out, N> ComputeFaceNormalTangent(const In (&VertexArray)[N], const Ty
 		const In& Vertex1 = VertexArray[Indices[1]];
 		const In& Vertex2 = VertexArray[Indices[2]];
 
-		const auto Pos0 = DirectX::XMVectorSet(Vertex0.Position.x, Vertex0.Position.y, Vertex0.Position.z, 0.f);
-		const auto Pos1 = DirectX::XMVectorSet(Vertex1.Position.x, Vertex1.Position.y, Vertex1.Position.z, 0.f);
-		const auto Pos2 = DirectX::XMVectorSet(Vertex2.Position.x, Vertex2.Position.y, Vertex2.Position.z, 0.f);
-
-		const auto Edge1 = DirectX::XMVectorSubtract(Pos1, Pos0);
-		const auto Edge2 = DirectX::XMVectorSubtract(Pos2, Pos0);
-
-		const auto Normal = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(Edge1, Edge2));
-		DXASSERT(!DirectX::XMVector3NearEqual(Normal, DirectX::XMVectorZero(), DirectX::XMVectorSplatEpsilon()), "Normal vector can not be zero vector");
-
-		// How far the uv travels along each edge
-		const float DeltaU1 = Vertex1.TexCoord.x - Vertex0.TexCoord.x;
-		const float DeltaV1 = Vertex1.TexCoord.y - Vertex0.TexCoord.y;
-		const float DeltaU2 = Vertex2.TexCoord.x - Vertex0.TexCoord.x;
-		const float DeltaV2 = Vertex2.TexCoord.y - Vertex0.TexCoord.y;
-
-		// Solving the two edges against those deltas gives the direction U grows in.
-		// A zero determinant means the triangle has no uv area, so there is nothing to
-		// solve and any perpendicular will do.
-		const float Determinant = (DeltaU1 * DeltaV2) - (DeltaU2 * DeltaV1);
-
-		DirectX::XMVECTOR Tangent;
-		if (fabsf(Determinant) < 1e-8f)
-		{
-			const auto Reference = fabsf(DirectX::XMVectorGetY(Normal)) > 0.99f
-									? DirectX::XMVectorSet(1.f, 0.f, 0.f, 0.f)
-									: DirectX::XMVectorSet(0.f, 1.f, 0.f, 0.f);
-			Tangent = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(Reference, Normal));
-		}
-		else
-		{
-			const float InvDeterminant = 1.f / Determinant;
-
-			Tangent = DirectX::XMVectorScale(
-				DirectX::XMVectorSubtract(DirectX::XMVectorScale(Edge1, DeltaV2),
-											DirectX::XMVectorScale(Edge2, DeltaV1)),
-				InvDeterminant);
-
-			// Gram-Schmidt, the tangent has to sit in the plane perpendicular to the normal
-			Tangent = DirectX::XMVector3Normalize(
-				DirectX::XMVectorSubtract(Tangent,
-					DirectX::XMVectorScale(Normal, DirectX::XMVectorGetX(DirectX::XMVector3Dot(Normal, Tangent)))));
-		}
-
-		// Which way the bitangent has to point, mirrored uvs flip it
-		const auto Bitangent = DirectX::XMVectorScale(
-			DirectX::XMVectorSubtract(DirectX::XMVectorScale(Edge2, DeltaU1),
-										DirectX::XMVectorScale(Edge1, DeltaU2)),
-			fabsf(Determinant) < 1e-8f ? 0.f : 1.f / Determinant);
-
-		const float Handedness = DirectX::XMVectorGetX(
-			DirectX::XMVector3Dot(DirectX::XMVector3Cross(Normal, Tangent), Bitangent)) < 0.f ? -1.f : 1.f;
-
-		// The bitangent a layout that stores one wants. Only the normal component is taken
-		// out, leaving whatever angle it makes with the tangent intact, because on sheared
-		// uvs that angle is the thing a stored bitangent exists to preserve. A triangle
-		// with no uv area has nothing to solve, so it falls back to the cross product.
-		DirectX::XMVECTOR StoredBitangent = fabsf(Determinant) < 1e-8f
-												? DirectX::XMVector3Cross(Normal, Tangent)
-												: Bitangent;
-
-		StoredBitangent = DirectX::XMVector3Normalize(
-			DirectX::XMVectorSubtract(StoredBitangent,
-				DirectX::XMVectorScale(Normal, DirectX::XMVectorGetX(DirectX::XMVector3Dot(Normal, StoredBitangent)))));
+		const auto Frame = ComputeTriangleFrame(
+			DirectX::XMFLOAT3(Vertex0.Position.x, Vertex0.Position.y, Vertex0.Position.z),
+			DirectX::XMFLOAT3(Vertex1.Position.x, Vertex1.Position.y, Vertex1.Position.z),
+			DirectX::XMFLOAT3(Vertex2.Position.x, Vertex2.Position.y, Vertex2.Position.z),
+			Vertex0.TexCoord, Vertex1.TexCoord, Vertex2.TexCoord);
 
 		for (const TypeOfIndice Index : Indices)
 		{
 			out[Index].Position	= DirectX::XMFLOAT4(VertexArray[Index].Position.x, VertexArray[Index].Position.y, VertexArray[Index].Position.z, 1.f);
 			out[Index].TexCoord	= DirectX::XMFLOAT2(VertexArray[Index].TexCoord.x, VertexArray[Index].TexCoord.y);
-			out[Index].Normal	= DirectX::XMFLOAT4(DirectX::XMVectorGetX(Normal), DirectX::XMVectorGetY(Normal), DirectX::XMVectorGetZ(Normal), 0.f);
-			out[Index].Tangent	= DirectX::XMFLOAT4(DirectX::XMVectorGetX(Tangent), DirectX::XMVectorGetY(Tangent), DirectX::XMVectorGetZ(Tangent), Handedness);
+			out[Index].Normal	= Frame.Normal;
+			out[Index].Tangent	= Frame.Tangent;
 
 			if constexpr (HasBitangent<Out>::value)
 			{
-				out[Index].Bitangent = DirectX::XMFLOAT4(DirectX::XMVectorGetX(StoredBitangent), DirectX::XMVectorGetY(StoredBitangent), DirectX::XMVectorGetZ(StoredBitangent), 0.f);
+				out[Index].Bitangent = Frame.Bitangent;
 			}
 		}
 	}
@@ -855,6 +822,31 @@ struct VertexInitData
 
 		// Return
 		return InitData; //RVO / NRVO
+	}
+
+	// Runtime sized sibling of the above, for a mesh read off disk where the counts are
+	// not known until the file has been parsed. Takes the buffers by value and moves them
+	// straight in, so a large mesh is never copied.
+	static VertexInitData<TypeOfVertex> CreateVertexInitData(
+		std::vector<TypeOfVertex> Vertices,
+		std::vector<TypeOfIndice> Indices)
+	{
+		DXASSERT(!Vertices.empty(), "A mesh with no vertices can not be uploaded");
+		DXASSERT(!Indices.empty(), "A mesh with no indices can not be drawn");
+
+		VertexInitData<TypeOfVertex> InitData;
+		InitData.Type = TypeOfVertex::VertexTypeValue;
+
+		InitData.InputElementDesc.insert(
+			InitData.InputElementDesc.end(),
+			TypeOfVertex::InputElementDesc,
+			TypeOfVertex::InputElementDesc + TypeOfVertex::InputElementCount
+		);
+
+		InitData.VertexData	= std::move(Vertices);
+		InitData.IndexData	= std::move(Indices);
+
+		return InitData;
 	}
 
 	// Default ctors/dctors

@@ -233,6 +233,8 @@ DXIPATHS::FilePath DXIPATHS::Directory::Resolve() const
 		return FilePath(ContentDirectory() + L"\\shaders");
 	case Kind::Texture:
 		return FilePath(ContentDirectory());
+	case Kind::Model:
+		return FilePath(ContentDirectory() + L"\\models");
 	default:
 		return {};
 	}
@@ -242,3 +244,4 @@ const DXIPATHS::Directory DXIPATHS::GetExecutableDir{ DXIPATHS::Directory::Kind:
 const DXIPATHS::Directory DXIPATHS::GetContentDir{ DXIPATHS::Directory::Kind::Content };
 const DXIPATHS::Directory DXIPATHS::GetShaderDir{ DXIPATHS::Directory::Kind::Shader };
 const DXIPATHS::Directory DXIPATHS::GetTextureDir{ DXIPATHS::Directory::Kind::Texture };
+const DXIPATHS::Directory DXIPATHS::GetModelDir{ DXIPATHS::Directory::Kind::Model };

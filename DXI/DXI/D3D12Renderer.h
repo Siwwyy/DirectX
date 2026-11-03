@@ -10,6 +10,7 @@
 #include "GBuffer.h"
 #include "ShadowAtlas.h"
 #include "CubeMap.h"
+#include "AssetCatalog.h"
 
 // Core | Everything every D3D12 app would otherwise duplicate
 #include "Core/D3D12Device.h"
@@ -92,6 +93,18 @@ private:
 	// Missing maps keep their null descriptor. Ownership stays in Materials, the
 	// reference is there so the caller can keep setting properties on what it just made.
 	Material& LoadMaterial(const wchar_t* AssetName);
+
+	// For a model that ships a single colour map rather than a folder of PBR maps. The
+	// remaining slots take the neutral values SetDefaults fills in.
+	Material& CreateMaterialWithDiffuse(const wchar_t* Name, const std::wstring& DiffusePath);
+
+	// Loads a catalog material the first time something asks for it and remembers where
+	// it landed. Returns null when the shared heap is full or the index is out of range.
+	Material* EnsureMaterialLoaded(const int CatalogIdx);
+
+	// Drains whatever the panel asked for. Called once per frame, after BeginFrame, so
+	// the command list is open for the vertex and texture uploads a spawn performs.
+	void ProcessPendingSpawns();
 
 	// Frame
 	void BeginFrame();
@@ -177,6 +190,9 @@ private:
 	Camera									Camera;
 	std::vector<std::unique_ptr<Primitive>>	Primitives;
 	std::vector<std::unique_ptr<LightBase>>	Lights;
+
+	// What is available to spawn, discovered on disk at startup
+	AssetCatalog							Catalog;
 
 	// Constant buffers | One region per frame in flight, all of them permanently mapped
 	ComPtr<DXResource>		PrimitiveCBV;					// one PrimitiveConstantBuffer per primitive, per frame

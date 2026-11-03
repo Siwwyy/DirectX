@@ -5,6 +5,7 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "Paths.h"
+#include "Objects/Model.h"
 
 #include <string>
 #include <pix3.h>
@@ -83,6 +84,11 @@ void D3D12Renderer::InitializeScene()
 	Primitives.emplace_back(std::make_unique<Plane>(TEXT("Ground")));
 	Primitives.emplace_back(std::make_unique<Cube>(TEXT("Cube4")));
 
+	// Spot, by Keenan Crane, dedicated to the public domain under CC0 1.0. The mesh
+	// carries uvs but no normals, which suits a renderer that computes its own per face.
+	Primitives.emplace_back(std::make_unique<Model>(TEXT("Spot"),
+								(DXIPATHS::GetModelDir / L"spot" / L"spot_triangulated.obj").Str()));
+
 	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 	{
 		// Init Vertex/Index Buffers
@@ -102,6 +108,10 @@ void D3D12Renderer::InitializeScene()
 	Primitives[2]->Transform({  1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
 	Primitives[3]->Transform({  0.0f, 0.0f, 3.0f }, { 90.f, 0.0f, 0.0f }, { 20.f, 20.f, 1.f });
 	Primitives[4]->Transform({  10.0f, 0.0f, 10.0f }, { 90.f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
+
+	// Spot sits in front of the cubes. The mesh is modelled about a unit tall and lying
+	// along +Z, so it is turned to face the camera and lifted clear of the ground.
+	Primitives[5]->Transform({  3.0f, 1.0f, 1.0f }, { 0.0f, -90.0f, 0.0f }, { 1.5f, 1.5f, 1.5f });
 
 	/***************************
 	 ********** Lights *********
@@ -160,17 +170,202 @@ void D3D12Renderer::InitializeMaterials()
 	// Primitive::GetMaterial() falls back to this one
 	Primitive::SetDefaultMaterial(DefaultMaterial.get());
 
-	// All CC0 from Poly Haven, in the order the primitives are created below.
-	// The last one is the ground, the three before it are the cubes.
-	LoadMaterial(L"american_walnut_veneer");
-	LoadMaterial(L"brick_4");
-	LoadMaterial(L"brushed_concrete");
+	// All CC0 from Poly Haven, in the order the primitives are created below, since
+	// materials are handed out by index.
+	LoadMaterial(L"american_walnut_veneer");	// Cube1
+	LoadMaterial(L"brick_4");					// Cube2
+	LoadMaterial(L"brushed_concrete");			// Cube3
 
 	// The ground is a single quad with no thickness, so it has to survive being looked
 	// at from underneath
-	LoadMaterial(L"blue_floor_tiles_01").SetTwoSided(true);
+	LoadMaterial(L"blue_floor_tiles_01").SetTwoSided(true);		// Ground
+
+	LoadMaterial(L"metal_plate");				// Cube4
+
+	// Spot ships one colour map and nothing else, so the remaining slots fall back to the
+	// neutral values SetDefaults fills in
+	CreateMaterialWithDiffuse(L"spot", (DXIPATHS::GetModelDir / L"spot" / L"spot_texture.png").Str());	// Spot
 
 	DXASSERT(Materials.size() <= MAX_MATERIALS, "More materials loaded than the shared heap can hold");
+
+	// What else is sitting on disk, so the panel can offer it
+	Catalog.Scan();
+
+	// Point the catalog at the materials already loaded above, otherwise picking one of
+	// them in the panel would load a second copy and burn another heap slot
+	for (auto& Asset : Catalog.GetMaterials())
+	{
+		for (SIZE_T MaterialIdx = 0; MaterialIdx < Materials.size(); ++MaterialIdx)
+		{
+			if (Materials[MaterialIdx]->GetName() == Asset.Name)
+			{
+				Asset.LoadedIdx = static_cast<int>(MaterialIdx);
+				break;
+			}
+		}
+	}
+}
+
+Material* D3D12Renderer::EnsureMaterialLoaded(const int CatalogIdx)
+{
+	auto& CatalogMaterials = Catalog.GetMaterials();
+
+	if (CatalogIdx < 0 || CatalogIdx >= static_cast<int>(CatalogMaterials.size()))
+	{
+		return nullptr;		// -1 is the panel saying "keep the default"
+	}
+
+	auto& Asset = CatalogMaterials[static_cast<size_t>(CatalogIdx)];
+
+	if (Asset.LoadedIdx >= 0)
+	{
+		return Materials[static_cast<size_t>(Asset.LoadedIdx)].get();
+	}
+
+	// One descriptor range per material, and the shared heap has a fixed number of them
+	if (Materials.size() >= MAX_MATERIALS)
+	{
+		DXLOG("Shared material heap is full, cannot load another material\n")
+		return nullptr;
+	}
+
+	// A folder of Poly Haven maps, or a lone colour map shipped beside a mesh
+	Material& Loaded = Asset.DiffuseOnlyPath.empty()
+							? LoadMaterial(Asset.Name.c_str())
+							: CreateMaterialWithDiffuse(Asset.Name.c_str(), Asset.DiffuseOnlyPath);
+
+	Asset.LoadedIdx = static_cast<int>(Materials.size()) - 1;
+	return &Loaded;
+}
+
+void D3D12Renderer::ProcessPendingSpawns()
+{
+	auto& PrimitiveRequests	= SceneDebugUI.GetPendingPrimitiveSpawns();
+	auto& LightRequests		= SceneDebugUI.GetPendingLightSpawns();
+
+	if (PrimitiveRequests.empty() && LightRequests.empty())
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	for (const auto& Request : PrimitiveRequests)
+	{
+		if (Primitives.size() >= MAX_PRIMITIVES)
+		{
+			DXLOG("Primitive constant buffer is full, cannot spawn another primitive\n")
+			break;
+		}
+
+		// A name that says what it is and stays unique, since the outliner lists by name
+		const auto Ordinal = std::to_wstring(Primitives.size());
+
+		std::unique_ptr<Primitive> Spawned;
+		switch (Request.Mesh)
+		{
+		case SpawnMesh::Plane:
+			Spawned = std::make_unique<::Plane>(L"Plane " + Ordinal);
+			break;
+
+		case SpawnMesh::Model:
+		{
+			const auto& CatalogModels = Catalog.GetModels();
+			if (Request.ModelIdx < 0 || Request.ModelIdx >= static_cast<int>(CatalogModels.size()))
+			{
+				continue;
+			}
+
+			const auto& Asset = CatalogModels[static_cast<size_t>(Request.ModelIdx)];
+			Spawned = std::make_unique<Model>(Asset.Name + L" " + Ordinal, Asset.MeshPath);
+			break;
+		}
+
+		default:
+			Spawned = std::make_unique<Cube>(L"Cube " + Ordinal);
+			break;
+		}
+
+		// Records the vertex and index uploads into the open command list
+		Spawned->Init(Device.Get(), CommandList);
+
+		// Null leaves it on the default material, which is what MaterialIdx -1 means
+		Spawned->SetMaterial(EnsureMaterialLoaded(Request.MaterialIdx));
+
+		// Dropped in front of the camera rather than at the origin, where it would be
+		// inside the ground plane and easy to miss
+		const auto& EyePosition	= Camera.GetPosition();
+		const auto& Forward		= Camera.GetDirection();
+		Spawned->SetTransform({ EyePosition.x + (Forward.x * 5.f),
+								EyePosition.y + (Forward.y * 5.f),
+								EyePosition.z + (Forward.z * 5.f) },
+								DX_IDENTITY_ROTATE3,
+								DX_IDENTITY_SCALE3);
+
+		Primitives.emplace_back(std::move(Spawned));
+	}
+
+	for (const auto& Request : LightRequests)
+	{
+		if (Lights.size() >= MAX_LIGHTS)
+		{
+			DXLOG("Shadow atlas has a slice per light and they are all taken\n")
+			break;
+		}
+
+		const auto Ordinal		= std::to_wstring(Lights.size());
+		const auto& EyePosition	= Camera.GetPosition();
+
+		switch (Request.Type)
+		{
+		case LightType::Directional:
+		{
+			auto Spawned = std::make_unique<DirectionalLight>(L"Directional " + Ordinal);
+			Spawned->SetDirection({ -0.5f, -1.0f, 0.5f });
+			Spawned->SetIntensity(0.6f);
+			Lights.emplace_back(std::move(Spawned));
+			break;
+		}
+
+		case LightType::Area:
+		{
+			auto Spawned = std::make_unique<AreaLight>(L"Area " + Ordinal);
+			Spawned->SetPosition({ EyePosition.x, EyePosition.y, EyePosition.z });
+			Spawned->SetDirection({ 0.0f, -1.0f, 0.0f });
+			Spawned->SetIntensity(12.0f);
+			Lights.emplace_back(std::move(Spawned));
+			break;
+		}
+
+		default:
+		{
+			auto Spawned = std::make_unique<PointLight>(L"Point " + Ordinal);
+			Spawned->SetPosition({ EyePosition.x, EyePosition.y, EyePosition.z });
+			Spawned->SetIntensity(6.0f);
+			Spawned->SetSourceRadius(0.2f);
+			Lights.emplace_back(std::move(Spawned));
+			break;
+		}
+		}
+	}
+
+	PrimitiveRequests.clear();
+	LightRequests.clear();
+}
+
+Material& D3D12Renderer::CreateMaterialWithDiffuse(const wchar_t* Name, const std::wstring& DiffusePath)
+{
+	DXASSERT(Name, "Material needs a name");
+
+	auto NewMaterial = std::make_unique<Material>(Name);
+	NewMaterial->Init(Device.Get(), SharedMaterialHeap);
+	NewMaterial->LoadTexture(Device.Get(), FrameContext.GetCommandList(), MaterialTextureSlot::Diffuse, DiffusePath);
+
+	// Everything else neutral, so the surface shades as a plain dielectric
+	NewMaterial->SetDefaults(Device.Get(), FrameContext.GetCommandList());
+
+	Materials.emplace_back(std::move(NewMaterial));
+	return *Materials.back();
 }
 
 Material& D3D12Renderer::LoadMaterial(const wchar_t* AssetName)
@@ -214,6 +409,10 @@ Material& D3D12Renderer::LoadMaterial(const wchar_t* AssetName)
 
 	DXASSERT(NewMaterial->HasTexture(MaterialTextureSlot::Diffuse), "Material has no diffuse map, check the asset folder next to the executable");
 
+	// Whatever the folder did not provide gets a neutral value, so no slot is left on the
+	// null descriptor it started with
+	NewMaterial->SetDefaults(Device.Get(), FrameContext.GetCommandList());
+
 	Materials.emplace_back(std::move(NewMaterial));
 	return *Materials.back();
 }
@@ -240,7 +439,9 @@ void D3D12Renderer::InitializeConstantBuffers()
 		ThrowIfFailed(OutBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(OutAddress)));
 	};
 
-	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(Primitives.size()) * PrimitiveConstantBufferSize;
+	// Sized for the capacity rather than for what the scene happens to hold right now,
+	// because the panel can add primitives after this has been created and mapped
+	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(MAX_PRIMITIVES) * PrimitiveConstantBufferSize;
 
 	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
 	CreateMappedBuffer(UINT64(CAMERA_CBV_STRIDE) * BACK_BUFFER_COUNT,			CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
@@ -350,6 +551,11 @@ void D3D12Renderer::Render()
 
 	//Always BeginFrame first
 	BeginFrame();
+
+	// Whatever the panel asked for last frame. Has to come before the constant uploads
+	// below, so anything spawned here gets its matrices written on the same frame it
+	// first draws, and after BeginFrame, because spawning records copy commands.
+	ProcessPendingSpawns();
 
 	// Now that the frame index is settled and the GPU is known to be done with that
 	// frame's region, its constants can be written
@@ -548,7 +754,7 @@ void D3D12Renderer::RenderDebugUI()
 {
 	// Straight over the shaded frame. LightPass already left the back buffer bound and
 	// there is no depth, so the panel is simply drawn on top.
-	SceneDebugUI.Draw(Camera, Primitives, Lights, Materials, DefaultMaterial.get(), StepTimer.GetFramesPerSecond());
+	SceneDebugUI.Draw(Camera, Catalog, Primitives, Lights, Materials, DefaultMaterial.get(), StepTimer.GetFramesPerSecond());
 	SceneDebugUI.Render(FrameContext.GetCommandList());
 }
 
@@ -640,7 +846,10 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// No light matrix here any more. ShadowPass renders the same object from several
 	// lights per frame, so it takes the light half as root constants instead.
 
-	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * Primitives.size() * PrimitiveConstantBufferSize;
+	// The stride between frame regions is the capacity, not the current count. Using the
+	// count would move every region the moment the panel adds a primitive, leaving the
+	// frames still in flight reading from the wrong offsets.
+	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveConstantBufferSize;
 	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveConstantBufferSize), &PrimitiveCbv, PrimitiveConstantBufferSize);
 }
 
@@ -649,7 +858,7 @@ D3D12_GPU_VIRTUAL_ADDRESS D3D12Renderer::GetPrimitiveCbvAddress(const SIZE_T Pri
 	DXASSERT(PrimitiveCBV, "Primitive constant buffer must be created before binding it");
 	DXASSERT(PrimitiveIdx < Primitives.size(), "Primitive index is out of range");
 
-	const UINT64 FrameOffset = UINT64(CurrentFrameIdx) * Primitives.size() * PrimitiveConstantBufferSize;
+	const UINT64 FrameOffset = UINT64(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveConstantBufferSize;
 	return PrimitiveCBV->GetGPUVirtualAddress() + FrameOffset + (UINT64(PrimitiveIdx) * PrimitiveConstantBufferSize);
 }
 

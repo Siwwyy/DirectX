@@ -289,7 +289,137 @@ void DebugUI::DrawLightProperties(LightBase& Light)
 	ImGui::PopID();
 }
 
+void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T PrimitiveCount, const SIZE_T LightCount)
+{
+	ImGui::PushID("SpawnPanel");
+
+	const auto& CatalogModels		= Catalog.GetModels();
+	const auto& CatalogMaterials	= Catalog.GetMaterials();
+
+	// Mesh | the two built in shapes, then whatever meshes were found on disk
+	std::vector<std::string> MeshNames;
+	MeshNames.emplace_back("Cube");
+	MeshNames.emplace_back("Plane");
+
+	for (const auto& MeshAsset : CatalogModels)
+	{
+		char Name[128] = {};
+		ToUtf8(MeshAsset.Name, Name, sizeof(Name));
+		MeshNames.emplace_back(Name);
+	}
+
+	// Material | entry 0 keeps the default, the rest are catalog entries offset by one
+	std::vector<std::string> MaterialNames;
+	MaterialNames.emplace_back("Default");
+
+	for (const auto& Asset : CatalogMaterials)
+	{
+		char Name[128] = {};
+		ToUtf8(Asset.Name, Name, sizeof(Name));
+
+		// A lone colour map reads differently from a full set of maps, so say which
+		MaterialNames.emplace_back(Asset.DiffuseOnlyPath.empty() ? std::string(Name) : std::string(Name) + "  (colour only)");
+	}
+
+	SpawnMeshIdx		= SpawnMeshIdx		< 0 ? 0 : (SpawnMeshIdx		>= static_cast<int>(MeshNames.size())		? 0 : SpawnMeshIdx);
+	SpawnMaterialIdx	= SpawnMaterialIdx	< 0 ? 0 : (SpawnMaterialIdx	>= static_cast<int>(MaterialNames.size())	? 0 : SpawnMaterialIdx);
+
+	ImGui::SeparatorText("Primitive");
+
+	if (ImGui::BeginCombo("Mesh", MeshNames[static_cast<size_t>(SpawnMeshIdx)].c_str()))
+	{
+		for (int MeshIdx = 0; MeshIdx < static_cast<int>(MeshNames.size()); ++MeshIdx)
+		{
+			const bool bSelected = (MeshIdx == SpawnMeshIdx);
+			if (ImGui::Selectable(MeshNames[static_cast<size_t>(MeshIdx)].c_str(), bSelected))
+			{
+				SpawnMeshIdx = MeshIdx;
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (ImGui::BeginCombo("Material", MaterialNames[static_cast<size_t>(SpawnMaterialIdx)].c_str()))
+	{
+		for (int MaterialIdx = 0; MaterialIdx < static_cast<int>(MaterialNames.size()); ++MaterialIdx)
+		{
+			const bool bSelected = (MaterialIdx == SpawnMaterialIdx);
+			if (ImGui::Selectable(MaterialNames[static_cast<size_t>(MaterialIdx)].c_str(), bSelected))
+			{
+				SpawnMaterialIdx = MaterialIdx;
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	const bool bPrimitivesFull = PrimitiveCount >= MAX_PRIMITIVES;
+
+	ImGui::BeginDisabled(bPrimitivesFull);
+	if (ImGui::Button("Add primitive"))
+	{
+		PrimitiveSpawnRequest Request;
+		Request.Mesh		= SpawnMeshIdx == 0 ? SpawnMesh::Cube : (SpawnMeshIdx == 1 ? SpawnMesh::Plane : SpawnMesh::Model);
+		Request.ModelIdx	= SpawnMeshIdx >= 2 ? SpawnMeshIdx - 2 : -1;
+		Request.MaterialIdx	= SpawnMaterialIdx - 1;		// entry 0 is the default, which is -1 to the renderer
+
+		PendingPrimitiveSpawns.push_back(Request);
+	}
+	ImGui::EndDisabled();
+
+	ImGui::SameLine();
+	ImGui::TextDisabled("%zu in scene", PrimitiveCount);
+
+	if (bPrimitivesFull)
+	{
+		ImGui::TextWrapped("The primitive constant buffer is sized for a fixed number of objects and they are all used.");
+	}
+
+	ImGui::SeparatorText("Light");
+
+	static const char* LightTypeNames[] = { "Point", "Directional", "Area" };
+
+	ImGui::Combo("Type", &SpawnLightTypeIdx, LightTypeNames, IM_ARRAYSIZE(LightTypeNames));
+
+	const bool bLightsFull = LightCount >= MAX_LIGHTS;
+
+	ImGui::BeginDisabled(bLightsFull);
+	if (ImGui::Button("Add light"))
+	{
+		LightSpawnRequest Request;
+		switch (SpawnLightTypeIdx)
+		{
+		case 1:		Request.Type = LightType::Directional;	break;
+		case 2:		Request.Type = LightType::Area;			break;
+		default:	Request.Type = LightType::Point;		break;
+		}
+
+		PendingLightSpawns.push_back(Request);
+	}
+	ImGui::EndDisabled();
+
+	ImGui::SameLine();
+	ImGui::TextDisabled("%zu of %u", LightCount, MAX_LIGHTS);
+
+	if (bLightsFull)
+	{
+		ImGui::TextWrapped("Every light owns a slice of the shadow atlas, and the atlas is built for MAX_LIGHTS of them.");
+	}
+
+	ImGui::TextDisabled("New objects appear five units in front of the camera.");
+
+	ImGui::PopID();
+}
+
 void DebugUI::Draw(Camera& Camera,
+					const AssetCatalog& Catalog,
 					std::vector<std::unique_ptr<Primitive>>& Primitives,
 					std::vector<std::unique_ptr<LightBase>>& Lights,
 					const std::vector<std::unique_ptr<Material>>& Materials,
@@ -408,6 +538,13 @@ void DebugUI::Draw(Camera& Camera,
 		XMFLOAT4X4 ViewMat;
 		XMStoreFloat4x4(&ViewMat, Camera.GetViewMatrix());
 		DrawMatrix(ViewMat);
+	}
+
+	// Everything the scene can be built out of, discovered on disk rather than listed in
+	// code. The renderer picks these requests up at the top of its next frame.
+	if (ImGui::CollapsingHeader("Add to Scene", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		DrawSpawnPanel(Catalog, Primitives.size(), Lights.size());
 	}
 
 	// 3 and 4 | Pick an object out of the scene and look at where it is, in world space

@@ -10,6 +10,7 @@
 #include "../Passes/BasePass.h"
 #include "../Material.h"
 #include "../LightTypes/LightBase.h"
+#include "../AssetCatalog.h"
 
 #include <memory>
 #include <vector>
@@ -33,10 +34,24 @@ public:
 	// Starts a UI frame, call it before Draw()
 	void BeginFrame();
 
+	// What the panel has asked to be added to the scene. The renderer drains these at the
+	// top of its next frame rather than the panel spawning anything itself, because a
+	// spawn records copy commands and the command list is only open mid frame.
+	_NODISCARD std::vector<PrimitiveSpawnRequest>& GetPendingPrimitiveSpawns() noexcept
+	{
+		return PendingPrimitiveSpawns;
+	}
+
+	_NODISCARD std::vector<LightSpawnRequest>& GetPendingLightSpawns() noexcept
+	{
+		return PendingLightSpawns;
+	}
+
 	// Fills the panel out of the live scene state. The camera, primitives and lights come
 	// in by non const reference because the panel edits them in place, the renderer picks
 	// the changes up on its next upload.
 	void Draw(Camera& Camera,
+				const AssetCatalog& Catalog,
 				std::vector<std::unique_ptr<Primitive>>& Primitives,
 				std::vector<std::unique_ptr<LightBase>>& Lights,
 				const std::vector<std::unique_ptr<Material>>& Materials,
@@ -84,6 +99,17 @@ private:
 								const std::vector<std::unique_ptr<Material>>& Materials,
 								Material * const DefaultMaterial);
 	void DrawLightProperties(LightBase& Light);
+
+	// The pickers that fill PendingPrimitiveSpawns and PendingLightSpawns
+	void DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T PrimitiveCount, const SIZE_T LightCount);
+
+	std::vector<PrimitiveSpawnRequest>	PendingPrimitiveSpawns;
+	std::vector<LightSpawnRequest>		PendingLightSpawns;
+
+	// What the spawn pickers are currently set to
+	int							SpawnMeshIdx		= 0;	// 0 Cube, 1 Plane, 2+ catalog models
+	int							SpawnMaterialIdx	= 0;	// 0 default, 1+ catalog materials
+	int							SpawnLightTypeIdx	= 0;
 
 	// Which entry of the object list is open
 	int							SelectedPrimitiveIdx = 0;

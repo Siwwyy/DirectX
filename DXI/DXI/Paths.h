@@ -48,7 +48,8 @@ namespace DXIPATHS
 			Executable,
 			Content,
 			Shader,
-			Texture
+			Texture,
+			Model
 		};
 
 		constexpr explicit Directory(Kind InKind) noexcept
@@ -82,6 +83,9 @@ namespace DXIPATHS
 
 	// Folder that holds texture files. Today that is the content root.
 	extern const Directory GetTextureDir;
+
+	// <content>/models, one subfolder per model with its mesh and maps beside it
+	extern const Directory GetModelDir;
 }
 
 inline DXIPATHS::FilePath DXIPATHS::FilePath::operator/(const std::wstring& Relative) const

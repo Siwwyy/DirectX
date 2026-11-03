@@ -144,20 +144,38 @@ void Material::SetSolidColor(DXDevice * Device, DXGraphicsCommandList * CommandL
 void Material::SetDefaults(DXDevice * Device, DXGraphicsCommandList * CommandList)
 {
 	// Neutral values for everything, so a mesh with no material of its own still shades
-	// correctly instead of coming out black or mirror smooth
-	BYTE Diffuse[4]		= { 204, 204, 204, 255 };	// 0.8 grey, obviously untextured
-	BYTE Normal[4]		= { 128, 128, 255, 255 };	// flat, pointing straight out of the surface
-	BYTE Specular[4]	= {  10,  10,  10, 255 };	// about 0.04, what a dielectric reflects head on
-	BYTE Metalness[4]	= {   0,   0,   0, 255 };	// not a metal
-	BYTE Roughness[4]	= { 128, 128, 128, 255 };	// half rough, neither mirror nor fully diffuse
-	BYTE Occlusion[4]	= { 255, 255, 255, 255 };	// nothing occluded
+	// correctly instead of coming out black or mirror smooth.
+	//
+	// Slots that already hold a loaded image are left alone, which makes this "fill in
+	// whatever is still missing" rather than only "build a default material". Calling it
+	// after loading an asset folder matters: an unwritten slot keeps the null descriptor
+	// Init put there, a null SRV samples as zero, and the base pass unpacks a zero normal
+	// map texel to (-1,-1,-1), tilting the surface normal into the surface.
+	struct SlotDefault
+	{
+		MaterialTextureSlot	Slot;
+		BYTE				Rgba[4];
+	};
 
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::Diffuse,			Diffuse);
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::Normal,				Normal);
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::Specular,			Specular);
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::Metalness,			Metalness);
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::Roughness,			Roughness);
-	SetSolidColor(Device, CommandList, MaterialTextureSlot::AmbientOcclusion,	Occlusion);
+	const SlotDefault Defaults[] =
+	{
+		{ MaterialTextureSlot::Diffuse,				{ 204, 204, 204, 255 } },	// 0.8 grey, obviously untextured
+		{ MaterialTextureSlot::Normal,				{ 128, 128, 255, 255 } },	// flat, pointing straight out of the surface
+		{ MaterialTextureSlot::Specular,			{  10,  10,  10, 255 } },	// about 0.04, what a dielectric reflects head on
+		{ MaterialTextureSlot::Metalness,			{   0,   0,   0, 255 } },	// not a metal
+		{ MaterialTextureSlot::Roughness,			{ 128, 128, 128, 255 } },	// half rough, neither mirror nor fully diffuse
+		{ MaterialTextureSlot::AmbientOcclusion,	{ 255, 255, 255, 255 } },	// nothing occluded
+	};
+
+	static_assert(_countof(Defaults) == MaterialTextureSlotCount, "Every material slot needs a neutral value here");
+
+	for (const auto& Default : Defaults)
+	{
+		if (!HasTexture(Default.Slot))
+		{
+			SetSolidColor(Device, CommandList, Default.Slot, Default.Rgba);
+		}
+	}
 }
 
 void Material::UploadSlotTexture(DXDevice * Device,
