@@ -88,13 +88,13 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 	return hr;
 }
 
-void LightPass::Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
+void LightPass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
 {
 	// Nothing to do per primitive, the whole screen is shaded at once by RenderFullscreen()
 	DXASSERT(false, "LightPass is a fullscreen pass, call RenderFullscreen instead");
 }
 
-void LightPass::RenderFullscreen(DXGraphicsCommandList * const CommandList) noexcept
+void LightPass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
 {
 	PIXBeginEvent(CommandList, 0, L"Light Pass");
 	{

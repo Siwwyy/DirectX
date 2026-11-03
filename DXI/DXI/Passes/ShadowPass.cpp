@@ -100,9 +100,18 @@ HRESULT ShadowPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 	return hr;
 }
 
-void ShadowPass::Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
+void ShadowPass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
 {
-	CommandList->IASetVertexBuffers(0, 1, &Primitive.VertexFactory.VertexBufferView);
-	CommandList->IASetIndexBuffer(&Primitive.VertexFactory.IndexBufferView);
-	CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0);
+	PIXBeginEvent(CommandList, 0, "Shadow Pass");
+	{
+		CommandList->IASetVertexBuffers(0, 1, &Primitive.VertexFactory.VertexBufferView);
+		CommandList->IASetIndexBuffer(&Primitive.VertexFactory.IndexBufferView);
+		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0);
+	}
+	PIXEndEvent(CommandList);
+}
+
+void ShadowPass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
+{
+	// Nothing here so far...
 }

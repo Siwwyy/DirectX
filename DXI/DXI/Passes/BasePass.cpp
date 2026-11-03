@@ -104,7 +104,7 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 	return hr;
 }
 
-void BasePass::Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
+void BasePass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
 {
 	PIXBeginEvent(CommandList, 0, Primitive.Name.c_str());
 	{
@@ -113,4 +113,9 @@ void BasePass::Render(DXGraphicsCommandList * const CommandList, const Primitive
 		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0); // draw cube
 	}
 	PIXEndEvent(CommandList);
+}
+
+void BasePass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
+{
+	// nothing here, so far...
 }

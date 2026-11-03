@@ -25,7 +25,8 @@ public:
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
 
 	// Render
-	virtual void Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept = 0; // make this class abstract
+	virtual void RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept = 0; // make this class abstract
+	virtual void RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept = 0; // make this class abstract
 
 	// Pipeline of the pass, the caller binds these before feeding it any work
 	_NODISCARD FORCEINLINE DXPipelineState* GetPipelineState() const noexcept

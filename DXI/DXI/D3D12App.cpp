@@ -563,7 +563,7 @@ void D3D12App::Initialize()
 	}
 }
 
-void D3D12App::Render()
+void D3D12App::RenderPrimitive()
 {
 	//Always BeginFrame first
 	BeginFrame();
@@ -593,14 +593,14 @@ void D3D12App::Render()
 		// Plane
 		CommandList->SetGraphicsRootDescriptorTable(1, PlaneMaterial.GetDescriptorTable());
 		CommandList->SetGraphicsRootConstantBufferView(0, ConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress() + (2 * PrimitiveConstantBufferSize));
-		SceneBasePass.Render(CommandList.Get(), PlanePrimitive);
+		SceneBasePass.RenderPrimitive(CommandList.Get(), PlanePrimitive);
 
 		// Primitives
 		CommandList->SetGraphicsRootDescriptorTable(1, PrimitiveMaterial.GetDescriptorTable());
 		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 		{
 			CommandList->SetGraphicsRootConstantBufferView(0, PrimitiveCBV->GetGPUVirtualAddress() + (PrimitiveIdx * PrimitiveConstantBufferSize));
-			SceneBasePass.Render(CommandList.Get(), *Primitives[PrimitiveIdx]);
+			SceneBasePass.RenderPrimitive(CommandList.Get(), *Primitives[PrimitiveIdx]);
 		}
 	}
 	PIXEndEvent(CommandList.Get());
@@ -627,7 +627,7 @@ void D3D12App::Render()
 		CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
 		CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsConstantBufferUploadHeaps[CurrentFrameIdx]->GetGPUVirtualAddress());
 
-		SceneLightPass.RenderFullscreen(CommandList.Get());
+		SceneLightPass.RenderFullScreen(CommandList.Get());
 	}
 
 	//Always EndFrame last

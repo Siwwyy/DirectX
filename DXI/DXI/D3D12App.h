@@ -45,7 +45,7 @@ public:
 
 	// Functions
 	void Initialize();
-	void Render();
+	void RenderPrimitive();
 	void Update(float DeltaTime);
 	void Destroy();
 

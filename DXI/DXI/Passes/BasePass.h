@@ -38,7 +38,8 @@ public:
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept override;
 
 	// Initialize the pipeline state object (PSO) for the base pass
-	void Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept override;
+	void RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept override;
+	void RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept override;
 
 	// Same shaders and root signature as the regular pipeline, only with culling off.
 	// Both variants exist up front because the cull mode is baked into the PSO.

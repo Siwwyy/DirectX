@@ -636,7 +636,7 @@ void D3D12Renderer::RenderShadowPass()
 			for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 			{
 				CommandList->SetGraphicsRootConstantBufferView(SceneShadowPass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
-				SceneShadowPass.Render(CommandList, *Primitives[PrimitiveIdx]);
+				SceneShadowPass.RenderPrimitive(CommandList, *Primitives[PrimitiveIdx]);
 			}
 		};
 
@@ -718,7 +718,7 @@ void D3D12Renderer::RenderBasePass()
 
 			CommandList->SetGraphicsRootDescriptorTable(SceneBasePass.MaterialTableIdx, PrimitiveMaterial->GetDescriptorTable());
 			CommandList->SetGraphicsRootConstantBufferView(SceneBasePass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
-			SceneBasePass.Render(CommandList, Primitive);
+			SceneBasePass.RenderPrimitive(CommandList, Primitive);
 		}
 	}
 	PIXEndEvent(CommandList);
@@ -747,7 +747,7 @@ void D3D12Renderer::RenderLightPass()
 	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CAMERA_CBV_STRIDE));
 	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
 
-	SceneLightPass.RenderFullscreen(CommandList);
+	SceneLightPass.RenderFullScreen(CommandList);
 }
 
 void D3D12Renderer::RenderDebugUI()
