@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -102,7 +102,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,11 +141,27 @@
     <ClCompile Include="JobLambda.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
+    <ClCompile Include="Core\D3D12DepthBuffer.cpp" />
+    <ClCompile Include="Core\D3D12Device.cpp" />
+    <ClCompile Include="Core\D3D12FrameContext.cpp" />
+    <ClCompile Include="Core\D3D12SwapChain.cpp" />
+    <ClCompile Include="D3D12Renderer.cpp" />
+    <ClCompile Include="GBuffer.cpp" />
+    <ClCompile Include="CubeMap.cpp" />
+    <ClCompile Include="ShadowAtlas.cpp" />
+    <ClCompile Include="Passes\ShadowPass.cpp" />
+    <ClCompile Include="LightTypes\AreaLight.cpp" />
+    <ClCompile Include="LightTypes\DirectionalLight.cpp" />
+    <ClCompile Include="LightTypes\LightBase.cpp" />
+    <ClCompile Include="LightTypes\PointLight.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Objects\Plane.cpp" />
+    <ClCompile Include="Paths.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
     <ClCompile Include="Passes\BasePass.cpp" />
     <ClCompile Include="Passes\LightPass.cpp" />
     <ClCompile Include="Passes\PassBase.cpp" />
+    <ClCompile Include="PSO.cpp" />
     <ClCompile Include="RenderGraph.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
@@ -166,8 +182,24 @@
     <ClInclude Include="Objects\Primitive.h" />
     <ClInclude Include="Passes\BasePass.h" />
     <ClInclude Include="Passes\LightPass.h" />
+    <ClInclude Include="Core\D3D12DepthBuffer.h" />
+    <ClInclude Include="Core\D3D12Device.h" />
+    <ClInclude Include="Core\D3D12FrameContext.h" />
+    <ClInclude Include="Core\D3D12SwapChain.h" />
+    <ClInclude Include="D3D12Renderer.h" />
+    <ClInclude Include="GBuffer.h" />
+    <ClInclude Include="CubeMap.h" />
+    <ClInclude Include="ShadowAtlas.h" />
+    <ClInclude Include="Passes\ShadowPass.h" />
+    <ClInclude Include="LightTypes\AreaLight.h" />
+    <ClInclude Include="LightTypes\DirectionalLight.h" />
+    <ClInclude Include="LightTypes\LightBase.h" />
+    <ClInclude Include="LightTypes\PointLight.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Passes\PassBase.h" />
+    <ClInclude Include="Paths.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PSO.h" />
     <ClInclude Include="RenderGraph.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />
@@ -186,3 +218,4 @@
     <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets'))" />
   </Target>
 </Project>
+

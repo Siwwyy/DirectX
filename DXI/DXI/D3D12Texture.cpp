@@ -1,78 +1,180 @@
 #include "D3D12Texture.h"
 
 
-// Texture class
-void Texture::Load(DXDevice * Device, DXGraphicsCommandList * CommandList, std::wstring TexturePath, ComPtr<DXDescriptorHeap> & MainDescriptorHeap, UINT& IncrementDescriptorSize, const UINT TextureIdx, std::wstring TextureName)
+UINT GetMipCount(const UINT Width, const UINT Height)
 {
-	// Usings
-	using Helpers::ThrowIfFailed;
+	UINT Count		= 1;
+	UINT MipWidth	= Width;
+	UINT MipHeight	= Height;
 
-	D3D12_RESOURCE_DESC TextureDesc;
-	int ImageBytesPerRow = 0;
-	SimpleSmartPointer<BYTE> ImageData = nullptr;
-	int ImageSize = LoadImageDataFromFile(ImageData, TextureDesc, TexturePath.c_str(), ImageBytesPerRow);
+	while (MipWidth > 1 || MipHeight > 1)
+	{
+		MipWidth	= MipWidth > 1 ? MipWidth / 2 : 1;
+		MipHeight	= MipHeight > 1 ? MipHeight / 2 : 1;
+		++Count;
+	}
 
-	// create a default heap where the upload heap will copy its contents into (contents being the texture)
-	constexpr auto StateBefore	= D3D12_RESOURCE_STATE_COPY_DEST;
-	constexpr auto StateAfter	= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	ThrowIfFailed(Device->CreateCommittedResource(
-		&DX_HEAP_PROPERTY_DEFAULT, // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&TextureDesc, // the description of our texture
-		StateBefore, // We will copy the texture from the upload heap to here, so we start it out in a copy dest state
-		nullptr, // used for render targets and depth/stencil buffers
-		IID_PPV_ARGS(&TextureBuffer)));
-	TextureBuffer->SetName(TextureName.c_str());
-
-	UINT64 TextureUploadBufferSize = 0;
-	// this function gets the size an upload buffer needs to be to upload a texture to the gpu.
-	// each row must be 256 byte aligned except for the last row, which can just be the size in bytes of the row
-	// eg. textureUploadBufferSize = ((((width * numBytesPerPixel) + 255) & ~255) * (height - 1)) + (width * numBytesPerPixel);
-	//const UINT64 TextureUploadBufferSizeFormula = (((ImageBytesPerRow + 255) & ~255) * (TextureDesc.Height - 1)) + ImageBytesPerRow;
-	Device->GetCopyableFootprints(&TextureDesc, 0, 1, 0, nullptr, nullptr, nullptr, &TextureUploadBufferSize);
-
-	// now we create an upload heap to upload our texture to the GPU
-	const auto TextureBufferUploadDesc = CD3DX12_RESOURCE_DESC::Buffer(TextureUploadBufferSize);
-	ThrowIfFailed(Device->CreateCommittedResource(
-		&DX_HEAP_PROPERTY_UPLOAD, // upload heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&TextureBufferUploadDesc, // resource description for a buffer (storing the image data in this heap just to copy to the default heap)
-		D3D12_RESOURCE_STATE_GENERIC_READ, // We will copy the contents from this heap to the default heap above
-		nullptr,
-		IID_PPV_ARGS(&TextureBufferUploadHeap)));
-	TextureBufferUploadHeap->SetName(L"Texture Buffer Upload Resource Heap");
-
-	// store vertex buffer in upload heap
-	D3D12_SUBRESOURCE_DATA TextureData = {};
-	TextureData.pData = static_cast<void*>(ImageData.Get()); // pointer to our image data
-	TextureData.RowPitch = ImageBytesPerRow; // size of all our triangle vertex data
-	TextureData.SlicePitch = ImageBytesPerRow * TextureDesc.Height; // also the size of our triangle vertex data
-
-	// Now we copy the upload buffer contents to the default heap
-	UpdateSubresources(CommandList, TextureBuffer.Get(), TextureBufferUploadHeap.Get(), 0, 0, 1, &TextureData);
-
-	// transition the texture default heap to a pixel shader resource (we will be sampling from this heap in the pixel shader to get the color of pixels)
-	const auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), StateBefore, StateAfter);
-	CommandList->ResourceBarrier(1, &Transition);
-
-	// create the descriptor heap that will store our srv
-	const auto DescriptorHeapType = MainDescriptorHeap->GetDesc().Type;
-
-	// Set Increment Descriptor size for TODO possible future multiple textures
-	IncrementDescriptorSize = Device->GetDescriptorHandleIncrementSize(DescriptorHeapType);
-
-	// Handle
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(MainDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	Handle.Offset(TextureIdx, IncrementDescriptorSize);
-
-	// now we create a shader resource view (descriptor that points to the texture and describes it)
-	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
-	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	SrvDesc.Format					= TextureDesc.Format;
-	SrvDesc.ViewDimension			= D3D12_SRV_DIMENSION_TEXTURE2D;
-	SrvDesc.Texture2D.MipLevels		= 1;
-	Device->CreateShaderResourceView(TextureBuffer.Get(), &SrvDesc, Handle);
+	return Count;
 }
+
+namespace
+{
+	// Width of a single channel in bytes, 0 when the format is not one this can filter.
+	// Averaging has to happen per channel, not per byte: halving a 16 bit value by
+	// averaging its two bytes separately produces noise, not a smaller image.
+	UINT GetFormatChannelBytes(const DXGI_FORMAT Format)
+	{
+		switch (Format)
+		{
+		case DXGI_FORMAT_R8G8B8A8_UNORM:
+		case DXGI_FORMAT_B8G8R8A8_UNORM:
+		case DXGI_FORMAT_B8G8R8X8_UNORM:
+		case DXGI_FORMAT_R8_UNORM:
+		case DXGI_FORMAT_A8_UNORM:
+			return 1;
+
+		// Poly Haven ships its roughness, metalness and occlusion maps as 16 bit
+		// grayscale, so this one matters as much as the 8 bit case
+		case DXGI_FORMAT_R16_UNORM:
+		case DXGI_FORMAT_R16G16B16A16_UNORM:
+			return 2;
+
+		default:
+			return 0;
+		}
+	}
+}
+
+bool CanGenerateMips(const DXGI_FORMAT Format)
+{
+	return GetFormatChannelBytes(Format) != 0;
+}
+
+UINT GetFormatBytesPerTexel(const DXGI_FORMAT Format)
+{
+	// The bits per pixel helper takes its argument by non const reference and answers -1
+	// for anything it does not recognise, so both have to be worked around here
+	auto LocalFormat		= Format;
+	const int BitsPerPixel	= GetDXGIFormatBitsPerPixel(LocalFormat);
+
+	return BitsPerPixel > 0 ? static_cast<UINT>(BitsPerPixel) / 8 : 0;
+}
+
+std::vector<std::vector<BYTE>> GenerateMipChain(const BYTE * Source, const UINT Width, const UINT Height, const UINT RowPitch, const DXGI_FORMAT Format)
+{
+	DXASSERT(Source, "Mip generation needs an image to start from");
+	DXASSERT(Width > 0 && Height > 0, "Mip generation needs a non empty image");
+
+	// How wide one texel is, straight out of the format. This is the thing that broke
+	// when it was assumed to be four: a grayscale map is one byte and reading it four
+	// bytes at a time runs clean off the end of the decoded image.
+	const UINT BytesPerTexel = GetFormatBytesPerTexel(Format);
+
+	DXASSERT(BytesPerTexel > 0, "Unknown format, the texel size can not be worked out");
+	DXASSERT(RowPitch >= Width * BytesPerTexel, "Row pitch is smaller than one row of texels, reading it would run off the end");
+
+	const UINT ChannelBytes	= GetFormatChannelBytes(Format);
+	const bool bCanFilter	= ChannelBytes != 0;
+
+	std::vector<std::vector<BYTE>> Mips;
+
+	// Mip 0 is the image itself, copied so every mip is laid out the same way
+	{
+		const SIZE_T Pitch = SIZE_T(Width) * BytesPerTexel;
+		std::vector<BYTE> Base(Pitch * Height);
+
+		for (UINT Y = 0; Y < Height; ++Y)
+		{
+			memcpy(Base.data() + (SIZE_T(Y) * Pitch), Source + (SIZE_T(Y) * RowPitch), Pitch);
+		}
+
+		Mips.emplace_back(std::move(Base));
+	}
+
+	// A format whose channels are wider than a byte can not be averaged this way, so it
+	// stops here with just the original
+	if (!bCanFilter)
+	{
+		return Mips;
+	}
+
+	UINT MipWidth	= Width;
+	UINT MipHeight	= Height;
+
+	while (MipWidth > 1 || MipHeight > 1)
+	{
+		const UINT SrcWidth		= MipWidth;
+		const UINT SrcHeight	= MipHeight;
+
+		// A dimension that already bottomed out stays at 1, which is what keeps a
+		// non square image going until both axes reach the end
+		MipWidth	= SrcWidth > 1 ? SrcWidth / 2 : 1;
+		MipHeight	= SrcHeight > 1 ? SrcHeight / 2 : 1;
+
+		const SIZE_T SrcPitch	= SIZE_T(SrcWidth) * BytesPerTexel;
+		const SIZE_T DstPitch	= SIZE_T(MipWidth) * BytesPerTexel;
+
+		const auto& Src = Mips.back();
+		std::vector<BYTE> Dst(DstPitch * MipHeight);
+
+		for (UINT Y = 0; Y < MipHeight; ++Y)
+		{
+			// Clamp so a 1 pixel tall mip averages the same row twice rather than
+			// reading past the end
+			const UINT Y0 = SrcHeight > 1 ? Y * 2 : 0;
+			const UINT Y1 = SrcHeight > 1 ? Y * 2 + 1 : 0;
+
+			for (UINT X = 0; X < MipWidth; ++X)
+			{
+				const UINT X0 = SrcWidth > 1 ? X * 2 : 0;
+				const UINT X1 = SrcWidth > 1 ? X * 2 + 1 : 0;
+
+				// Offsets of the four texels being averaged, and of where the result goes
+				const SIZE_T Src00	= (SIZE_T(Y0) * SrcPitch) + (SIZE_T(X0) * BytesPerTexel);
+				const SIZE_T Src10	= (SIZE_T(Y0) * SrcPitch) + (SIZE_T(X1) * BytesPerTexel);
+				const SIZE_T Src01	= (SIZE_T(Y1) * SrcPitch) + (SIZE_T(X0) * BytesPerTexel);
+				const SIZE_T Src11	= (SIZE_T(Y1) * SrcPitch) + (SIZE_T(X1) * BytesPerTexel);
+				const SIZE_T DstAt	= (SIZE_T(Y) * DstPitch) + (SIZE_T(X) * BytesPerTexel);
+
+				const UINT ChannelCount = BytesPerTexel / ChannelBytes;
+
+				for (UINT Channel = 0; Channel < ChannelCount; ++Channel)
+				{
+					const SIZE_T ChannelOffset = SIZE_T(Channel) * ChannelBytes;
+
+					if (ChannelBytes == 1)
+					{
+						const UINT Sum =
+							Src[Src00 + ChannelOffset] + Src[Src10 + ChannelOffset] +
+							Src[Src01 + ChannelOffset] + Src[Src11 + ChannelOffset];
+
+						Dst[DstAt + ChannelOffset] = static_cast<BYTE>(Sum / 4);
+					}
+					else
+					{
+						// Read the pair of bytes as the value it actually is before averaging
+						const auto Read = [&](const SIZE_T At) -> UINT
+						{
+							UINT16 Value = 0;
+							memcpy(&Value, &Src[At + ChannelOffset], sizeof(Value));
+							return Value;
+						};
+
+						const UINT Sum = Read(Src00) + Read(Src10) + Read(Src01) + Read(Src11);
+
+						const UINT16 Average = static_cast<UINT16>(Sum / 4);
+						memcpy(&Dst[DstAt + ChannelOffset], &Average, sizeof(Average));
+					}
+				}
+			}
+		}
+
+		Mips.emplace_back(std::move(Dst));
+	}
+
+	return Mips;
+}
+
 
 // Functions
 int LoadImageDataFromFile(SimpleSmartPointer<BYTE>& ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow)
@@ -277,5 +379,3 @@ int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& DxgiFormat)
 	else if (DxgiFormat == DXGI_FORMAT_A8_UNORM) return 8;
 	return -1;
 }
-
-

@@ -354,3 +354,4 @@ MigrationBackup/
 !/**/libs/*
 DirectX-Graphics-Samples/*
 build/
+third_party/*

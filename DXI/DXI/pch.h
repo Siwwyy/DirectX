@@ -15,6 +15,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define D3DX12_NO_STATE_OBJECT_HELPERS
 #endif
+#include <initguid.h>
 #include <dxgi1_6.h>
 #include <DirectXMath.h>
 
@@ -27,9 +28,7 @@
 #include <cstdint>
 #include <wrl/client.h>
 
-#include "d3dx12.h"
-#include "d3d12.h"
-#include "D3D12Helpers.h"
+#include "libs/d3dx12.h"
 
 using namespace DirectX;
 

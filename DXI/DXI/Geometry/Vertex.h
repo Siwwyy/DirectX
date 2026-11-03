@@ -4,6 +4,7 @@
 #define D3D12_VERTEX_H_INCLUDED
 
 #include "../pch.h"
+#include "../D3D12Helpers.h"
 
 // usings
 using TypeOfIndice = DWORD;
@@ -12,7 +13,7 @@ using TypeOfIndice = DWORD;
 /// Enumeration of supported vertex attribute types.
 /// Defines the composition of vertex data for different rendering scenarios.
 /// </summary>
-enum class VertexType : uint32_t
+enum class VertexType : UINT
 {
 	/// Position only vertex (XMFLOAT4)
 	Position,
@@ -31,6 +32,12 @@ enum class VertexType : uint32_t
 
 	/// Position with texture coordinates and normal (XMFLOAT4 + XMFLOAT2 + XMFLOAT4)
 	PositionTexCoordNormal,
+
+	/// Position with texture coordinates, normal and tangent (XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4)
+	PositionTexCoordNormalTangent,
+
+	/// Position with texture coordinates, normal, tangent and bitangent (XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4 + XMFLOAT4)
+	PositionTexCoordNormalTangentBitangent,
 
 	/// Total number of vertex type options
 	VertexTypeCount
@@ -380,17 +387,284 @@ struct VertexPositionTexCoordNormal
 };
 
 /// <summary>
+/// Vertex layout structure containing position, texture coordinate, normal and tangent data.
+/// Matches VertexType::PositionTexcoordNormalTangent.
+/// Total size: 56 bytes (4x FLOAT + 2x FLOAT + 4x FLOAT + 4x FLOAT).
+///
+/// The tangent is what a tangent space normal map needs: the map stores directions
+/// relative to the surface, and only a basis built on the surface can put them back into
+/// world space. Meshes that are never normal mapped want VertexPositionTexCoordNormal
+/// instead, which is 16 bytes per vertex lighter.
+/// </summary>
+struct VertexPositionTexCoordNormalTangent
+{
+	constexpr static VertexType VertexTypeValue = VertexType::PositionTexCoordNormalTangent;
+	constexpr static uint32_t InputElementCount = 4;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
+	{
+		{ "POSITION",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",	0,		DXGI_FORMAT_R32G32_FLOAT,		0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	/// 3D position (W component typically set to 1.0f)
+	DirectX::XMFLOAT4 Position;
+
+	/// UV texture coordinates
+	DirectX::XMFLOAT2 TexCoord;
+
+	/// Surface normal vector (W component unused)
+	DirectX::XMFLOAT4 Normal;
+
+	/// Surface tangent, pointing along growing U. W carries the handedness, which is the
+	/// sign the bitangent has to be flipped by.
+	DirectX::XMFLOAT4 Tangent;
+
+	/// ctor: position (x,y,z[,pw]), texcoord (u,v), normal (nx,ny,nz[,nw]).
+	/// The tangent defaults to the x axis, ComputeFaceNormalTangent fills in the real one.
+	VertexPositionTexCoordNormalTangent(float x = 0.0f, float y = 0.0f, float z = 0.0f,
+										float u = 0.0f, float v = 0.0f,
+										float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
+										float pw = 1.0f, float nw = 0.0f) noexcept
+		: Position(x, y, z, pw)
+		, TexCoord(u, v)
+		, Normal(nx, ny, nz, nw)
+		, Tangent(1.0f, 0.0f, 0.0f, 1.0f)
+	{
+	}
+
+	/// <summary>
+	/// Populate this structure from a byte buffer.
+	/// Copies position, texcoord, normal and tangent elements from the provided contiguous byte array into this instance.
+	/// </summary>
+	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionTexCoordNormalTangent) bytes.</param>
+	void DeserializeFromBytes(const std::vector<BYTE>& Data)
+	{
+		DXASSERT(sizeof(VertexPositionTexCoordNormalTangent) <= Data.size(), L"Insufficient buffer size for VertexPositionTexCoordNormalTangent deserialization");
+		std::memcpy(&Position,	&Data[0],																			sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&TexCoord,	&Data[sizeof(DirectX::XMFLOAT4)],													sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Normal,	&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],						sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Tangent,	&Data[(sizeof(DirectX::XMFLOAT4) * 2) + sizeof(DirectX::XMFLOAT2)],					sizeof(DirectX::XMFLOAT4));
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position, texture coordinate, normal and tangent data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionTexCoordNormalTangent));
+		std::memcpy(&Data[0],																			&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],													&TexCoord,	sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],						&Normal,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[(sizeof(DirectX::XMFLOAT4) * 2) + sizeof(DirectX::XMFLOAT2)],					&Tangent,	sizeof(DirectX::XMFLOAT4));
+		return Data;
+	}
+};
+
+/// <summary>
+/// Vertex layout structure containing position, texture coordinate, normal, tangent and bitangent data.
+/// Matches VertexType::PositionTexcoordNormalTangentBitangent.
+/// Total size: 72 bytes (4x FLOAT + 2x FLOAT + 4x FLOAT + 4x FLOAT + 4x FLOAT).
+///
+/// Carries the bitangent rather than deriving it. VertexPositionTexCoordNormalTangent
+/// stores only the handedness and leaves the pixel shader to recover the third axis with
+/// a cross product, which is the cheaper option and the usual one. Storing it outright
+/// costs 16 bytes a vertex and is what a mesh wants when its bitangent cannot be
+/// reconstructed, such as one whose uv shell is sheared rather than merely mirrored.
+/// </summary>
+struct VertexPositionTexCoordNormalTangentBitangent
+{
+	constexpr static VertexType VertexTypeValue = VertexType::PositionTexCoordNormalTangentBitangent;
+	constexpr static uint32_t InputElementCount = 5;
+	constexpr static D3D12_INPUT_ELEMENT_DESC InputElementDesc[InputElementCount] =
+	{
+		{ "POSITION",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD",	0,		DXGI_FORMAT_R32G32_FLOAT,		0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 56,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	/// 3D position (W component typically set to 1.0f)
+	DirectX::XMFLOAT4 Position;
+
+	/// UV texture coordinates
+	DirectX::XMFLOAT2 TexCoord;
+
+	/// Surface normal vector (W component unused)
+	DirectX::XMFLOAT4 Normal;
+
+	/// Surface tangent, pointing along growing U. W still carries the handedness, so the
+	/// two stay interchangeable with the tangent only layout.
+	DirectX::XMFLOAT4 Tangent;
+
+	/// Surface bitangent, pointing along growing V (W component unused)
+	DirectX::XMFLOAT4 Bitangent;
+
+	/// ctor: position (x,y,z[,pw]), texcoord (u,v), normal (nx,ny,nz[,nw]).
+	/// Tangent and bitangent default to the x and y axes, ComputeFaceNormalTangent fills
+	/// in the real ones.
+	VertexPositionTexCoordNormalTangentBitangent(float x = 0.0f, float y = 0.0f, float z = 0.0f,
+												float u = 0.0f, float v = 0.0f,
+												float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
+												float pw = 1.0f, float nw = 0.0f) noexcept
+		: Position(x, y, z, pw)
+		, TexCoord(u, v)
+		, Normal(nx, ny, nz, nw)
+		, Tangent(1.0f, 0.0f, 0.0f, 1.0f)
+		, Bitangent(0.0f, 1.0f, 0.0f, 0.0f)
+	{
+	}
+
+	/// <summary>
+	/// Populate this structure from a byte buffer.
+	/// Copies position, texcoord, normal, tangent and bitangent elements from the provided contiguous byte array into this instance.
+	/// </summary>
+	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionTexCoordNormalTangentBitangent) bytes.</param>
+	void DeserializeFromBytes(const std::vector<BYTE>& Data)
+	{
+		DXASSERT(sizeof(VertexPositionTexCoordNormalTangentBitangent) <= Data.size(), L"Insufficient buffer size for VertexPositionTexCoordNormalTangentBitangent deserialization");
+		std::memcpy(&Position,	&Data[0],																			sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&TexCoord,	&Data[sizeof(DirectX::XMFLOAT4)],													sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Normal,	&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],						sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Tangent,	&Data[(sizeof(DirectX::XMFLOAT4) * 2) + sizeof(DirectX::XMFLOAT2)],					sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Bitangent,	&Data[(sizeof(DirectX::XMFLOAT4) * 3) + sizeof(DirectX::XMFLOAT2)],					sizeof(DirectX::XMFLOAT4));
+	}
+
+	/// <summary>
+	/// Serializes vertex data to a byte buffer.
+	/// Converts position, texture coordinate, normal, tangent and bitangent data into a byte array for storage or transmission.
+	/// </summary>
+	/// <returns>Vector containing serialized vertex data.</returns>
+	std::vector<BYTE> SerializeToBytes() const
+	{
+		std::vector<BYTE> Data(sizeof(VertexPositionTexCoordNormalTangentBitangent));
+		std::memcpy(&Data[0],																			&Position,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4)],													&TexCoord,	sizeof(DirectX::XMFLOAT2));
+		std::memcpy(&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],						&Normal,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[(sizeof(DirectX::XMFLOAT4) * 2) + sizeof(DirectX::XMFLOAT2)],					&Tangent,	sizeof(DirectX::XMFLOAT4));
+		std::memcpy(&Data[(sizeof(DirectX::XMFLOAT4) * 3) + sizeof(DirectX::XMFLOAT2)],					&Bitangent,	sizeof(DirectX::XMFLOAT4));
+		return Data;
+	}
+};
+
+// The byte offsets in InputElementDesc above are written out by hand, so they have to be
+// held against the members they claim to describe
+static_assert(sizeof(VertexPositionTexCoordNormalTangentBitangent) == 72, "Layout has changed, the input element offsets need revisiting");
+static_assert(offsetof(VertexPositionTexCoordNormalTangentBitangent, Tangent) == 40, "TANGENT is declared at offset 40");
+static_assert(offsetof(VertexPositionTexCoordNormalTangentBitangent, Bitangent) == 56, "BINORMAL is declared at offset 56");
+
+/// <summary>
 /// Array mapping VertexType enumeration values to their corresponding vertex structure sizes.
 /// Used for memory allocation and validation during vertex buffer operations.
 /// </summary>
 const uint64_t VertexTypeSizes[] = {
-	sizeof(VertexPosition),					/// VertexType::Position
-	sizeof(VertexPositionNormal),			/// VertexType::PositionNormal
-	sizeof(VertexPositionColor),			/// VertexType::PositionColor
-	sizeof(VertexPositionColorNormal),		/// VertexType::PositionColorNormal
-	sizeof(VertexPositionTexCoord),			/// VertexType::PositionTexcoord
-	sizeof(VertexPositionTexCoordNormal)	/// VertexType::PositionTexcoordNormal
+	sizeof(VertexPosition),									/// VertexType::Position
+	sizeof(VertexPositionNormal),							/// VertexType::PositionNormal
+	sizeof(VertexPositionColor),							/// VertexType::PositionColor
+	sizeof(VertexPositionColorNormal),						/// VertexType::PositionColorNormal
+	sizeof(VertexPositionTexCoord),							/// VertexType::PositionTexcoord
+	sizeof(VertexPositionTexCoordNormal),					/// VertexType::PositionTexcoordNormal
+	sizeof(VertexPositionTexCoordNormalTangent),			/// VertexType::PositionTexcoordNormalTangent
+	sizeof(VertexPositionTexCoordNormalTangentBitangent)	/// VertexType::PositionTexcoordNormalTangentBitangent
 };
+static_assert(_countof(VertexTypeSizes) == static_cast<size_t>(VertexType::VertexTypeCount),
+				"Every VertexType needs its size listed here, the array is indexed by the enum");
+
+/// Whether a vertex layout stores a bitangent of its own, rather than leaving the pixel
+/// shader to recover it from the normal, the tangent and the handedness
+template<typename T, typename = void>
+struct HasBitangent : std::false_type {};
+
+template<typename T>
+struct HasBitangent<T, std::void_t<decltype(T::Bitangent)>> : std::true_type {};
+
+/// The basis one triangle gives its vertices.
+struct TriangleFrame
+{
+	DirectX::XMFLOAT4 Normal;		/// Plane of the triangle, w unused
+	DirectX::XMFLOAT4 Tangent;		/// Along growing U, w is the handedness
+	DirectX::XMFLOAT4 Bitangent;	/// Along growing V, w unused
+};
+
+/// <summary>
+/// Solves one triangle for its normal, tangent and bitangent.
+///
+/// The normal is the triangle plane. The tangent is the direction U grows in, found by
+/// solving the two edges against their uv deltas. The bitangent is the same for V, with
+/// only its normal component removed so a sheared uv keeps the angle between the two.
+///
+/// Pulled out of ComputeFaceNormalTangent so the mesh loader, which has no compile time
+/// vertex count to template on, solves triangles exactly the same way the built in
+/// primitives do.
+/// </summary>
+_NODISCARD TriangleFrame ComputeTriangleFrame(const DirectX::XMFLOAT3& Position0,
+											const DirectX::XMFLOAT3& Position1,
+											const DirectX::XMFLOAT3& Position2,
+											const DirectX::XMFLOAT2& TexCoord0,
+											const DirectX::XMFLOAT2& TexCoord1,
+											const DirectX::XMFLOAT2& TexCoord2);
+
+/// <summary>
+/// Per face normal, tangent and bitangent for every vertex of a mesh.
+///
+/// The normal is the triangle plane, as ComputeFaceNormal does it. The tangent is the
+/// direction U grows in across that triangle, found by solving the two triangle edges
+/// against their uv deltas. Together with the bitangent they form the basis a tangent
+/// space normal map is expressed in, which is what lets the map be read in world space.
+///
+/// The bitangent is only written for layouts that have somewhere to put it, see
+/// HasBitangent above. The rest carry the handedness in Tangent.w and leave the pixel
+/// shader to finish the basis with a cross product.
+///
+/// Flat faces on purpose, matching the nointerpolation normals the shaders already use.
+/// </summary>
+template<typename In, typename Out, size_t N, size_t M>
+std::array<Out, N> ComputeFaceNormalTangent(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])
+{
+	constexpr size_t NumVerticesPerTriangle	= 3;
+	constexpr size_t NumTriangles			= M / NumVerticesPerTriangle;
+
+	std::array<Out, N> out{};
+
+	for (size_t TriangleIdx = 0; TriangleIdx < NumTriangles; ++TriangleIdx)
+	{
+		const TypeOfIndice Indices[3] =
+		{
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 0],
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 1],
+			IndicesList[TriangleIdx * NumVerticesPerTriangle + 2]
+		};
+
+		const In& Vertex0 = VertexArray[Indices[0]];
+		const In& Vertex1 = VertexArray[Indices[1]];
+		const In& Vertex2 = VertexArray[Indices[2]];
+
+		const auto Frame = ComputeTriangleFrame(
+			DirectX::XMFLOAT3(Vertex0.Position.x, Vertex0.Position.y, Vertex0.Position.z),
+			DirectX::XMFLOAT3(Vertex1.Position.x, Vertex1.Position.y, Vertex1.Position.z),
+			DirectX::XMFLOAT3(Vertex2.Position.x, Vertex2.Position.y, Vertex2.Position.z),
+			Vertex0.TexCoord, Vertex1.TexCoord, Vertex2.TexCoord);
+
+		for (const TypeOfIndice Index : Indices)
+		{
+			out[Index].Position	= DirectX::XMFLOAT4(VertexArray[Index].Position.x, VertexArray[Index].Position.y, VertexArray[Index].Position.z, 1.f);
+			out[Index].TexCoord	= DirectX::XMFLOAT2(VertexArray[Index].TexCoord.x, VertexArray[Index].TexCoord.y);
+			out[Index].Normal	= Frame.Normal;
+			out[Index].Tangent	= Frame.Tangent;
+
+			if constexpr (HasBitangent<Out>::value)
+			{
+				out[Index].Bitangent = Frame.Bitangent;
+			}
+		}
+	}
+
+	return out;
+}
 
 template<typename In, typename Out, size_t N, size_t M>
 std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])
@@ -523,7 +797,7 @@ struct VertexInitData
 		const std::size_t NumIndices)
 	{
 		VertexInitData<TypeOfVertex> InitData;
-		InitData.Type				= TypeOfVertex::VertexTypeValue;
+		InitData.Type = TypeOfVertex::VertexTypeValue;
 
 		// Input Element Desc
 		InitData.InputElementDesc.insert(
@@ -548,6 +822,31 @@ struct VertexInitData
 
 		// Return
 		return InitData; //RVO / NRVO
+	}
+
+	// Runtime sized sibling of the above, for a mesh read off disk where the counts are
+	// not known until the file has been parsed. Takes the buffers by value and moves them
+	// straight in, so a large mesh is never copied.
+	static VertexInitData<TypeOfVertex> CreateVertexInitData(
+		std::vector<TypeOfVertex> Vertices,
+		std::vector<TypeOfIndice> Indices)
+	{
+		DXASSERT(!Vertices.empty(), "A mesh with no vertices can not be uploaded");
+		DXASSERT(!Indices.empty(), "A mesh with no indices can not be drawn");
+
+		VertexInitData<TypeOfVertex> InitData;
+		InitData.Type = TypeOfVertex::VertexTypeValue;
+
+		InitData.InputElementDesc.insert(
+			InitData.InputElementDesc.end(),
+			TypeOfVertex::InputElementDesc,
+			TypeOfVertex::InputElementDesc + TypeOfVertex::InputElementCount
+		);
+
+		InitData.VertexData	= std::move(Vertices);
+		InitData.IndexData	= std::move(Indices);
+
+		return InitData;
 	}
 
 	// Default ctors/dctors

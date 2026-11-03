@@ -3,9 +3,17 @@
 // Global Constants
 static constexpr bool LHCameraCoordinateSystem = true;
 
+// Where the camera starts out, and what Reset() puts it back to. A yaw of 90 degrees is
+// what aims the forward vector down +Z, which is why it is not zero: Update() builds the
+// direction as (cos yaw, sin pitch, sin yaw) scaled by cos pitch, and a yaw of zero would
+// aim it down +X instead. Both places take the numbers from here so they cannot drift.
+static constexpr float INITIAL_YAW		= 90.0f;	// degrees
+static constexpr float INITIAL_PITCH	= 0.0f;		// degrees
+static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 0.0f, -1.0f, 1.0f);
+
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
-	: Yaw(90.0f)
-	, Pitch(0.0f)
+	: Yaw(INITIAL_YAW)
+	, Pitch(INITIAL_PITCH)
 	, MoveSpeed(5.0f)
 	, TurnSpeed(XM_PIDIV2)
 	, CameraMatrices{}
@@ -37,8 +45,8 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
 
 	//// set starting camera state
-	CameraMatrices.Position		= XMFLOAT4(0.0f, 0.0f, -1.0f, 1.0f);
-	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	CameraMatrices.Position		= INITIAL_POSITION;
+	CameraMatrices.Direction	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);	// what INITIAL_YAW works out to
 	CameraMatrices.Up			= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	CameraMatrices.Right		= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 
@@ -59,9 +67,13 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 
 void Camera::Reset()
 {
-	Yaw			= 0.0f;
-	Pitch		= 0.0f;
-	KeysPressed = {};
+	// Position too, otherwise a reset leaves the camera wherever it had been flown to.
+	// Direction, up, right and the view matrix are all rebuilt from these by Update(),
+	// so there is nothing else to put back.
+	Yaw						= INITIAL_YAW;
+	Pitch					= INITIAL_PITCH;
+	CameraMatrices.Position	= INITIAL_POSITION;
+	KeysPressed				= {};
 }
 
 void Camera::Update(float ElapsedSeconds) noexcept
@@ -139,24 +151,25 @@ void Camera::Update(float ElapsedSeconds) noexcept
 
 	const XMFLOAT4 RotXYZW = XMFLOAT4(Helpers::ToRadians(Pitch), Helpers::ToRadians(Yaw), 0.0f, 0.0f);
 
-	// Normalize
-	XMStoreFloat4(&N, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Direction)));
-	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Up)));
-
-	// Calculate right vector
-	XMStoreFloat4(&U, XMVector3Normalize(XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N))));
-
-	// Rotate direction vector
+	// Rotate direction vector | Yaw and pitch describe it on their own, so the previous
+	// direction is not read here, and the result is already unit length
 	N.x = cosf(RotXYZW.y) * cosf(RotXYZW.x);
 	N.y = sinf(RotXYZW.x);
 	N.z = sinf(RotXYZW.y) * cosf(RotXYZW.x);
+
+	// Normalize
+	XMStoreFloat4(&V, XMVector3Normalize(XMLoadFloat4(&CameraMatrices.Up)));
+
+	// Calculate right vector | Has to follow the rotation above. Crossing against the
+	// direction from the previous frame leaves strafing trailing the view by a frame.
+	XMStoreFloat4(&U, XMVector3Normalize(XMVector3Cross(XMLoadFloat4(&V), XMLoadFloat4(&N))));
 
 	// Store NVU vectors
 	XMStoreFloat4(&CameraMatrices.Direction, XMLoadFloat4(&N));
 	XMStoreFloat4(&CameraMatrices.Up, XMLoadFloat4(&V));
 	XMStoreFloat4(&CameraMatrices.Right, XMLoadFloat4(&U));
 
-#if 1
+#if DEBUG_MODE
 	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
 	DXLOG("Rot X %f | Y %f\n", Pitch, Yaw)
 #endif
@@ -208,6 +221,15 @@ void Camera::OnKeyDown(WPARAM key)
 	//	Reset();
 	//	break;
 	}
+}
+
+void Camera::OnMouseMove(const int DeltaX, const int DeltaY) noexcept
+{
+	// Same convention as the arrow keys: turning right is where the yaw decreases, and
+	// the screen Y axis grows downwards so dragging down has to pitch down.
+	// Update() is what clamps the pitch and rebuilds the direction out of these.
+	Yaw		-= static_cast<float>(DeltaX) * MouseSensitivity;
+	Pitch	-= static_cast<float>(DeltaY) * MouseSensitivity;
 }
 
 void Camera::OnKeyUp(WPARAM key)

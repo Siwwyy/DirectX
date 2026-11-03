@@ -1,5 +1,8 @@
 #include "Primitive.h"
 
+// Nothing to fall back to until the owner of the materials registers one
+Material * Primitive::DefaultMaterial = nullptr;
+
 // Ctors
 Primitive::Primitive()
     : VertexFactory({})

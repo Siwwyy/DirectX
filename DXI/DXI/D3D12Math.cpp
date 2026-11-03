@@ -4,6 +4,9 @@
 #include "D3D12Math.h"
 
 ObjectMatrices::ObjectMatrices()
+    : RotVec(DX_IDENTITY_ROTATE4)
+    , ScaleVec(DX_IDENTITY_SCALE4)
+    , PositionVec(DX_IDENTITY_TRANSLATE4)
 {
     Transform();
 }
@@ -12,8 +15,21 @@ ObjectMatrices::ObjectMatrices()
 ObjectMatrices::ObjectMatrices(const DirectX::XMFLOAT3  InitRot,
                             const DirectX::XMFLOAT3     InitPosition,
                             const DirectX::XMFLOAT3     InitScale)
+    : ObjectMatrices()
 {
     Transform(InitRot, InitPosition, InitScale);
+}
+
+void ObjectMatrices::SetTransform(const XMFLOAT3 Translation,
+    const XMFLOAT3 Rotation,
+    const XMFLOAT3 Scale) noexcept
+{
+    // Zero everything out, then let Transform() add the absolute values onto nothing.
+    // Keeps the matrix rebuilding in one place instead of repeating it here.
+    this->PositionVec   = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+    this->RotVec        = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+
+    Transform(Translation, Rotation, Scale);
 }
 
 void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
@@ -64,15 +80,15 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
     const auto ScaleMat = XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
 
     // Create offset of rotation
-    const auto RotationMatX     = XMMatrixRotationX(this->RotVec.x);
-    const auto RotationMatY     = XMMatrixRotationY(this->RotVec.y);
-    const auto RotationMatZ     = XMMatrixRotationZ(this->RotVec.z);
+    const auto RotationMatX     = XMMatrixRotationX(Helpers::ToRadians(this->RotVec.x));
+    const auto RotationMatY     = XMMatrixRotationY(Helpers::ToRadians(this->RotVec.y));
+    const auto RotationMatZ     = XMMatrixRotationZ(Helpers::ToRadians(this->RotVec.z));
     const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
 
     // create translation matrix                                                                           
     const auto TranslationMat = XMMatrixTranslation(this->PositionVec.x, this->PositionVec.y, this->PositionVec.z);
 
-    // Create World Matrix, Scale * Rotation
+    // Create Local Matrix, Scale * Rotation
     {
         const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
         XMStoreFloat4x4(&this->ScaleRotMat, ScaleRotMat);

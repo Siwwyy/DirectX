@@ -11,7 +11,7 @@ class JobBase
 public:
 
 	JobBase() = default;
-	~JobBase() = default;
+	virtual ~JobBase() = default;
 	JobBase(std::wstring JobName)
 		: JobName(std::move(JobName))
 	{ }

@@ -1,4 +1,3 @@
-
 //Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
 #ifndef D3D12_APP_H_INCLUDED
@@ -10,11 +9,22 @@
 #include "D3D12Math.h"
 #include "D3D12ShaderCompiler.h"
 #include "D3D12Texture.h"
+#include "Material.h"
+#include "GBuffer.h"
+
+// Passes
+#include "Passes/BasePass.h"
+#include "Passes/LightPass.h"
 
 // Objects
 #include "Objects/Camera.h"
 #include "Objects/Plane.h"
 #include "Objects/Cube.h"
+
+// Lights
+#include "LightTypes/DirectionalLight.h"
+#include "LightTypes/PointLight.h"
+#include "LightTypes/AreaLight.h"
 
 
 //APP
@@ -26,7 +36,6 @@ public:
 	// Ctors & DCtors
 	D3D12App(UINT windowWidth, UINT windowHeight, std::wstring windowName);
 	~D3D12App() = default; //just do nothing, app takes care of deallocation with smart pointers
-	
 
 	// Getters
 	[[nodiscard]] UINT											GetWindowWidth() const { return WindowWidth; }
@@ -43,6 +52,7 @@ public:
 	// Movement of camera
 	void OnKeyDown(UINT8 key);
 	void OnKeyUp(UINT8 key);
+	void OnMouseMove(int DeltaX, int DeltaY);
 
 private:
 
@@ -106,33 +116,42 @@ public:
 	D3D12_INDEX_BUFFER_VIEW								IndexBufferView;
 
 	// Shaders
-	D3D12ShaderCompiler									ShaderCompiler;
 	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
 	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
 
 	// Constant Buffers
 	std::vector<ComPtr<DXResource>>						ConstantBufferUploadHeaps;	// this is the memory on the gpu where constant buffers for each frame will be placed
 	std::vector<UINT8*>									CbvGPUAddress;				// this is a pointer to each of the constant buffer resource heaps
-	Plane												Plane;
+	std::vector<ComPtr<DXResource>>						CameraConstantBufferUploadHeaps;	// camera constant buffer for each frame, read by the pixel shader
+	std::vector<UINT8*>									CameraCbvGPUAddress;				// this is a pointer to each of the camera constant buffer resource heaps
+	std::vector<ComPtr<DXResource>>						LightsConstantBufferUploadHeaps;	// lights constant buffer for each frame, read by the pixel shader
+	std::vector<UINT8*>									LightsCbvGPUAddress;				// this is a pointer to each of the lights constant buffer resource heaps
+	Plane												PlanePrimitive;
 	Camera												Camera;
-	ConstantBufferPerObject								CbvPerObject;
+	PrimitiveConstantBuffer								CbvPerObject;
 
 
 
-	//
-	ComPtr<DXDescriptorHeap>	MainDescriptorHeap;
-	UINT						IncrementDescriptorSize;
+	// Materials | Every material takes its descriptors out of the one shared heap
+	MaterialHeap										SharedMaterialHeap;
+	Material											PlaneMaterial;
+	Material											PrimitiveMaterial;
 
-	// Texture class
-	Texture TextureMegane;
-	Texture Texture;
+	// Deferred rendering | BasePass writes the surface into the G-buffer, LightPass shades it
+	GBuffer												SceneGBuffer;
+	ComPtr<DXDescriptorHeap>							LightInputsHeap;	// everything LightPass samples, in one shader visible heap
+	BasePass											SceneBasePass;
+	LightPass											SceneLightPass;
 
 	// Timer
-	Helpers::StepTimer StepTimer;
+	Helpers::StepTimer									StepTimer;
 
 
 	// NEW SECTION
 	std::vector<std::unique_ptr<Primitive>>				Primitives;
+
+	// Lights of the scene, every one of them is packed into the lights constant buffer
+	std::vector<std::unique_ptr<LightBase>>				Lights;
 
 	// CBV section for primitives
 	UINT8*												PrimitivesConstantBufferPtr;

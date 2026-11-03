@@ -5,7 +5,11 @@
 
 #include "../pch.h"
 #include "../D3D12ShaderCompiler.h"
+#include "../ShaderRegisters.h"
+#include "../Core/RootSignatureBuilder.h"
 #include "../Objects/Primitive.h"
+#include "../PSO.h"
+
 
 class PassBase
 {
@@ -13,23 +17,31 @@ class PassBase
 
 public:
 
+	// Ctors & DCtor
 	PassBase() = default;
-	~PassBase() = default;
+	virtual ~PassBase() = default;
+
+	// Init
+	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
 
 	// Render
 	virtual void Render(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept = 0; // make this class abstract
-	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept = 0; // make this class abstract
+
+	// Pipeline of the pass, the caller binds these before feeding it any work
+	_NODISCARD FORCEINLINE DXPipelineState* GetPipelineState() const noexcept
+	{
+		return PSO.PipelineState.Get();
+	}
+	_NODISCARD FORCEINLINE ID3D12RootSignature* GetRootSignature() const noexcept
+	{
+		return PSO.RootSignature.Get();
+	}
+
 
 protected:
 
-	// Pipeline state and root signature	
-	ComPtr<ID3D12PipelineState>							PipelineState;
-	ComPtr<ID3D12RootSignature>							RootSignature;
-
-	// Shaders
-	D3D12ShaderCompiler									ShaderCompiler;
-	ComPtr<ID3DBlob>									VertexShader;				// Vertex shader blob
-	ComPtr<ID3DBlob>									PixelShader;				// Pixel shader blob
+	// Pipeline state
+	GraphicsPSO		PSO;
 };
 
 
