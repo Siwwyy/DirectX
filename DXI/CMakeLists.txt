@@ -27,6 +27,22 @@ file(GLOB_RECURSE DXI_SOURCES CONFIGURE_DEPENDS
     "${DXI_SRC_DIR}/*.cxx"
 )
 
+# Superseded code, kept for reference but not built. Compiling it costs build time and
+# keeps dead dependencies alive, so it is pulled out of the lists below and added back to
+# the target as IDE-only. That also keeps the folder off the include path, so nothing live
+# can quietly start including it again.
+file(GLOB_RECURSE DXI_DEPRECATED CONFIGURE_DEPENDS
+    "${DXI_SRC_DIR}/Deprecated/*.cpp"
+    "${DXI_SRC_DIR}/Deprecated/*.h"
+)
+
+if(DXI_DEPRECATED)
+    list(REMOVE_ITEM DXI_SOURCES ${DXI_DEPRECATED})
+    set_source_files_properties(${DXI_DEPRECATED} PROPERTIES HEADER_FILE_ONLY TRUE)
+    list(LENGTH DXI_DEPRECATED DXI_DEPRECATED_COUNT)
+    message(STATUS "Deprecated files excluded from the build: ${DXI_DEPRECATED_COUNT}")
+endif()
+
 if(NOT DXI_SOURCES)
     message(FATAL_ERROR "No source files found under ${DXI_SRC_DIR}")
 endif()
@@ -40,8 +56,10 @@ file(GLOB_RECURSE DXI_HEADERS CONFIGURE_DEPENDS
 file(GLOB_RECURSE REMOVE_HEADERS "${DXI_SRC_DIR}/libs/*.h")
 
 # remove DXC headers from the list of IDE-visible headers (they are included via target_include_directories)
+# Deprecated headers go too, so that folder never reaches DXI_PUBLIC_INCLUDES below
 list(REMOVE_ITEM DXI_HEADERS 
     ${REMOVE_HEADERS} # files to remove
+    ${DXI_DEPRECATED}
 )
 
 if(NOT DXI_HEADERS)
@@ -70,8 +88,11 @@ if(DXI_SHADERS)
     set_source_files_properties(${DXI_SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 endif()
 
-# Create a virtual folder in the .sln
-source_group(TREE "${DXI_SRC_DIR}/shaders" PREFIX "Shaders" FILES ${DXI_SHADERS})
+# Mirror the on-disk folders in the .sln rather than dropping everything into the
+# generator's flat "Source Files" / "Header Files" filters. One tree over sources, headers
+# and shaders together, so Objects/Cube.cpp and Objects/Cube.h sit side by side under an
+# Objects filter, Core/ holds its four pairs, and so on. Root level files stay at the root.
+source_group(TREE "${DXI_SRC_DIR}" FILES ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS} ${DXI_DEPRECATED})
 
 if(DXI_WINMAINS)
     list(LENGTH DXI_WINMAINS DXI_WINMAIN_COUNT)
@@ -80,8 +101,10 @@ if(DXI_WINMAINS)
     endif()
 endif()
 
-# Create executable from all DXI sources (include headers for IDE)
-add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS})
+# Create executable from all DXI sources (include headers for IDE).
+# DXI_DEPRECATED is in the list only so the files stay browsable in the solution; they
+# carry HEADER_FILE_ONLY so the generator will not try to compile them.
+add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS} ${DXI_DEPRECATED})
 
 # Include the DXI root plus every subfolder that actually holds a header.
 # Derived from DXI_HEADERS rather than hand listed, so adding a new folder such as
@@ -109,15 +132,20 @@ FetchContent_MakeAvailable(imgui)
 message(STATUS "Dear ImGui extracted to: ${imgui_SOURCE_DIR}")
 
 # ImGui ships as plain sources, there is no CMake target to link against
-target_sources(DXIApp
-    PRIVATE
-        "${imgui_SOURCE_DIR}/imgui.cpp"
-        "${imgui_SOURCE_DIR}/imgui_draw.cpp"
-        "${imgui_SOURCE_DIR}/imgui_tables.cpp"
-        "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
-        "${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp"
-        "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
+set(IMGUI_SOURCES
+    "${imgui_SOURCE_DIR}/imgui.cpp"
+    "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+    "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+    "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
 )
+
+target_sources(DXIApp PRIVATE ${IMGUI_SOURCES})
+
+# Out of the way in its own filter. These live under the build tree, so they are not part
+# of the DXI_SRC_DIR tree above and would otherwise land in the default flat filter.
+source_group("ThirdParty\\ImGui" FILES ${IMGUI_SOURCES})
 
 target_include_directories(DXIApp
     PRIVATE

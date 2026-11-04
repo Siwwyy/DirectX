@@ -1,6 +1,6 @@
 #include "Model.h"
 
-#include "../Geometry/ObjLoader.h"
+#include "ObjLoader.h"
 
 using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
 

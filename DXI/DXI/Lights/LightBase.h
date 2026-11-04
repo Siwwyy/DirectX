@@ -3,9 +3,9 @@
 #ifndef D3D12_LIGHTBASE_H_INCLUDED
 #define D3D12_LIGHTBASE_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../D3D12Math.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
+#include "D3D12Math.h"
 
 // Kind of the light, has to match the Type switch inside the shaders
 enum class LightType : UINT

@@ -13,28 +13,29 @@
 #include "AssetCatalog.h"
 
 // Core | Everything every D3D12 app would otherwise duplicate
-#include "Core/D3D12Device.h"
-#include "Core/D3D12SwapChain.h"
-#include "Core/D3D12DepthBuffer.h"
-#include "Core/D3D12FrameContext.h"
+#include "D3D12Device.h"
+#include "D3D12SwapChain.h"
+#include "D3D12DepthBuffer.h"
+#include "D3D12FrameContext.h"
 
 // Objects
-#include "Objects/Camera.h"
-#include "Objects/Plane.h"
-#include "Objects/Cube.h"
+#include "Camera.h"
+#include "Plane.h"
+#include "Cube.h"
+#include "Sphere.h"
 
 // Lights
-#include "LightTypes/DirectionalLight.h"
-#include "LightTypes/PointLight.h"
-#include "LightTypes/AreaLight.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "AreaLight.h"
 
 // Passes
-#include "Passes/ShadowPass.h"
-#include "Passes/BasePass.h"
-#include "Passes/LightPass.h"
+#include "ShadowPass.h"
+#include "BasePass.h"
+#include "LightPass.h"
 
 // UI
-#include "UI/DebugUI.h"
+#include "DebugUI.h"
 
 
 // Deferred renderer.
@@ -102,6 +103,10 @@ private:
 	// it landed. Returns null when the shared heap is full or the index is out of range.
 	Material* EnsureMaterialLoaded(const int CatalogIdx);
 
+	// An already loaded material by name, or null. Lets the scene ask for one without
+	// depending on the order InitializeMaterials happens to load them in.
+	_NODISCARD Material* FindMaterial(const std::wstring& Name) const;
+
 	// Drains whatever the panel asked for. Called once per frame, after BeginFrame, so
 	// the command list is open for the vertex and texture uploads a spawn performs.
 	void ProcessPendingSpawns();
@@ -166,10 +171,9 @@ private:
 	GBuffer					SceneGBuffer;
 	ShadowAtlas				SceneShadowAtlas;
 
-	// Sky of the scene. The radiance cube is both the background and what the specular
-	// reflection reads, the irradiance cube is what the diffuse reflection reads.
-	CubeMap					SkyRadianceMap;
-	CubeMap					SkyIrradianceMap;
+	// Sky removed for now. It was two CubeMaps here, a radiance cube serving as both the
+	// background and the specular reflection source, and an irradiance cube for the
+	// diffuse reflection. CubeMap.h still builds, nothing instantiates it.
 	ShadowPass				SceneShadowPass;
 	BasePass				SceneBasePass;
 	LightPass				SceneLightPass;

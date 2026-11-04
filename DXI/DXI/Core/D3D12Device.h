@@ -3,8 +3,8 @@
 #ifndef D3D12_DEVICE_H_INCLUDED
 #define D3D12_DEVICE_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
 
 // Factory, adapter, device and the direct command queue.
 // Every D3D12 app needs the exact same setup, so it lives here instead of being

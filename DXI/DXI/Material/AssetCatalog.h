@@ -4,7 +4,7 @@
 #define D3D12_ASSETCATALOG_H_INCLUDED
 
 #include "pch.h"
-#include "LightTypes/LightBase.h"
+#include "LightBase.h"
 
 #include <string>
 
@@ -35,6 +35,7 @@ enum class SpawnMesh : UINT
 {
 	Cube,
 	Plane,
+	Sphere,
 	Model
 };
 
@@ -46,6 +47,7 @@ struct PrimitiveSpawnRequest
 	SpawnMesh	Mesh		= SpawnMesh::Cube;
 	int			ModelIdx	= -1;	// Into AssetCatalog::GetModels, when Mesh is Model
 	int			MaterialIdx	= -1;	// Into AssetCatalog::GetMaterials, -1 keeps the default material
+	UINT		Density		= 24;	// Latitude bands, when Mesh is Sphere
 };
 
 // A light the panel has asked for. No GPU upload involved, but it still waits for the

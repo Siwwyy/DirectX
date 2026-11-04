@@ -4,9 +4,9 @@
 #define D3D12_CAMERA_H_INCLUDED
 
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../D3D12Math.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
+#include "D3D12Math.h"
 
 class Camera
 {

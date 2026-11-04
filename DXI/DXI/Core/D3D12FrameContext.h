@@ -3,8 +3,8 @@
 #ifndef D3D12_FRAMECONTEXT_H_INCLUDED
 #define D3D12_FRAMECONTEXT_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
 #include "D3D12Device.h"
 
 // Per frame command recording and CPU to GPU synchronization.

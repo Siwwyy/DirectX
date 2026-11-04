@@ -4,7 +4,7 @@
 
 #include <windowsx.h>	//for GET_X_LPARAM, LOWORD would break on the negative coordinates a captured drag can report
 
-#include "UI/DebugUI.h"
+#include "DebugUI.h"
 
 HWND Win32Proc::hwnd			= nullptr;
 POINT Win32Proc::LastMousePos	= {};

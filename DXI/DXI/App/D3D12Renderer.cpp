@@ -5,7 +5,7 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "Paths.h"
-#include "Objects/Model.h"
+#include "Model.h"
 
 #include <string>
 #include <pix3.h>
@@ -54,26 +54,10 @@ void D3D12Renderer::InitializeScene()
 
 	InitializeMaterials();
 
-	/***************************
-	 ********** Sky ************
-	 ***************************/
-	// CC0 panorama from Poly Haven. It is equirectangular, so the six cube faces get
-	// projected out of it here rather than being shipped as separate images.
-	const auto PanoramaPath = (DXIPATHS::GetTextureDir / L"sky" / L"cloud_layers.jpg").Str();
-
-	// The sky as it looks, mipped so a rough surface reflects a blurry version of it
-	SkyRadianceMap.LoadRadiance(Device.Get(),
-								CommandList,
-								PanoramaPath,
-								SKY_FACE_RESOLUTION,
-								L"Sky Radiance CubeMap");
-
-	// The same sky gathered over the hemisphere, which is what a diffuse surface receives
-	SkyIrradianceMap.LoadIrradiance(Device.Get(),
-									CommandList,
-									PanoramaPath,
-									SKY_IRRADIANCE_RESOLUTION,
-									L"Sky Irradiance CubeMap");
+	// No sky. CubeMap still builds and the panorama is still in the content folder, but
+	// nothing loads it, so there is no image based lighting and the background is flat.
+	// Putting it back means restoring the two LoadRadiance/LoadIrradiance calls here, the
+	// two SRVs in InitializePasses, and SKY_SRV_COUNT in LightPass.h.
 
 	/***************************
 	 ******* Primitives ********
@@ -86,8 +70,28 @@ void D3D12Renderer::InitializeScene()
 
 	// Spot, by Keenan Crane, dedicated to the public domain under CC0 1.0. The mesh
 	// carries uvs but no normals, which suits a renderer that computes its own per face.
-	Primitives.emplace_back(std::make_unique<Model>(TEXT("Spot"),
-								(DXIPATHS::GetModelDir / L"spot" / L"spot_triangulated.obj").Str()));
+	//
+	// Skipped rather than fatal when absent: models are fetched by download_assets.bat
+	// rather than committed, so a clone that has not been set up yet still runs, just
+	// without the cow. Everything else in the scene is generated in code.
+	{
+		const auto SpotMesh = (DXIPATHS::GetModelDir / L"spot" / L"spot_triangulated.obj").Str();
+
+		if (GetFileAttributesW(SpotMesh.c_str()) != INVALID_FILE_ATTRIBUTES)
+		{
+			Primitives.emplace_back(std::make_unique<Model>(TEXT("Spot"), SpotMesh));
+		}
+		else
+		{
+			DXLOG("Spot mesh is missing, run download_assets.bat to fetch it\n")
+		}
+	}
+
+	// Last on purpose. The index based material hand out below counts from the front, so
+	// anything added after the conditional model keeps its own index whether or not the
+	// model was downloaded. Its material and transform are set by name further down.
+	Primitives.emplace_back(std::make_unique<Sphere>(TEXT("Sphere"), 32));
+	const SIZE_T SphereIdx = Primitives.size() - 1;
 
 	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
 	{
@@ -102,6 +106,13 @@ void D3D12Renderer::InitializeScene()
 		}
 	}
 
+	// Sphere shares the metal plate maps with Cube4, which is worth seeing: the same
+	// material on a flat face and on a curved one is where a normal map earns its keep.
+	// Looked up by name rather than by index, since the sphere sits past the end of the
+	// material list and the index hand out above leaves it on the default.
+	Primitives[SphereIdx]->SetMaterial(FindMaterial(L"metal_plate"));
+	Primitives[SphereIdx]->SetTransform({ -5.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, { 1.5f, 1.5f, 1.5f });
+
 	// Cubes in a row, the last primitive is the ground laid out underneath them
 	Primitives[0]->Transform({ -3.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
 	Primitives[1]->Transform({ -1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
@@ -111,7 +122,11 @@ void D3D12Renderer::InitializeScene()
 
 	// Spot sits in front of the cubes. The mesh is modelled about a unit tall and lying
 	// along +Z, so it is turned to face the camera and lifted clear of the ground.
-	Primitives[5]->Transform({  3.0f, 1.0f, 1.0f }, { 0.0f, -90.0f, 0.0f }, { 1.5f, 1.5f, 1.5f });
+	// Only present when the asset download has been run, hence the bounds check.
+	if (Primitives.size() > 5)
+	{
+		Primitives[5]->Transform({  3.0f, 1.0f, 1.0f }, { 0.0f, -90.0f, 0.0f }, { 1.5f, 1.5f, 1.5f });
+	}
 
 	/***************************
 	 ********** Lights *********
@@ -183,8 +198,16 @@ void D3D12Renderer::InitializeMaterials()
 	LoadMaterial(L"metal_plate");				// Cube4
 
 	// Spot ships one colour map and nothing else, so the remaining slots fall back to the
-	// neutral values SetDefaults fills in
-	CreateMaterialWithDiffuse(L"spot", (DXIPATHS::GetModelDir / L"spot" / L"spot_texture.png").Str());	// Spot
+	// neutral values SetDefaults fills in. Downloaded alongside the mesh, so it is only
+	// created when the asset is actually here.
+	{
+		const auto SpotTexture = (DXIPATHS::GetModelDir / L"spot" / L"spot_texture.png").Str();
+
+		if (GetFileAttributesW(SpotTexture.c_str()) != INVALID_FILE_ATTRIBUTES)
+		{
+			CreateMaterialWithDiffuse(L"spot", SpotTexture);	// Spot
+		}
+	}
 
 	DXASSERT(Materials.size() <= MAX_MATERIALS, "More materials loaded than the shared heap can hold");
 
@@ -204,6 +227,22 @@ void D3D12Renderer::InitializeMaterials()
 			}
 		}
 	}
+
+	DXASSERT(FindMaterial(L"metal_plate"), "The scene asks for metal_plate by name, it has to be among the loaded materials");
+}
+
+Material* D3D12Renderer::FindMaterial(const std::wstring& Name) const
+{
+	for (const auto& Candidate : Materials)
+	{
+		if (Candidate->GetName() == Name)
+		{
+			return Candidate.get();
+		}
+	}
+
+	// Null means "use the default", which is what Primitive::SetMaterial takes it as
+	return nullptr;
 }
 
 Material* D3D12Renderer::EnsureMaterialLoaded(const int CatalogIdx)
@@ -266,6 +305,10 @@ void D3D12Renderer::ProcessPendingSpawns()
 		{
 		case SpawnMesh::Plane:
 			Spawned = std::make_unique<::Plane>(L"Plane " + Ordinal);
+			break;
+
+		case SpawnMesh::Sphere:
+			Spawned = std::make_unique<Sphere>(L"Sphere " + Ordinal, Request.Density);
 			break;
 
 		case SpawnMesh::Model:
@@ -484,11 +527,7 @@ void D3D12Renderer::InitializePasses()
 	SrvHandle.Offset(GBufferTargetCount, IncrementSize);
 	SceneShadowAtlas.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
-	SrvHandle.Offset(ShadowAtlas::GetSrvCount(), IncrementSize);
-	SkyRadianceMap.CreateShaderResourceView(Device.Get(), SrvHandle);
-
-	SrvHandle.Offset(1, IncrementSize);
-	SkyIrradianceMap.CreateShaderResourceView(Device.Get(), SrvHandle);
+	// The sky cubes used to follow the shadow atlas here, at t6 and t7
 }
 
 XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx) const

@@ -1,7 +1,7 @@
 #include "BasePass.h"
-#include "../Paths.h"
-#include "../GBuffer.h"
-#include "../Material.h"
+#include "Paths.h"
+#include "GBuffer.h"
+#include "Material.h"
 
 #include <pix3.h>
 

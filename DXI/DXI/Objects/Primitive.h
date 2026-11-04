@@ -3,10 +3,10 @@
 #ifndef D3D12_PRIMITIVE_H_INCLUDED
 #define D3D12_PRIMITIVE_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../D3D12Math.h"
-#include "../Geometry/Vertex.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
+#include "D3D12Math.h"
+#include "Vertex.h"
 
 // FWD
 class Material;

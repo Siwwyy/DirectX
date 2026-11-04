@@ -3,7 +3,7 @@
 #ifndef D3D12_OBJLOADER_H_INCLUDED
 #define D3D12_OBJLOADER_H_INCLUDED
 
-#include "../pch.h"
+#include "pch.h"
 #include "Vertex.h"
 
 #include <string>

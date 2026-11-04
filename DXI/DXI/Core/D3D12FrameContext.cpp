@@ -92,17 +92,28 @@ void D3D12FrameContext::Flush(const D3D12Device& Device, const UINT FrameIdx)
 
 void D3D12FrameContext::WaitForGpuIdle(const D3D12Device& Device)
 {
-	if (!FenceEvent)
+	if (!FenceEvent || Fences.empty())
 	{
 		return;
 	}
 
-	// The queue runs in order, so waiting for the last thing signalled on every frame
-	// covers everything still in flight
+	// Catch up on every frame that has been submitted
 	for (UINT FrameIdx = 0; FrameIdx < static_cast<UINT>(Fences.size()); ++FrameIdx)
 	{
 		WaitForFrame(Device, FrameIdx);
 	}
+
+	// Those waits are not enough on their own. Execute() signals a frame's fence and
+	// EndFrame() calls Present afterwards, so the last Present sits on the queue *behind*
+	// the newest signal and nothing above waits for it. Releasing the swap chain then
+	// pulls a back buffer out from under a present that is still running, which the debug
+	// layer reports as OBJECT_DELETED_WHILE_STILL_IN_USE.
+	//
+	// A fresh signal goes to the back of the queue, after that Present, so waiting on it
+	// covers everything. One fence is enough because a queue completes in order.
+	FenceValues[0] = FenceValues[0] + 1;
+	ThrowIfFailed(Device.GetCommandQueue()->Signal(Fences[0].Get(), FenceValues[0]));
+	WaitForFrame(Device, 0);
 }
 
 void D3D12FrameContext::WaitForFrame(const D3D12Device& Device, const UINT FrameIdx)

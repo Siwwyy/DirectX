@@ -4,14 +4,10 @@
 #ifndef WIN32_PROC_H_INCLUDED
 #define WIN32_PROC_H_INCLUDED
 
-#include "D3D12App.h"
 #include "D3D12Renderer.h"
-//#include "DXApp3D.h"
-//#include "D3D123DApp.h"
 
-//using CurrentApp = DXApp3D;
-//using CurrentApp = D3D123DApp;
-//using CurrentApp = D3D12App;
+// Which app Run() drives. Swapping this is how a new renderer gets taken for a spin
+// without touching WinMain; it only has to offer the same Initialize/Update/Render surface.
 using CurrentApp = D3D12Renderer;
 
 class Win32Proc

@@ -1,7 +1,7 @@
 #include "LightPass.h"
-#include "../Paths.h"
-#include "../GBuffer.h"
-#include "../ShadowAtlas.h"
+#include "Paths.h"
+#include "GBuffer.h"
+#include "ShadowAtlas.h"
 
 #include <pix3.h>
 
@@ -58,9 +58,9 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 		LightsCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerLights, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		// s0 is point clamp, the G-buffer and the shadow map are read one texel at a time.
-		// s1 is linear clamp, the sky is a direction lookup that would look blocky otherwise.
-		Builder.AddStaticSampler(ShaderRegister::SamplerBase,		D3D12_FILTER_MIN_MAG_MIP_POINT,		D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-		Builder.AddStaticSampler(ShaderRegister::SamplerBase + 1,	D3D12_FILTER_MIN_MAG_MIP_LINEAR,	D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+		// s1 was a linear clamp for the sky cubes, which are a direction lookup that would
+		// look blocky with point filtering. Gone with the sky.
+		Builder.AddStaticSampler(ShaderRegister::SamplerBase, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 
 		PSO.RootSignature = Builder.Build(Device,
 			// No input assembler here, the fullscreen triangle comes out of SV_VertexID

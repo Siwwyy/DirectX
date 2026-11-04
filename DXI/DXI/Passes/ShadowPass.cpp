@@ -1,6 +1,6 @@
 #include "ShadowPass.h"
-#include "../Paths.h"
-#include "../ShadowAtlas.h"
+#include "Paths.h"
+#include "ShadowAtlas.h"
 
 #include <pix3.h>
 

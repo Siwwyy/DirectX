@@ -355,3 +355,9 @@ MigrationBackup/
 DirectX-Graphics-Samples/*
 build/
 third_party/*
+
+# Downloaded models. Note the *.obj rule far above: it is there for MSVC object
+# files but it swallows Wavefront meshes too, so .obj models could never be
+# committed without an exception. They are fetched by download_assets.bat
+# instead, which keeps the licence file next to each one.
+DXI/DXI/models/

@@ -2,6 +2,8 @@
 
 #include "D3D12SwapChain.h"
 
+#include <string>
+
 // Namespaces
 using namespace Helpers;
 
@@ -71,6 +73,11 @@ void D3D12SwapChain::Init(const D3D12Device& Device, const HWND WindowHandle, co
 	for (UINT BackBufferIdx = 0; BackBufferIdx < BackBufferCount; ++BackBufferIdx)
 	{
 		ThrowIfFailed(SwapChain->GetBuffer(BackBufferIdx, IID_PPV_ARGS(&BackBuffers[BackBufferIdx])));
+
+		// Named so a debug layer complaint about one says which it is, rather than
+		// 'Unnamed Object'. GetBuffer does not name them for us.
+		BackBuffers[BackBufferIdx]->SetName((L"Back Buffer " + std::to_wstring(BackBufferIdx)).c_str());
+
 		Device.Get()->CreateRenderTargetView(BackBuffers[BackBufferIdx].Get(), nullptr, RtvHandle);
 		RtvHandle.Offset(1, RtvIncrementSize);
 	}

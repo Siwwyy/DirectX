@@ -12,11 +12,13 @@ Texture2D GBufferWorldPosition  : register(t2);
 Texture2D GBufferMaterialParams : register(t3);
 Texture2DArray ShadowDepth      : register(t4);     // one depth slice per directional or area light
 TextureCubeArray ShadowDistance : register(t5);     // six distance faces per point light
-TextureCube SkyRadiance         : register(t6);     // the sky itself, mipped for roughness
-TextureCube SkyIrradiance       : register(t7);     // the sky gathered over the hemisphere
+// t6 and t7 were the radiance and irradiance sky cubes, see LightPass::SKY_SRV_COUNT
 
 SamplerState GBufferSampler     : register(s0);     // point, for the buffers above
-SamplerState SkySampler         : register(s1);     // linear, the cubes are direction lookups
+
+// Stand in for the sky. Flat, and deliberately not black, so the background still reads
+// as somewhere rather than as a hole in the image.
+static const float3 BACKGROUND_COLOR = float3(0.08, 0.10, 0.14);
 
 cbuffer ConstantBufferPerCamera : register(CB_PER_VIEW)
 {
@@ -40,12 +42,11 @@ float4 main(FullscreenPSInput input) : SV_TARGET
     float3 albedo       = albedo_sample.xyz;
     float4 world_pos    = GBufferWorldPosition.Sample(GBufferSampler, input.tex_coord);
 
-    // BasePass marks written pixels with w of 1, everything else is background, which is
-    // where the sky shows through. Shading it would be wrong anyway, its normal is zero
-    // and normalizing that would give NaN.
+    // BasePass marks written pixels with w of 1, everything else is background. Shading it
+    // would be wrong anyway, its normal is zero and normalizing that would give NaN.
     if (world_pos.w == 0.0)
     {
-        return float4(SkyRadiance.Sample(SkySampler, GetViewRay(input.tex_coord)).xyz, 1.0);
+        return float4(BACKGROUND_COLOR, 1.0);
     }
 
     // A debug view of BasePass already decided the colour, shading it would hide whatever
@@ -69,23 +70,8 @@ float4 main(FullscreenPSInput input) : SV_TARGET
     // slice of the shadow atlas
     float3 direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, albedo, normal, world_pos.xyz, EyePosition.xyz);
 
-    // How many mips the radiance cube has decides how blurred the roughest reflection
-    // can get. Asking the texture avoids a constant that has to be kept in sync.
-    uint cube_width, cube_height, cube_mips;
-    SkyRadiance.GetDimensions(0, cube_width, cube_height, cube_mips);
-
-    // Reflected lighting from the sky, diffuse and specular kept apart
-    float3 reflections  = ShadeReflections(SkyRadiance,
-                                            SkyIrradiance,
-                                            SkySampler,
-                                            float(cube_mips),
-                                            albedo,
-                                            normal,
-                                            world_pos.xyz,
-                                            EyePosition.xyz,
-                                            metalness,
-                                            roughness,
-                                            occlusion);
-
-    return float4(direct + reflections, 1.0);
+    // No image based lighting while the sky is out. ShadeReflections in Lighting.hlsl is
+    // still there and takes its cubes as parameters, so restoring this is a call away.
+    // Metalness, roughness and occlusion are read above and reach nothing for now.
+    return float4(direct, 1.0);
 }

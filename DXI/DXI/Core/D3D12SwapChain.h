@@ -3,8 +3,8 @@
 #ifndef D3D12_SWAPCHAIN_H_INCLUDED
 #define D3D12_SWAPCHAIN_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
 #include "D3D12Device.h"
 
 // Swap chain along with its back buffers and their render target views.

@@ -11,7 +11,6 @@
 //#define DEBUG_MODE 1
 
 // Own includes
-#include "D3D12App.h"
 #include "Win32Proc.h"
 ////
 

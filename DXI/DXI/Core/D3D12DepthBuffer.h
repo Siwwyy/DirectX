@@ -3,8 +3,8 @@
 #ifndef D3D12_DEPTHBUFFER_H_INCLUDED
 #define D3D12_DEPTHBUFFER_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
 #include "D3D12Device.h"
 
 // Depth target along with its descriptor heap and view.

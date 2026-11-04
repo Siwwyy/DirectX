@@ -3,14 +3,15 @@
 #ifndef D3D12_DEBUGUI_H_INCLUDED
 #define D3D12_DEBUGUI_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../Objects/Camera.h"
-#include "../Objects/Primitive.h"
-#include "../Passes/BasePass.h"
-#include "../Material.h"
-#include "../LightTypes/LightBase.h"
-#include "../AssetCatalog.h"
+#include "pch.h"
+#include "D3D12Helpers.h"
+#include "Camera.h"
+#include "Primitive.h"
+#include "Sphere.h"
+#include "BasePass.h"
+#include "Material.h"
+#include "LightBase.h"
+#include "AssetCatalog.h"
 
 #include <memory>
 #include <vector>
@@ -106,10 +107,18 @@ private:
 	std::vector<PrimitiveSpawnRequest>	PendingPrimitiveSpawns;
 	std::vector<LightSpawnRequest>		PendingLightSpawns;
 
+	// Where the built in shapes sit in the mesh picker. Catalog meshes follow them, so a
+	// list index of SPAWN_MESH_BUILTIN_COUNT or more is a catalog entry.
+	static constexpr int SPAWN_MESH_CUBE			= 0;
+	static constexpr int SPAWN_MESH_PLANE			= 1;
+	static constexpr int SPAWN_MESH_SPHERE			= 2;
+	static constexpr int SPAWN_MESH_BUILTIN_COUNT	= 3;
+
 	// What the spawn pickers are currently set to
-	int							SpawnMeshIdx		= 0;	// 0 Cube, 1 Plane, 2+ catalog models
+	int							SpawnMeshIdx		= 0;	// built in shapes first, then catalog models
 	int							SpawnMaterialIdx	= 0;	// 0 default, 1+ catalog materials
 	int							SpawnLightTypeIdx	= 0;
+	UINT						SpawnSphereDensity	= Sphere::DEFAULT_DENSITY;
 
 	// Which entry of the object list is open
 	int							SelectedPrimitiveIdx = 0;

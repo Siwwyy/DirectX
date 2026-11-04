@@ -2,9 +2,9 @@
 
 #include "DebugUI.h"
 
-#include "../LightTypes/DirectionalLight.h"
-#include "../LightTypes/PointLight.h"
-#include "../LightTypes/AreaLight.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "AreaLight.h"
 
 #include <string>
 
@@ -296,10 +296,11 @@ void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T Primitive
 	const auto& CatalogModels		= Catalog.GetModels();
 	const auto& CatalogMaterials	= Catalog.GetMaterials();
 
-	// Mesh | the two built in shapes, then whatever meshes were found on disk
+	// Mesh | the built in shapes, then whatever meshes were found on disk
 	std::vector<std::string> MeshNames;
 	MeshNames.emplace_back("Cube");
 	MeshNames.emplace_back("Plane");
+	MeshNames.emplace_back("Sphere");
 
 	for (const auto& MeshAsset : CatalogModels)
 	{
@@ -343,6 +344,23 @@ void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T Primitive
 		ImGui::EndCombo();
 	}
 
+	// Only the sphere is generated rather than loaded, so only it has a density to set.
+	// It has to be chosen before the primitive is built; changing it afterwards would
+	// mean rebuilding and re-uploading the vertex buffer.
+	if (SpawnMeshIdx == SPAWN_MESH_SPHERE)
+	{
+		int Density = static_cast<int>(SpawnSphereDensity);
+		if (ImGui::SliderInt("Density", &Density, static_cast<int>(Sphere::MIN_DENSITY), static_cast<int>(Sphere::MAX_DENSITY)))
+		{
+			SpawnSphereDensity = static_cast<UINT>(Density);
+		}
+
+		ImGui::TextDisabled("%u latitude bands, %u longitude, %u triangles",
+							SpawnSphereDensity,
+							SpawnSphereDensity * 2,
+							Sphere::GetTriangleCountFor(SpawnSphereDensity));
+	}
+
 	if (ImGui::BeginCombo("Material", MaterialNames[static_cast<size_t>(SpawnMaterialIdx)].c_str()))
 	{
 		for (int MaterialIdx = 0; MaterialIdx < static_cast<int>(MaterialNames.size()); ++MaterialIdx)
@@ -366,9 +384,19 @@ void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T Primitive
 	if (ImGui::Button("Add primitive"))
 	{
 		PrimitiveSpawnRequest Request;
-		Request.Mesh		= SpawnMeshIdx == 0 ? SpawnMesh::Cube : (SpawnMeshIdx == 1 ? SpawnMesh::Plane : SpawnMesh::Model);
-		Request.ModelIdx	= SpawnMeshIdx >= 2 ? SpawnMeshIdx - 2 : -1;
+
+		switch (SpawnMeshIdx)
+		{
+		case SPAWN_MESH_CUBE:	Request.Mesh = SpawnMesh::Cube;		break;
+		case SPAWN_MESH_PLANE:	Request.Mesh = SpawnMesh::Plane;	break;
+		case SPAWN_MESH_SPHERE:	Request.Mesh = SpawnMesh::Sphere;	break;
+		default:				Request.Mesh = SpawnMesh::Model;	break;
+		}
+
+		// Catalog meshes follow the built in shapes in the list, so the offset comes off
+		Request.ModelIdx	= SpawnMeshIdx >= SPAWN_MESH_BUILTIN_COUNT ? SpawnMeshIdx - SPAWN_MESH_BUILTIN_COUNT : -1;
 		Request.MaterialIdx	= SpawnMaterialIdx - 1;		// entry 0 is the default, which is -1 to the renderer
+		Request.Density		= SpawnSphereDensity;
 
 		PendingPrimitiveSpawns.push_back(Request);
 	}

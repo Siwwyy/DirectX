@@ -3,12 +3,12 @@
 #ifndef D3D12_PASSBASE_H_INCLUDED
 #define D3D12_PASSBASE_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12ShaderCompiler.h"
-#include "../ShaderRegisters.h"
-#include "../Core/RootSignatureBuilder.h"
-#include "../Objects/Primitive.h"
-#include "../PSO.h"
+#include "pch.h"
+#include "D3D12ShaderCompiler.h"
+#include "ShaderRegisters.h"
+#include "RootSignatureBuilder.h"
+#include "Primitive.h"
+#include "PSO.h"
 
 
 class PassBase

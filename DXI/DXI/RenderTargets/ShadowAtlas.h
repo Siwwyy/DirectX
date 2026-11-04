@@ -5,7 +5,7 @@
 
 #include "pch.h"
 #include "D3D12Helpers.h"
-#include "LightTypes/LightBase.h"
+#include "LightBase.h"
 
 // Shadow storage for every light of the scene, kept as texture arrays rather than tiles
 // of one big surface. Slices cost nothing to address and cannot bleed into each other,
