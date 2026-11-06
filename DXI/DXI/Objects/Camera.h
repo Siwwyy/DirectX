@@ -19,6 +19,10 @@ public:
 	Camera(UINT ScreenWidth, UINT ScreenHeight);
 	~Camera()	= default;
 
+	// Rebuilds the projection for a new window size. Position and orientation are left
+	// alone, only the aspect ratio moves, so a resize does not nudge the view.
+	void SetViewportSize(const UINT ScreenWidth, const UINT ScreenHeight);
+
 	// Logic
 	void Reset();
 	void Update(float ElapsedSeconds) noexcept;

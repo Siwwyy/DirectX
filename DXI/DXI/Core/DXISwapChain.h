@@ -21,6 +21,10 @@ public:
 	// Creates the swap chain for the given window and a render target view per back buffer
 	void Init(const DXIDevice& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
 
+	// Resizes the back buffers to match a resized window, keeping the chain itself.
+	// The GPU has to be idle before this is called, see the note in the implementation.
+	void Resize(const DXIDevice& Device, const UINT Width, const UINT Height);
+
 	// Format every back buffer is created with
 	_NODISCARD static DXGI_FORMAT GetFormat() noexcept
 	{
@@ -60,6 +64,10 @@ public:
 	}
 
 private:
+
+	// Fetches each back buffer out of the chain and writes its render target view.
+	// Shared by Init and Resize, which differ only in whether the chain already existed.
+	void CreateBackBufferViews(const DXIDevice& Device);
 
 	ComPtr<IDXGISwapChain3>				SwapChain;					// the swap chain itself
 	std::vector<ComPtr<DXResource>>		BackBuffers;				// one surface per back buffer

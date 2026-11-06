@@ -7,6 +7,11 @@ static constexpr bool LHCameraCoordinateSystem = true;
 // what aims the forward vector down +Z, which is why it is not zero: Update() builds the
 // direction as (cos yaw, sin pitch, sin yaw) scaled by cos pitch, and a yaw of zero would
 // aim it down +X instead. Both places take the numbers from here so they cannot drift.
+// Lens, shared by the constructor and SetViewportSize so a resize cannot quietly change it
+static constexpr float HALF_FOV_DEGREES	= 45.0f;
+static constexpr float NEAR_PLANE		= 0.01f;
+static constexpr float FAR_PLANE		= 1000.0f;
+
 static constexpr float INITIAL_YAW		= 90.0f;	// degrees
 static constexpr float INITIAL_PITCH	= -20.0f;		// degrees
 static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 5.0f, -9.0f, 1.0f);
@@ -33,16 +38,9 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 		[0, 0, b, 0]
 	*/
 
-	// build projection and view matrix
-	const auto HalfFOV			= 45.0f;
-	constexpr const auto Near	= 0.01f;
-	constexpr const auto Far	= 1000.0f;
-	XMMATRIX ProjMat			= XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), 
-															static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 
-															Near, 
-															Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
-	// TODO | DO REVERSE Z PROJECTION MATRIX
-	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
+	// Projection depends only on the window size, and the window can be resized, so it is
+	// built by a function both this and D3D12Renderer::OnResize can call
+	SetViewportSize(ScreenWidth, ScreenHeight);
 
 	//// set starting camera state
 	CameraMatrices.Position		= INITIAL_POSITION;
@@ -63,6 +61,34 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 
 	// Store View Mat
 	XMStoreFloat4x4(&CameraMatrices.ViewMat, Matrix);
+}
+
+void Camera::SetViewportSize(const UINT ScreenWidth, const UINT ScreenHeight)
+{
+	DXASSERT(ScreenWidth > 0 && ScreenHeight > 0, "Camera needs a non empty viewport to build a projection for");
+
+	/*
+		aspectRatio = width/height
+		h = 1 / tan(fovy*0.5)
+		w = h / aspectRatio
+		a = zfar / (zfar - znear)
+		b = (-znear * zfar) / (zfar - znear)
+
+		perspective projection matrix
+		[w, 0, 0, 0]
+		[0, h, 0, 0]
+		[0, 0, a, 1]
+		[0, 0, b, 0]
+	*/
+
+	// Only the aspect ratio changes with the window. Rebuilding the whole matrix rather
+	// than patching the one term keeps this the single place the lens is described.
+	const XMMATRIX ProjMat = XMMatrixPerspectiveFovLH(HALF_FOV_DEGREES * (3.14f / 180.0f),
+														static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight),
+														NEAR_PLANE,
+														FAR_PLANE); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
+	// TODO | DO REVERSE Z PROJECTION MATRIX
+	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
 }
 
 void Camera::Reset()
