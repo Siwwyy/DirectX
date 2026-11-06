@@ -108,6 +108,20 @@ public:
 	// Descriptor table to bind for this material, covers every slot at once
 	_NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptorTable() const;
 
+	// Drops the staging copies of the textures.
+	//
+	// A texture is uploaded by writing it into an upload heap and copying from there into
+	// the default heap the shader reads, and the upload heap has to outlive the copy, which
+	// is why it is held at all. Once the command list carrying that copy has been waited
+	// on, it is dead weight: an exact duplicate of every texture, sitting in system memory
+	// for as long as the material does.
+	//
+	// Six cubes never made that worth noticing. A scene arriving with twenty five materials
+	// of 1k maps does: the duplicates come to a few hundred megabytes.
+	//
+	// Only safe after the GPU has finished the copies, so call it past a flush.
+	void ReleaseUploadHeaps();
+
 	// Setters
 	// Two sided surfaces keep their back faces, which a single quad like a ground plane
 	// needs to stay visible from underneath. Culling lives in the pipeline state, so this

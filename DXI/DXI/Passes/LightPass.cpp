@@ -15,7 +15,7 @@ LightPass::LightPass()
 	// branch there instead and supply your own direction, falloff and accumulation.
 	// Shaders are compiled from source at startup, so once the switch is set, iterating on
 	// the implementation itself only needs the app restarted rather than a rebuild.
-	//ShaderDefines.AddDefine({ L"BASELINE", L"0" });
+	ShaderDefines.AddDefine({ L"BASELINE", L"1" });
 
 	const DXIPATHS::FilePath VertexShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"vertex_shader.hlsl";
 	const DXIPATHS::FilePath PixelShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"pixel_shader.hlsl";

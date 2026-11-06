@@ -121,6 +121,20 @@ endforeach()
 
 list(REMOVE_DUPLICATES DXI_PUBLIC_INCLUDES)
 
+# cgltf | glTF 2.0 parser, a single header. Pinned, since the loader is written against
+# its accessor helpers and those have shifted across releases.
+set(CGLTF_VERSION_TAG   "v1.15")
+set(CGLTF_RELEASE_URL   "https://github.com/jkuhlmann/cgltf/archive/refs/tags/${CGLTF_VERSION_TAG}.zip")
+
+message(STATUS "FetchContent: requesting cgltf from ${CGLTF_RELEASE_URL}")
+FetchContent_Declare(cgltf URL ${CGLTF_RELEASE_URL})
+FetchContent_MakeAvailable(cgltf)
+message(STATUS "cgltf extracted to: ${cgltf_SOURCE_DIR}")
+
+# Header only, so there is nothing to compile or link. One translation unit defines
+# CGLTF_IMPLEMENTATION, see Geometry/GltfLoader.cpp.
+target_include_directories(DXIApp PRIVATE "${cgltf_SOURCE_DIR}")
+
 # Dear ImGui | Debug panel. Fetched as a zip like DXC below, so no git is needed.
 # Pinned on purpose, the DX12 backend changed its Init signature across releases.
 set(IMGUI_VERSION_TAG   "v1.90.9")

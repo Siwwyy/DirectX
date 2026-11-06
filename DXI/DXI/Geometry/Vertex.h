@@ -753,6 +753,14 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const TypeOfInd
 	return out;
 }
 
+/// A mesh read off disk, in the layout the base pass expects. Shared by every loader, so
+/// the file format a mesh came out of stops mattering past the point it was parsed.
+struct LoadedMesh
+{
+	std::vector<VertexPositionTexCoordNormalTangentBitangent>	Vertices;
+	std::vector<TypeOfIndice>									Indices;
+};
+
 /// <summary>
 /// VertexInitData
 /// 

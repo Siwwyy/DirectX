@@ -1,0 +1,23 @@
+---
+description: How the README is written
+globs: README.md
+alwaysApply: false
+---
+
+# The README summarises, it does not explain
+
+Every entry is the shortest statement of the fact. No justification, no background, no
+reasoning about why something is the way it is. A reader who wants the reasoning reads the
+code, where the comments carry it.
+
+- A switch, option or dependency gets a table row, not a paragraph
+- A command gets a code block with a trailing comment, not prose around it
+- Keep a caveat only when ignoring it costs the reader time: a build that fails by design,
+  a scene that renders without shadows, an asset that is not in the repository
+- Cut the second sentence of any entry unless it states a further fact
+
+## Check facts against the code, never against the previous README
+
+It has been wrong about `vcpkg.json` existing, about `DOWNLOAD_PIX` and `USE_WINGET` being
+CMake options, about the DXC version, and about shaders being compiled at build time rather
+than at startup. Before documenting a flag, a path or a version, grep for it.

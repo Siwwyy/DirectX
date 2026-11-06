@@ -28,6 +28,10 @@ namespace DXICMD
 	// Value of a switch, or Fallback when it is absent or not a number
 	_NODISCARD int GetInt(const wchar_t* Name, const int Fallback);
 
+	// Value of a switch as written, or Fallback when it is absent or carries no value.
+	// Case is preserved, unlike the switch name, so compare it with _wcsicmp.
+	_NODISCARD std::wstring GetString(const wchar_t* Name, const wchar_t* Fallback);
+
 	// Everything the switches do, written to the debug output. Triggered by -help.
 	void LogUsage();
 

@@ -28,7 +28,12 @@ struct MaterialAsset
 // How many primitives the scene can hold. The primitive constant buffer is created for
 // this many, mapped once, and never resized, so it is the hard ceiling on spawning. Lives
 // here rather than in the renderer because the panel greys out its button against it.
-constexpr UINT MAX_PRIMITIVES = 32;
+//
+// Sized for a loaded scene rather than a handful of cubes: Sponza arrives as 103 primitives
+// on its own, since glTF splits a mesh wherever the material changes. The cost of the
+// ceiling is only address space in the constant buffer, 256 bytes per slot per frame, so
+// it is set well clear of what the scene needs rather than exactly at it.
+constexpr UINT MAX_PRIMITIVES = 256;
 
 // Which built in shape a spawn uses, or a mesh out of the catalog
 enum class SpawnMesh : UINT

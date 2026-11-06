@@ -10,13 +10,20 @@ Model::Model(std::wstring Name, std::wstring MeshPath)
 {
 }
 
+Model::Model(std::wstring Name, LoadedMesh Mesh)
+	: Primitive(std::move(Name))
+	, PreloadedMesh(std::move(Mesh))
+{
+}
+
 HRESULT Model::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 {
 	HRESULT hr = Primitive::Init(Device, CommandList);
 
-	DXASSERT(!MeshPath.empty(), "Model needs a mesh path before it can be initialized");
+	DXASSERT(!MeshPath.empty() || !PreloadedMesh.Vertices.empty(), "Model needs either a mesh path or geometry before it can be initialized");
 
-	auto Mesh = LoadObjFromFile(MeshPath);
+	auto Mesh = !PreloadedMesh.Vertices.empty() ? std::move(PreloadedMesh) : LoadObjFromFile(MeshPath);
+	PreloadedMesh = LoadedMesh();
 
 	const auto NumIndices = static_cast<UINT>(Mesh.Indices.size());
 	SetNumIndices(NumIndices);

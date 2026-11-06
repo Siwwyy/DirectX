@@ -271,3 +271,11 @@ D3D12_GPU_DESCRIPTOR_HANDLE Material::GetDescriptorTable() const
 
 	return Heap->GetGPUHandle(MaterialIdx);
 }
+
+void Material::ReleaseUploadHeaps()
+{
+	for (ComPtr<DXResource>& UploadHeap : TextureUploadHeaps)
+	{
+		UploadHeap.Reset();
+	}
+}

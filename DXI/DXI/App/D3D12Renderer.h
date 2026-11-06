@@ -38,6 +38,21 @@
 #include "DebugUI.h"
 
 
+// Which scene Initialize builds, chosen by -scene on the command line.
+//
+// Two very different things are worth having in front of the renderer. The built in scene
+// is a handful of generated primitives with Poly Haven maps, which starts instantly and is
+// where a lighting or shading change is easiest to read. Sponza is a quarter of a million
+// triangles over twenty five materials that nothing in this engine authored, which is where
+// a loader or a scaling assumption actually gets tested. Neither replaces the other.
+enum class SceneSetup : UINT
+{
+	Default,	// Cubes, ground, sphere and Spot. What runs with no switch.
+	Sponza,		// Sponza alone, at the origin, with the sun sized to cover it
+	Both,		// Both at once, Sponza stood off along +Z so the two do not overlap
+	CornellBox	// The Cornell Box, to its published measurements. Exclusive, it is a closed room.
+};
+
 // Deferred renderer.
 // Same surface as D3D12App so Win32Proc can drive either of them, but the D3D12
 // plumbing lives in the Core classes and the frame is a BasePass into the G-buffer
@@ -89,6 +104,30 @@ private:
 	void InitializeScene();
 	void InitializePasses();
 
+	// The setups InitializeScene picks between, plus the lights they share
+	void InitializeDefaultScene();
+	void InitializeSponzaScene();
+	void InitializeCornellBoxScene();
+	void InitializeSceneLights();
+
+	// Which scene was asked for. Reads -scene, falling back to the built in one.
+	_NODISCARD static SceneSetup GetRequestedScene();
+
+	// Whether the active setup includes each half, so a conditional reads as a question
+	// about the scene rather than as a comparison against an enum
+	_NODISCARD bool UsesDefaultScene() const noexcept
+	{
+		return ActiveScene == SceneSetup::Default || ActiveScene == SceneSetup::Both;
+	}
+	_NODISCARD bool UsesSponzaScene() const noexcept
+	{
+		return ActiveScene == SceneSetup::Sponza || ActiveScene == SceneSetup::Both;
+	}
+	_NODISCARD bool UsesCornellBoxScene() const noexcept
+	{
+		return ActiveScene == SceneSetup::CornellBox;
+	}
+
 	// Loads one material out of a Poly Haven style folder, where every map is named
 	// <AssetName>_<suffix>_1k.png, appends it to Materials and hands it back.
 	// Missing maps keep their null descriptor. Ownership stays in Materials, the
@@ -99,6 +138,10 @@ private:
 	// remaining slots take the neutral values SetDefaults fills in.
 	Material& CreateMaterialWithDiffuse(const wchar_t* Name, const std::wstring& DiffusePath);
 
+	// A flat untextured colour, for a scene whose surfaces are specified as reflectances
+	// rather than shipped as images. Rgba is linear, not sRGB, matching SetSolidColor.
+	Material& CreateMaterialWithColor(const wchar_t* Name, const BYTE (&Rgba)[4], const BYTE Roughness = 128);
+
 	// Loads a catalog material the first time something asks for it and remembers where
 	// it landed. Returns null when the shared heap is full or the index is out of range.
 	Material* EnsureMaterialLoaded(const int CatalogIdx);
@@ -106,6 +149,21 @@ private:
 	// An already loaded material by name, or null. Lets the scene ask for one without
 	// depending on the order InitializeMaterials happens to load them in.
 	_NODISCARD Material* FindMaterial(const std::wstring& Name) const;
+
+	// Appends an entire glTF file to the scene: one Material per material it declares and
+	// one Model per primitive, placed by the transform given.
+	//
+	// Nothing like the other loaders, which produce one thing each. A glTF file is a scene
+	// rather than an asset, so it arrives already split into pieces and already positioned
+	// relative to itself, and the only transform worth applying is one that moves the whole
+	// thing at once. Every piece therefore gets the same transform.
+	//
+	// Skipped with a log rather than fatal when the file is absent, like Spot: the assets
+	// are downloaded rather than committed.
+	void LoadGltfScene(const std::wstring& Path,
+						const XMFLOAT3 Translation	= DX_IDENTITY_TRANSLATE3,
+						const XMFLOAT3 Rotation		= DX_IDENTITY_ROTATE3,
+						const XMFLOAT3 Scale		= DX_IDENTITY_SCALE3);
 
 	// Drains whatever the panel asked for. Called once per frame, after BeginFrame, so
 	// the command list is open for the vertex and texture uploads a spawn performs.
@@ -135,7 +193,7 @@ private:
 
 	// Constants / Misc
 	static constexpr UINT	BACK_BUFFER_COUNT	= 3;											//how many frames are in flight
-	static constexpr UINT	MAX_MATERIALS		= 10;											//how many materials fit in the shared descriptor heap
+	static constexpr UINT	MAX_MATERIALS		= 64;											//how many materials fit in the shared descriptor heap, Sponza alone declares 25
 	static constexpr UINT	CAMERA_CBV_STRIDE	= CameraConstantBufferSize;							//already a multiple of the constant buffer alignment
 	static constexpr UINT	SKY_FACE_RESOLUTION	= 512;												//per radiance cube face, projected out of the panorama on the CPU
 	static constexpr UINT	SKY_IRRADIANCE_RESOLUTION = 32;											//irradiance barely varies with direction, so it stays tiny
@@ -194,6 +252,12 @@ private:
 	Camera									Camera;
 	std::vector<std::unique_ptr<Primitive>>	Primitives;
 	std::vector<std::unique_ptr<LightBase>>	Lights;
+
+	// Settled once in Initialize, before anything is built, and read by the material and
+	// light setup afterwards. Not changeable at runtime: swapping scenes means releasing
+	// vertex buffers and textures the GPU may still be reading, which is a teardown path
+	// that does not exist yet.
+	SceneSetup								ActiveScene = SceneSetup::Default;
 
 	// What is available to spawn, discovered on disk at startup
 	AssetCatalog							Catalog;

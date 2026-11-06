@@ -8,12 +8,7 @@
 
 #include <string>
 
-// A mesh read off disk, in the layout the base pass expects
-struct LoadedMesh
-{
-	std::vector<VertexPositionTexCoordNormalTangentBitangent>	Vertices;
-	std::vector<TypeOfIndice>									Indices;
-};
+// LoadedMesh, the return type, lives in Vertex.h so every loader shares one.
 
 // Reads a Wavefront OBJ.
 //

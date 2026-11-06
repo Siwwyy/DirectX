@@ -21,9 +21,18 @@ public:
 
 	// MeshPath is absolute, build it with DXIPATHS::GetModelDir
 	Model(std::wstring Name, std::wstring MeshPath);
+
+	// Geometry that has already been parsed.
+	//
+	// A Wavefront file holds one mesh, so pointing a Model at a path and letting it read
+	// its own works. A glTF file holds many, split wherever the material changes, and
+	// reparsing the file once per piece would be absurd. The scene loader parses once and
+	// hands each piece over here instead.
+	Model(std::wstring Name, LoadedMesh Mesh);
+
 	~Model() override = default;
 
-	// Reads the mesh off disk, then uploads it like any other primitive
+	// Uploads the mesh, reading it off disk first if it was not supplied at construction
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList) override;
 
 	_NODISCARD const std::wstring& GetMeshPath() const noexcept
@@ -33,7 +42,12 @@ public:
 
 private:
 
-	std::wstring MeshPath;
+	std::wstring	MeshPath;
+
+	// Set when the geometry arrived pre-parsed. Cleared in Init once it has been uploaded,
+	// because past that point the GPU copy is the only one that matters and a scene the
+	// size of Sponza would otherwise keep a second one in system memory for nothing.
+	LoadedMesh		PreloadedMesh;
 };
 
 #endif // D3D12_MODEL_H_INCLUDED

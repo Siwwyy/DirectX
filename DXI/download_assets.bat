@@ -39,6 +39,18 @@ call :Fetch "spot" ^
     "spot_triangulated.obj spot_texture.png README.txt"
 if errorlevel 1 goto :Failed
 
+rem  Sponza, the Crytek scene as redistributed by Khronos. CC-BY 3.0, see the repository.
+rem  Around 260k triangles across 25 materials, which makes it the standard scene for
+rem  checking that a renderer copes with something it did not generate itself.
+rem
+rem  Fetched file by file rather than as an archive: Khronos publishes the sample assets
+rem  as one large repository with no per model download, and pulling the whole thing to
+rem  get 50MB of Sponza is not worth it.
+call :FetchGitHubDir "sponza" ^
+    "KhronosGroup/glTF-Sample-Assets" ^
+    "Models/Sponza/glTF"
+if errorlevel 1 goto :Failed
+
 echo.
 echo Assets are up to date.
 popd
@@ -108,6 +120,49 @@ if not defined FOUND (
 )
 
 copy /y "%FOUND%" "%~3\" >nul
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  :FetchGitHubDir  name  owner/repo  path/in/repo
+rem  Downloads every file of one GitHub directory, which is what a repository that ships
+rem  many assets side by side forces. PowerShell rather than curl here, because the
+rem  directory listing comes back as JSON and batch has no way to read it.
+rem ---------------------------------------------------------------------------
+:FetchGitHubDir
+set "NAME=%~1"
+set "REPO=%~2"
+set "REPOPATH=%~3"
+set "DEST=%MODELROOT%\%NAME%"
+
+if not defined FORCE if exist "%DEST%\*.gltf" (
+    echo [skip] %NAME% is already here
+    exit /b 0
+)
+
+echo [get ] %NAME%  (many files, this takes a moment)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference='Stop';" ^
+    "try {" ^
+    "  $api = 'https://api.github.com/repos/%REPO%/contents/%REPOPATH%';" ^
+    "  $list = Invoke-RestMethod -Uri $api -Headers @{ 'User-Agent' = 'dxi' } -TimeoutSec 120;" ^
+    "  $files = @($list | Where-Object { $_.type -eq 'file' });" ^
+    "  New-Item -ItemType Directory -Force -Path '%DEST%' | Out-Null;" ^
+    "  $done = 0;" ^
+    "  foreach ($f in $files) {" ^
+    "    Invoke-WebRequest -Uri $f.download_url -OutFile (Join-Path '%DEST%' $f.name) -TimeoutSec 180;" ^
+    "    $done++;" ^
+    "  }" ^
+    "  Write-Host ('       ' + $done + ' of ' + $files.Count + ' files');" ^
+    "  if ($done -ne $files.Count) { exit 1 }" ^
+    "} catch { Write-Host ('       failed: ' + $_.Exception.Message); exit 1 }"
+
+if errorlevel 1 (
+    echo        download failed
+    exit /b 1
+)
+
+echo        done, see %DEST%
 exit /b 0
 
 rem ---------------------------------------------------------------------------

@@ -144,6 +144,17 @@ int DXICMD::GetInt(const wchar_t* Name, const int Fallback)
 	}
 }
 
+std::wstring DXICMD::GetString(const wchar_t* Name, const wchar_t* Fallback)
+{
+	const Switch* const Entry = Find(Name);
+	if (!Entry || Entry->Value.empty())
+	{
+		return Fallback ? Fallback : L"";
+	}
+
+	return Entry->Value;
+}
+
 bool DXICMD::WantsUsage()
 {
 	return HasFlag(L"help") || HasFlag(L"h") || HasFlag(L"?");
@@ -158,6 +169,12 @@ void DXICMD::LogUsage()
 	DXLOG("    -nobreak           Do not break into the debugger on debug layer messages.\n")
 	DXLOG("\n  Adapter\n")
 	DXLOG("    -warp              Render on the WARP software adapter, which tells a driver bug from an engine bug.\n")
+	DXLOG("\n  Scene\n")
+	DXLOG("    -scene default     Cubes, ground, sphere and Spot. The built in scene, and what runs with no switch.\n")
+	DXLOG("    -scene sponza      Sponza on its own, at the origin, with the sun sized to cover it.\n")
+	DXLOG("    -scene both        Both at once, Sponza stood off along +Z. For comparing them.\n")
+	DXLOG("    -scene cornell     The Cornell Box, to its published measurements. One ceiling light.\n")
+	DXLOG("    -sponza, -cornell  Shorthand for the matching -scene.\n")
 	DXLOG("\n  Presentation\n")
 	DXLOG("    -vsync             Present with a sync interval of 1. Off by default.\n")
 	DXLOG("    -width  N          Window width in pixels.\n")
