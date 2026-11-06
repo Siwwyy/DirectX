@@ -11,8 +11,8 @@
 //#define DEBUG_MODE 1
 
 // Own includes
-#include "D3D12App.h"
 #include "Win32Proc.h"
+#include "CommandLine.h"
 ////
 
 
@@ -22,6 +22,19 @@ int WINAPI WinMain(HINSTANCE hInstance,
     LPSTR     lpCmdLine,
     int       nCmdShow)
 {
-    D3D12App dx12App(1280u, 720u, L"MyApp");
+    // First, so everything downstream can read a switch. It takes the command line from
+    // the process rather than from lpCmdLine, which is ANSI and already split badly.
+    DXICMD::Parse();
+
+    if (DXICMD::ShowHelpDocs())
+    {
+        DXICMD::LogUsage();
+    }
+
+    // Which app actually runs is the CurrentApp alias of Win32Proc.h
+    CurrentApp dx12App(static_cast<UINT>(DXICMD::GetInt(L"width", 1280)),
+                       static_cast<UINT>(DXICMD::GetInt(L"height", 720)),
+                       L"MyApp");
+
     return Win32Proc::Run(hInstance, nCmdShow, &dx12App);
 }

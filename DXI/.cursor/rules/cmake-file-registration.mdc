@@ -1,0 +1,39 @@
+---
+description: Keeping CMake in sync when files are added, moved, renamed or deleted
+alwaysApply: true
+---
+
+# CMake stays in sync by globbing, not by hand
+
+`CMakeLists.txt` collects sources, headers and shaders with
+`file(GLOB_RECURSE ... CONFIGURE_DEPENDS)` under `DXI/`. A new `.cpp`, `.h` or `.hlsl`
+anywhere in that tree is picked up automatically. **Do not hand-list files.**
+
+## After adding, renaming or deleting any file
+
+Always build, and expect the first build to fail:
+
+- `CONFIGURE_DEPENDS` re-globs at build time, *after* MSBuild has already loaded the
+  project, so the new file is missing from the current build. A new `.cpp` fails at link
+  with unresolved externals, a deleted one fails with `C1083: Cannot open source file`.
+- **Build a second time.** It passes. This lag is inherent to globbing with the Visual
+  Studio generator, it is not a mistake to chase.
+- If a second build still fails, reconfigure:
+  `cmake --build <build-dir> --target DXIApp` after `cmake <source-dir>`.
+
+## When CMakeLists *does* need editing
+
+Globbing only covers what the patterns already match. Edit `CMakeLists.txt` when:
+
+- a file uses an extension not in the patterns (sources: `.cpp .c .cc .cxx`,
+  headers: `.h .hpp`, shaders under `DXI/shaders`: `.glsl .hlsl .comp .hip .cl`)
+- shaders are added outside `DXI/shaders`, which is globbed separately from sources
+- a third party dependency is introduced, which needs `FetchContent` plus either
+  `target_sources` or `target_link_libraries`
+- a new header folder must be on the include path — normally automatic, since include
+  directories are derived from `DXI_HEADERS`, but `DXI/libs` is deliberately excluded
+
+## Verify before reporting work complete
+
+A change is not finished until `cmake --build` succeeds. State in the summary that the
+build passed, and if a new file was added, that it passed on the rebuild.

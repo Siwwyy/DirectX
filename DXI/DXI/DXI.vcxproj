@@ -102,7 +102,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs;E:\!!PROJECTS_VS\DirectX\DXEngine\DXEngine\libs\dxc_2024_07_31\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,31 +132,90 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp" />
-    <ClCompile Include="D3D12Helpers.cpp" />
-    <ClCompile Include="D3D12Math.cpp" />
-    <ClCompile Include="D3D12ShaderCompiler.cpp" />
-    <ClCompile Include="D3D12Texture.cpp" />
+    <ClCompile Include="D3D12Buffer.cpp" />
+    <ClCompile Include="DXIHelpers.cpp" />
+    <ClCompile Include="DXIMath.cpp" />
+    <ClCompile Include="DXIShaderCompiler.cpp" />
+    <ClCompile Include="DXITexture.cpp" />
+    <ClCompile Include="Geometry\Vertex.cpp" />
+    <ClCompile Include="JobLambda.cpp" />
     <ClCompile Include="Objects\Camera.cpp" />
     <ClCompile Include="Objects\Cube.cpp" />
+    <ClCompile Include="Core\DXIDepthBuffer.cpp" />
+    <ClCompile Include="Core\DXIDevice.cpp" />
+    <ClCompile Include="Core\DXIFrameContext.cpp" />
+    <ClCompile Include="Core\DXISwapChain.cpp" />
+    <ClCompile Include="D3D12Renderer.cpp" />
+    <ClCompile Include="GBuffer.cpp" />
+    <ClCompile Include="CubeMap.cpp" />
+    <ClCompile Include="ShadowAtlas.cpp" />
+    <ClCompile Include="Passes\ShadowPass.cpp" />
+    <ClCompile Include="LightTypes\AreaLight.cpp" />
+    <ClCompile Include="LightTypes\DirectionalLight.cpp" />
+    <ClCompile Include="LightTypes\LightBase.cpp" />
+    <ClCompile Include="LightTypes\PointLight.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Objects\Plane.cpp" />
+    <ClCompile Include="Paths.cpp" />
     <ClCompile Include="Objects\Primitive.cpp" />
+    <ClCompile Include="Passes\BasePass.cpp" />
+    <ClCompile Include="Passes\LightPass.cpp" />
+    <ClCompile Include="Passes\PassBase.cpp" />
+    <ClCompile Include="PSO.cpp" />
+    <ClCompile Include="RenderGraph.cpp" />
     <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Win32Proc.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12App.h" />
-    <ClInclude Include="D3D12Helpers.h" />
-    <ClInclude Include="D3D12Math.h" />
-    <ClInclude Include="D3D12ShaderCompiler.h" />
-    <ClInclude Include="D3D12Texture.h" />
+    <ClInclude Include="D3D12Buffer.h" />
+    <ClInclude Include="DXIHelpers.h" />
+    <ClInclude Include="DXIMath.h" />
+    <ClInclude Include="DXIShaderCompiler.h" />
+    <ClInclude Include="DXITexture.h" />
+    <ClInclude Include="Geometry\Vertex.h" />
+    <ClInclude Include="JobLambda.h" />
     <ClInclude Include="Objects\Camera.h" />
     <ClInclude Include="Objects\Cube.h" />
+    <ClInclude Include="Objects\Plane.h" />
     <ClInclude Include="Objects\Primitive.h" />
+    <ClInclude Include="Passes\BasePass.h" />
+    <ClInclude Include="Passes\LightPass.h" />
+    <ClInclude Include="Core\DXIDepthBuffer.h" />
+    <ClInclude Include="Core\DXIDevice.h" />
+    <ClInclude Include="Core\DXIFrameContext.h" />
+    <ClInclude Include="Core\DXISwapChain.h" />
+    <ClInclude Include="D3D12Renderer.h" />
+    <ClInclude Include="GBuffer.h" />
+    <ClInclude Include="CubeMap.h" />
+    <ClInclude Include="ShadowAtlas.h" />
+    <ClInclude Include="Passes\ShadowPass.h" />
+    <ClInclude Include="LightTypes\AreaLight.h" />
+    <ClInclude Include="LightTypes\DirectionalLight.h" />
+    <ClInclude Include="LightTypes\LightBase.h" />
+    <ClInclude Include="LightTypes\PointLight.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="Passes\PassBase.h" />
+    <ClInclude Include="Paths.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PSO.h" />
+    <ClInclude Include="RenderGraph.h" />
     <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Win32Proc.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets" Condition="Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets'))" />
+  </Target>
 </Project>
+

@@ -3,10 +3,15 @@
 #ifndef D3D12_PRIMITIVE_H_INCLUDED
 #define D3D12_PRIMITIVE_H_INCLUDED
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../D3D12Math.h"
+#include "pch.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
+#include "Vertex.h"
 
+// FWD
+class Material;
+
+// Primitive class
 class Primitive
 {
 	DISABLE_COPY(Primitive)
@@ -14,78 +19,105 @@ class Primitive
 public:
 
 	Primitive();
-	Primitive(const DirectX::XMFLOAT4X4 InitWorldMat,
-				const DirectX::XMFLOAT4X4 InitRotMat,
-				const DirectX::XMFLOAT4 InitPosition,
-				const XMFLOAT4 InitScale);
-	~Primitive() = default;
+	Primitive(std::wstring Name);
+	Primitive(const XMFLOAT3 InitRot,
+			const XMFLOAT3 InitPosition,
+			const XMFLOAT3 InitScale);
+	virtual ~Primitive() = default;
 
+	// Init
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
+	// Setters
 	void SetNumIndices(const UINT NumIndices)
 	{
 		this->NumIndices = NumIndices;
 	}
 
-	// Main Transform of pritmitive
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSFORM,
-				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE,
-				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE);
+	// Material this primitive is drawn with, owned by whoever created it.
+	// Overrides the default, pass nullptr to fall back to it again.
+	void SetMaterial(Material * const InMaterial)
+	{
+		this->PrimitiveMaterial = InMaterial;
+	}
+
+	// Material every primitive without one of its own is drawn with. Registered once by
+	// whoever owns the materials, before anything is drawn.
+	static void SetDefaultMaterial(Material * const InDefaultMaterial)
+	{
+		DefaultMaterial = InDefaultMaterial;
+	}
+
+	// Main Transform of pritmitive | Nudges position and rotation, replaces scale
+	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
+				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
+				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
+
+	// Replaces the whole transform, which is what an editor hands over
+	void SetTransform(const XMFLOAT3 Translation, const XMFLOAT3 Rotation, const XMFLOAT3 Scale)
+	{
+		Matrices.SetTransform(Translation, Rotation, Scale);
+	}
 	
+	// Getters
+	_NODISCARD inline const auto GetWorldMatrixNoTranslation() const
+	{
+		return Matrices.ScaleRotMat;
+	}
 	_NODISCARD inline const auto GetWorldMatrix() const
 	{
 		return Matrices.WorldMat;
 	}
 	_NODISCARD inline const auto GetPosVector() const
 	{
-		return Matrices.Position;
+		return Matrices.PositionVec;
 	}
-	_NODISCARD inline const auto GetRotationMatrix() const
+	_NODISCARD inline const auto GetRotVector() const
 	{
-		return Matrices.RotMat;
+		return Matrices.RotVec;
+	}
+	_NODISCARD inline const auto GetScaleVector() const
+	{
+		return Matrices.ScaleVec;
 	}
 	_NODISCARD inline const auto GetNumIndices() const
 	{
 		return NumIndices;
 	}
-
-	void PrintTransformPretty() const;
+	// Falls back to the default, so a freshly created mesh is always drawable
+	_NODISCARD inline auto GetMaterial() const
+	{
+		return PrimitiveMaterial ? PrimitiveMaterial : DefaultMaterial;
+	}
+	_NODISCARD inline bool HasOwnMaterial() const
+	{
+		return PrimitiveMaterial != nullptr;
+	}
 
 	// D3D12 Vertex data
-	ComPtr<DXResource>			VertexBufferUpload;
-	ComPtr<DXResource>			VertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;
+	VertexFactory				VertexFactory;
 
 	// D3D12 Index buffer data
 	ComPtr<DXResource>			IndexBufferUpload;
 	ComPtr<DXResource>			IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
+	// Name of primitive (for debug purposes)
+	std::wstring				Name = L"Primitive";
+
 private:
-
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetWorldMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.WorldMat, Matrix);
-	}
-
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetPosVector(const XMFLOAT4 Vector)
-	{
-		Matrices.Position = Vector;
-	}
-
-	/* [[deprecated("SHOULD NOT BE USED")]] */ void SetRotationMatrix(const XMMATRIX Matrix)
-	{
-		XMStoreFloat4x4(&Matrices.RotMat, Matrix);
-	}
-
 
 	// Matrices
 	ObjectMatrices				Matrices;
 
 	// Number of indices
-	UINT NumIndices;
+	UINT						NumIndices;
 
+	// Material of the primitive, not owned here. Null means use the default below.
+	Material *					PrimitiveMaterial = nullptr;
+
+	// Shared by every primitive, also not owned here
+	static Material *			DefaultMaterial;
 };
-
 
 #endif // D3D12_PRIMITIVE_H_INCLUDED

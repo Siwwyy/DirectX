@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -19,18 +19,54 @@
     <Filter Include="Source Files\Objects">
       <UniqueIdentifier>{c9d40fc0-8839-4ac5-a1b0-7897b5cb92bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderGraph">
+      <UniqueIdentifier>{159e79e1-5a42-4f6f-ad23-94dee3891fc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderGraph">
+      <UniqueIdentifier>{3411fe55-89d3-402b-b091-e0da1c119a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources">
+      <UniqueIdentifier>{b3888abd-8157-40e9-8464-4eef21db46f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{c1f3a990-6e2b-4adb-9516-1264d9a1bd3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Geometry">
+      <UniqueIdentifier>{116c9ba9-cea3-4d4a-a46b-023e25f24d15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Passes">
+      <UniqueIdentifier>{ef21707e-b0aa-4912-a2c5-eae05b29501d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Passes">
+      <UniqueIdentifier>{ac4855b8-05a2-4bee-84aa-e81b4f1c1642}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Geometry">
+      <UniqueIdentifier>{b56e5fe3-c8fb-45a5-be24-55bae4614e29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\LightTypes">
+      <UniqueIdentifier>{2a1d5f3c-7b64-4f2a-9c18-5d3e4a6b7c81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{9c6b1e74-48d2-4a53-bf91-6e2d7a3c5f48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{d5a83f26-91b7-4c0e-8a64-3f7b2e9d14c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LightTypes">
+      <UniqueIdentifier>{7f4c2b9e-3a85-4d16-b2f7-9e1a8c5d4b32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Helpers.cpp">
+    <ClCompile Include="DXIHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Math.cpp">
+    <ClCompile Include="DXIMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12ShaderCompiler.cpp">
+    <ClCompile Include="DXIShaderCompiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Win32Proc.cpp">
@@ -51,21 +87,90 @@
     <ClCompile Include="TextRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Texture.cpp">
+    <ClCompile Include="DXITexture.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Buffer.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="JobLambda.cpp">
+      <Filter>Source Files\RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Vertex.cpp">
+      <Filter>Source Files\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\BasePass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\LightPass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\PassBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Plane.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="PSO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Paths.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Passes\ShadowPass.cpp">
+      <Filter>Source Files\Passes</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DXIDevice.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DXISwapChain.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DXIDepthBuffer.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\DXIFrameContext.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\LightBase.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\DirectionalLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\PointLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="LightTypes\AreaLight.cpp">
+      <Filter>Source Files\LightTypes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12App.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Helpers.h">
+    <ClInclude Include="DXIHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Math.h">
+    <ClInclude Include="DXIMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12ShaderCompiler.h">
+    <ClInclude Include="DXIShaderCompiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -86,8 +191,80 @@
     <ClInclude Include="TextRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Texture.h">
+    <ClInclude Include="DXITexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RenderGraph.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Buffer.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="JobLambda.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Vertex.h">
+      <Filter>Header Files\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\BasePass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\LightPass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\PassBase.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Plane.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="PSO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Paths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Passes\ShadowPass.h">
+      <Filter>Header Files\Passes</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\DXIDevice.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\DXISwapChain.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\DXIDepthBuffer.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\DXIFrameContext.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\LightBase.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\DirectionalLight.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\PointLight.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="LightTypes\AreaLight.h">
+      <Filter>Header Files\LightTypes</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

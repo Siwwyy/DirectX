@@ -4,9 +4,9 @@
 #define D3D12_CAMERA_H_INCLUDED
 
 
-#include "../pch.h"
-#include "../D3D12Helpers.h"
-#include "../D3D12Math.h"
+#include "pch.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 
 class Camera
 {
@@ -14,36 +14,98 @@ class Camera
 
 public:
 
+	// Ctors
 	Camera()	= default;
+	Camera(UINT ScreenWidth, UINT ScreenHeight);
 	~Camera()	= default;
 
-	Camera(UINT ScreenWidth, UINT ScreenHeight);
+	// Logic
+	void Reset();
+	void Update(float ElapsedSeconds) noexcept;
 
-	void SetPosVector(const XMFLOAT4 Vector)
+	// Movement
+	void OnKeyDown(WPARAM key);
+	void OnKeyUp(WPARAM key);
+
+	// Rotation | Takes how many pixels the cursor travelled since the last message
+	void OnMouseMove(const int DeltaX, const int DeltaY) noexcept;
+
+	// Setters
+	void SetMouseSensitivity(const float Sensitivity) noexcept
 	{
-		// set starting camera state
-		CameraMatrices.CameraPosition = Vector;
-
-		// build view matrix
-		XMVECTOR Pos	= XMLoadFloat4(&CameraMatrices.CameraPosition);
-		XMVECTOR Targ	= XMLoadFloat4(&CameraMatrices.CameraTarget);
-		XMVECTOR Up		= XMLoadFloat4(&CameraMatrices.CameraUp);
-		XMMATRIX LookAt = XMMatrixLookAtLH(Pos, Targ, Up);
-		XMStoreFloat4x4(&CameraMatrices.CameraViewMat, LookAt);
+		MouseSensitivity = Sensitivity;
 	}
 
+	// Getters
+	_NODISCARD inline auto GetMouseSensitivity() const noexcept
+	{
+		return MouseSensitivity;
+	}
 	_NODISCARD inline const auto GetViewMatrix() const
 	{
-		return CameraMatrices.CameraViewMat;
+		return XMLoadFloat4x4(&CameraMatrices.ViewMat);						// View mat
 	}
 	_NODISCARD inline const auto GetProjMatrix() const
 	{
-		return CameraMatrices.CameraProjMat;
+		return XMLoadFloat4x4(&CameraMatrices.ProjMat);						// Proj mat
+	}
+	_NODISCARD inline const auto& GetPosition() const
+	{
+		return CameraMatrices.Position;										// World space position (eye)
+	}
+	_NODISCARD inline auto GetYaw() const noexcept
+	{
+		return Yaw;															// Degrees, turning right lowers it
+	}
+	_NODISCARD inline auto GetPitch() const noexcept
+	{
+		return Pitch;														// Degrees, clamped short of +/- 90
+	}
+	_NODISCARD inline const auto& GetDirection() const
+	{
+		return CameraMatrices.Direction;									// N | Forward, rebuilt from yaw and pitch
+	}
+	_NODISCARD inline const auto& GetUp() const
+	{
+		return CameraMatrices.Up;											// V
+	}
+	_NODISCARD inline const auto& GetRight() const
+	{
+		return CameraMatrices.Right;										// U
 	}
 
 private:
-	CameraMatrices	CameraMatrices;
-};
 
+	void ConstructViewMatrix(const XMFLOAT4 Pos, 
+							const XMFLOAT4 Dir,
+							const XMFLOAT4 Up, 
+							const XMFLOAT4 RotXYZW);
+	struct KeysPressed
+	{
+		bool w;
+		bool a;
+		bool s;
+		bool d;
+
+		bool left;
+		bool right;
+		bool up;
+		bool down;
+	};
+
+	//
+	float Yaw;								// Relative to the y plane.
+	float Pitch;							// Relative to the xz plane.
+	float MoveSpeed;						// Speed at which the camera moves, in units per second.
+	float TurnSpeed;						// Speed at which the camera turns, in radians per second.
+	float MouseSensitivity = 0.2f;			// Degrees of rotation per pixel of cursor movement.
+
+	// Matrices
+	CameraMatrices	CameraMatrices;
+
+	// Keys
+	KeysPressed KeysPressed;
+
+};
 
 #endif // D3D12_CAMERA_H_INCLUDED
