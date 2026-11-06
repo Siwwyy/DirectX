@@ -66,6 +66,35 @@ void DXISwapChain::Init(const DXIDevice& Device, const HWND WindowHandle, const 
 
 	RtvIncrementSize = Device.Get()->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
+	CreateBackBufferViews(Device);
+}
+
+void DXISwapChain::Resize(const DXIDevice& Device, const UINT Width, const UINT Height)
+{
+	DXASSERT(SwapChain, "Swap chain must be initialized before it can be resized");
+	DXASSERT(Width > 0 && Height > 0, "Swap chain needs a non empty size");
+
+	// ResizeBuffers refuses to run while anything still references a back buffer, and the
+	// surfaces held here are exactly that, so they go first and are picked up again below.
+	// The heap and its increment size survive, only the views written into it are redone.
+	//
+	// Nothing waits for the GPU here. The caller has to have done that already, because a
+	// buffer being dropped may still belong to a frame that has not finished presenting.
+	for (auto& BackBuffer : BackBuffers)
+	{
+		BackBuffer.Reset();
+	}
+
+	// The same flags the chain was created with. Dropping the tearing flag here would leave
+	// an unsynchronized Present failing against a chain that no longer allows one.
+	const UINT SwapChainFlags = bTearingSupported ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+	ThrowIfFailed(SwapChain->ResizeBuffers(BackBufferCount, Width, Height, GetFormat(), SwapChainFlags));
+
+	CreateBackBufferViews(Device);
+}
+
+void DXISwapChain::CreateBackBufferViews(const DXIDevice& Device)
+{
 	// One render target view per back buffer
 	BackBuffers.resize(BackBufferCount);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());

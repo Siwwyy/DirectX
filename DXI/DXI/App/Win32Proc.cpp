@@ -9,6 +9,9 @@
 HWND Win32Proc::hwnd			= nullptr;
 POINT Win32Proc::LastMousePos	= {};
 bool Win32Proc::bIsRotating		= false;
+bool Win32Proc::bIsResizing		= false;
+UINT Win32Proc::PendingWidth	= 0;
+UINT Win32Proc::PendingHeight	= 0;
 
 int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 {
@@ -150,6 +153,49 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 		// Tracked even while idle, otherwise the first move of a drag would jump
 		LastMousePos = MousePos;
+	}
+	return 0;
+
+	// Resizing | The client area changed, so everything sized to it has to be rebuilt.
+	//
+	// Dragging an edge sends one of these per mouse move, and each one would otherwise
+	// recreate the swap chain buffers, the depth target and four G-buffer targets, waiting
+	// for the GPU to go idle each time. So during a drag the size is only recorded, and the
+	// rebuild happens once the drag ends. Outside a drag, which is a maximise, a snap or a
+	// programmatic resize, there is no stream of messages and it is applied immediately.
+	case WM_SIZE:
+	{
+		if (!dx12App)
+		{
+			return 0;
+		}
+
+		PendingWidth	= LOWORD(lParam);
+		PendingHeight	= HIWORD(lParam);
+
+		// wParam distinguishes a minimise from a real size change. A minimised window
+		// reports zero anyway, which OnResize ignores, but saying so is clearer.
+		if (!bIsResizing && wParam != SIZE_MINIMIZED)
+		{
+			dx12App->OnResize(PendingWidth, PendingHeight);
+		}
+	}
+	return 0;
+
+	case WM_ENTERSIZEMOVE:
+	{
+		bIsResizing = true;
+	}
+	return 0;
+
+	case WM_EXITSIZEMOVE:
+	{
+		bIsResizing = false;
+
+		if (dx12App)
+		{
+			dx12App->OnResize(PendingWidth, PendingHeight);
+		}
 	}
 	return 0;
 

@@ -80,6 +80,13 @@ public:
 	void Update(float DeltaTime);
 	void Destroy();
 
+	// Rebuilds everything that was sized to the window: the back buffers, the depth buffer,
+	// the G-buffer, the views onto them, the viewport and the camera's projection.
+	//
+	// Called from WM_SIZE, which arrives for every mouse move of a drag, so Win32Proc holds
+	// the final size back until the drag ends rather than rebuilding dozens of times.
+	void OnResize(const UINT Width, const UINT Height);
+
 	// Movement of camera
 	void OnKeyDown(UINT8 Key);
 	void OnKeyUp(UINT8 Key);

@@ -693,6 +693,65 @@ void D3D12Renderer::Destroy()
 	Device.ReportLiveObjects();
 }
 
+void D3D12Renderer::OnResize(const UINT Width, const UINT Height)
+{
+	// A minimised window reports zero, and there is nothing worth creating at that size.
+	// The size it had is kept, so restoring brings everything back as it was.
+	if (Width == 0 || Height == 0)
+	{
+		return;
+	}
+
+	// WM_SIZE arrives while the window is being created, before Initialize has run, and
+	// again on the way out after Destroy has unmapped the constant buffers. Rebuilding
+	// render targets in either state is the same mistake Update and Render guard against.
+	if (bDestroyed || !Device.IsValid() || !SwapChain.Get() || !LightInputsHeap)
+	{
+		return;
+	}
+
+	if (Width == WindowWidth && Height == WindowHeight)
+	{
+		return;
+	}
+
+	// Every resource below is about to be released, and frames are not waited on after
+	// Present, so several may still be reading them. This is the same reasoning as the
+	// wait in Destroy.
+	FrameContext.WaitForGpuIdle(Device);
+
+	WindowWidth		= Width;
+	WindowHeight	= Height;
+	AspectRatio		= static_cast<float>(Width) / static_cast<float>(Height);
+
+	// BeginFrame sets these on the command list every frame, so they only need updating
+	ViewPort		= CD3DX12_VIEWPORT(0.f, 0.f, static_cast<float>(Width), static_cast<float>(Height), 0.0f, 1.0f);
+	ScissorRect		= CD3DX12_RECT(0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height));
+
+	SwapChain.Resize(Device, Width, Height);
+
+	// Both of these recreate their resources and their descriptor heaps outright. Nothing
+	// about them is worth keeping: a depth target and a G-buffer target are tied to a size.
+	DepthBuffer.Init(Device, Width, Height);
+	SceneGBuffer.Init(Device.Get(), Width, Height);
+
+	// The shader visible heap still holds views onto the G-buffer targets that were just
+	// released. Easy to forget, and the symptom is not a crash but a frame sampling freed
+	// memory. The shadow atlas views after them are untouched, since the atlas is sized
+	// independently of the window.
+	const auto IncrementSize = Device.Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE SrvHandle(LightInputsHeap->GetCPUDescriptorHandleForHeapStart());
+	SceneGBuffer.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
+
+	// Only the aspect ratio moves, so the view does not jump
+	Camera.SetViewportSize(Width, Height);
+
+	// ResizeBuffers restarts the chain's indexing, so the cached index is stale
+	CurrentFrameIdx = SwapChain.GetCurrentBackBufferIdx();
+
+	DXLOG("Resized to %ux%u\n", Width, Height)
+}
+
 void D3D12Renderer::OnKeyDown(UINT8 Key)
 {
 	Camera.OnKeyDown(Key);

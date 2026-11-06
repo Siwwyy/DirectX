@@ -29,6 +29,13 @@ private:
     // cursor over the window does not spin the camera around
     static POINT    LastMousePos;
     static bool     bIsRotating;
+
+    // Resizing | A drag reports a new size on every mouse move. Rebuilding the render
+    // targets that often would wait for the GPU dozens of times, so the size is held here
+    // and applied when the drag ends. See WM_SIZE.
+    static bool     bIsResizing;
+    static UINT     PendingWidth;
+    static UINT     PendingHeight;
 };
 
 #endif // WIN32_PROC_H_INCLUDED
