@@ -9,14 +9,14 @@
 
 namespace
 {
-	struct Switch
+	struct ConsoleVariable
 	{
 		std::wstring Name;		// lower case, leading dashes stripped
-		std::wstring Value;		// empty when the switch is a bare flag
+		std::wstring Value;		// empty when the ConsoleVariable is a bare flag
 	};
 
-	std::vector<Switch>	Switches;
-	bool				bParsed = false;
+	std::vector<ConsoleVariable>	ConsoleVariables;
+	bool							bParsed = false;
 
 	std::wstring ToLower(std::wstring Text)
 	{
@@ -26,7 +26,7 @@ namespace
 	}
 
 	// Accepts -name, --name and /name so nobody has to remember which this engine wanted
-	bool IsSwitchToken(const std::wstring& Token)
+	bool IsConsoleVariableToken(const std::wstring& Token)
 	{
 		return !Token.empty() && (Token[0] == L'-' || Token[0] == L'/');
 	}
@@ -41,18 +41,18 @@ namespace
 		return Token.substr(Start);
 	}
 
-	const Switch* Find(const wchar_t* Name)
+	const ConsoleVariable* Find(const wchar_t* Name)
 	{
 		if (!bParsed)
 		{
-			// Reading a switch before Parse() would silently answer "absent" for everything
-			DXASSERT(bParsed, "DXICMD::Parse must be called before any switch is read");
+			// Reading a ConsoleVariable before Parse() would silently answer "absent" for everything
+			DXASSERT(bParsed, "DXICMD::Parse must be called before any ConsoleVariable is read");
 			return nullptr;
 		}
 
 		const std::wstring Wanted = ToLower(Name ? Name : L"");
 
-		for (const auto& Entry : Switches)
+		for (const auto& Entry : ConsoleVariables)
 		{
 			if (Entry.Name == Wanted)
 			{
@@ -84,12 +84,12 @@ void DXICMD::Parse()
 	for (int ArgIdx = 1; ArgIdx < ArgCount; ++ArgIdx)
 	{
 		std::wstring Token = Arguments[ArgIdx];
-		if (!IsSwitchToken(Token))
+		if (!IsConsoleVariableToken(Token))
 		{
 			continue;
 		}
 
-		Switch Entry;
+		ConsoleVariable Entry;
 		Token = StripPrefix(Token);
 
 		// -name=value
@@ -103,16 +103,16 @@ void DXICMD::Parse()
 		{
 			Entry.Name = ToLower(Token);
 
-			// -name value, but only when what follows is not itself a switch, so a bare
+			// -name value, but only when what follows is not itself a ConsoleVariable, so a bare
 			// flag sitting in front of another flag is not mistaken for taking a value
-			if (ArgIdx + 1 < ArgCount && !IsSwitchToken(Arguments[ArgIdx + 1]))
+			if (ArgIdx + 1 < ArgCount && !IsConsoleVariableToken(Arguments[ArgIdx + 1]))
 			{
 				Entry.Value = Arguments[ArgIdx + 1];
 				++ArgIdx;
 			}
 		}
 
-		Switches.push_back(std::move(Entry));
+		ConsoleVariables.push_back(std::move(Entry));
 	}
 
 	LocalFree(Arguments);
@@ -125,7 +125,7 @@ bool DXICMD::HasFlag(const wchar_t* Name)
 
 int DXICMD::GetInt(const wchar_t* Name, const int Fallback)
 {
-	const Switch* const Entry = Find(Name);
+	const ConsoleVariable* const Entry = Find(Name);
 	if (!Entry || Entry->Value.empty())
 	{
 		return Fallback;
@@ -137,16 +137,16 @@ int DXICMD::GetInt(const wchar_t* Name, const int Fallback)
 	}
 	catch (...)
 	{
-		// A switch given a word where a number belongs is worth saying out loud rather
+		// A ConsoleVariable given a word where a number belongs is worth saying out loud rather
 		// than quietly running at the default
-		DXLOG("Command line: value of the switch is not a number, using the default\n")
+		DXLOG("Command line: value of the ConsoleVariable is not a number, using the default\n")
 		return Fallback;
 	}
 }
 
 std::wstring DXICMD::GetString(const wchar_t* Name, const wchar_t* Fallback)
 {
-	const Switch* const Entry = Find(Name);
+	const ConsoleVariable* const Entry = Find(Name);
 	if (!Entry || Entry->Value.empty())
 	{
 		return Fallback ? Fallback : L"";
@@ -155,14 +155,14 @@ std::wstring DXICMD::GetString(const wchar_t* Name, const wchar_t* Fallback)
 	return Entry->Value;
 }
 
-bool DXICMD::WantsUsage()
+bool DXICMD::ShowHelpDocs()
 {
 	return HasFlag(L"help") || HasFlag(L"h") || HasFlag(L"?");
 }
 
 void DXICMD::LogUsage()
 {
-	DXLOG("\nDXIApp switches | -name, --name or /name, case insensitive\n")
+	DXLOG("\nDXIApp ConsoleVariables | -name, --name or /name, case insensitive\n")
 	DXLOG("\n  Debug layer\n")
 	DXLOG("    -gpuvalidation     GPU based validation. Instruments every shader, commonly 10x slower.\n")
 	DXLOG("    -nodebuglayer      Skip the debug layer entirely. Needed when Graphics Tools is not installed.\n")
@@ -170,7 +170,7 @@ void DXICMD::LogUsage()
 	DXLOG("\n  Adapter\n")
 	DXLOG("    -warp              Render on the WARP software adapter, which tells a driver bug from an engine bug.\n")
 	DXLOG("\n  Scene\n")
-	DXLOG("    -scene default     Cubes, ground, sphere and Spot. The built in scene, and what runs with no switch.\n")
+	DXLOG("    -scene default     Cubes, ground, sphere and Spot. The built in scene, and what runs with no ConsoleVariable.\n")
 	DXLOG("    -scene sponza      Sponza on its own, at the origin, with the sun sized to cover it.\n")
 	DXLOG("    -scene both        Both at once, Sponza stood off along +Z. For comparing them.\n")
 	DXLOG("    -scene cornell     The Cornell Box, to its published measurements. One ceiling light.\n")

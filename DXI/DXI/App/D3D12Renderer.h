@@ -4,8 +4,8 @@
 #define D3D12_RENDERER_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 #include "Material.h"
 #include "GBuffer.h"
 #include "ShadowAtlas.h"
@@ -13,10 +13,10 @@
 #include "AssetCatalog.h"
 
 // Core | Everything every D3D12 app would otherwise duplicate
-#include "D3D12Device.h"
-#include "D3D12SwapChain.h"
-#include "D3D12DepthBuffer.h"
-#include "D3D12FrameContext.h"
+#include "DXIDevice.h"
+#include "DXISwapChain.h"
+#include "DXIDepthBuffer.h"
+#include "DXIFrameContext.h"
 
 // Objects
 #include "Camera.h"
@@ -211,10 +211,10 @@ private:
 	CD3DX12_RECT			ScissorRect;
 
 	// Core | Device, presentation, depth and command recording
-	D3D12Device				Device;
-	D3D12SwapChain			SwapChain;
-	D3D12DepthBuffer		DepthBuffer;
-	D3D12FrameContext		FrameContext;
+	DXIDevice				Device;
+	DXISwapChain			SwapChain;
+	DXIDepthBuffer		DepthBuffer;
+	DXIFrameContext		FrameContext;
 	UINT					CurrentFrameIdx = 0;
 
 	// Off by default, otherwise the frame rate is pinned to the refresh rate and says

@@ -1,11 +1,11 @@
-#include "D3D12ShaderCompiler.h"
+#include "DXIShaderCompiler.h"
 
 #include <cassert>
 #include <D3Dcompiler.h>
 
 using namespace Helpers;
 
-D3D12ShaderCompiler::D3D12ShaderCompiler()
+DXIShaderCompiler::DXIShaderCompiler()
 {
 	ThrowIfFailed(DxcCreateInstance(CLSID_DxcLibrary,	IID_PPV_ARGS(&Library)));
 	ThrowIfFailed(DxcCreateInstance(CLSID_DxcCompiler,	IID_PPV_ARGS(&Compiler)));
@@ -14,7 +14,7 @@ D3D12ShaderCompiler::D3D12ShaderCompiler()
 }
 
 // Old D3D HLSL Shader compiler
-ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
+ComPtr<ID3DBlob> DXIShaderCompiler::CompileShaderD3D(
 	LPCWSTR ShaderAbsolutePath, 
 	D3D_SHADER_MACRO const * ShaderDefines,
 	LPCSTR EntryPoint, 
@@ -60,4 +60,4 @@ ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShaderD3D(
 
 
 // make it always last...
-D3D12ShaderCompiler DXIShaderCompiler = {};
+DXIShaderCompiler GShaderCompiler = {};

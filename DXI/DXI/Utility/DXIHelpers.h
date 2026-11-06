@@ -1,8 +1,8 @@
-﻿
+
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#ifndef D3D12_HELPERS_H_INCLUDED
-#define D3D12_HELPERS_H_INCLUDED
+#ifndef DXI_HELPERS_H_INCLUDED
+#define DXI_HELPERS_H_INCLUDED
 
 #include "pch.h"
 #include <iostream>

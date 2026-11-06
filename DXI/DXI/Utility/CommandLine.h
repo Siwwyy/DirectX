@@ -4,7 +4,7 @@
 #define DXI_COMMANDLINE_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 
 #include <string>
 
@@ -35,8 +35,8 @@ namespace DXICMD
 	// Everything the switches do, written to the debug output. Triggered by -help.
 	void LogUsage();
 
-	// Whether -help or -? was asked for
-	_NODISCARD bool WantsUsage();
+	// Whether -help, -h or -? was asked for
+	_NODISCARD bool ShowHelpDocs();
 }
 
 #endif // DXI_COMMANDLINE_H_INCLUDED

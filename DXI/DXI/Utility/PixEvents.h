@@ -4,7 +4,7 @@
 #define DXI_PIXEVENTS_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 
 // PIX markers, so a capture reads as the structure of the frame rather than a flat run of
 // draws. Written as an explicit pair with the work braced in between, which makes the

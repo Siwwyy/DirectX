@@ -4,8 +4,8 @@
 #define D3D12_BUFFER_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 
 // Type of buffers to the RHI
 enum class BufferType : UINT

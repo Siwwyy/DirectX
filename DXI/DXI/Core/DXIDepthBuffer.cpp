@@ -1,11 +1,11 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-#include "D3D12DepthBuffer.h"
+#include "DXIDepthBuffer.h"
 
 // Namespaces
 using namespace Helpers;
 
-void D3D12DepthBuffer::Init(const D3D12Device& Device, const UINT Width, const UINT Height)
+void DXIDepthBuffer::Init(const DXIDevice& Device, const UINT Width, const UINT Height)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the depth buffer");
 	DXASSERT(Width > 0 && Height > 0, "Depth buffer needs a non empty size");
@@ -48,7 +48,7 @@ void D3D12DepthBuffer::Init(const D3D12Device& Device, const UINT Width, const U
 	Device.Get()->CreateDepthStencilView(DepthStencil.Get(), &DepthStencilViewDesc, DsvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void D3D12DepthBuffer::Clear(DXGraphicsCommandList * CommandList) const
+void DXIDepthBuffer::Clear(DXGraphicsCommandList * CommandList) const
 {
 	DXASSERT(CommandList, "Command list can not be null for clearing the depth buffer");
 	DXASSERT(DsvHeap, "Depth buffer must be initialized before clearing it");
@@ -56,7 +56,7 @@ void D3D12DepthBuffer::Clear(DXGraphicsCommandList * CommandList) const
 	CommandList->ClearDepthStencilView(GetDsvHandle(), D3D12_CLEAR_FLAG_DEPTH, DEPTH_CLEAR_VALUE, 0, 0, nullptr);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE D3D12DepthBuffer::GetDsvHandle() const
+D3D12_CPU_DESCRIPTOR_HANDLE DXIDepthBuffer::GetDsvHandle() const
 {
 	DXASSERT(DsvHeap, "Depth buffer must be initialized before taking its handle");
 

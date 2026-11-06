@@ -1,11 +1,11 @@
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#ifndef D3D12_MATH_H_INCLUDED
-#define D3D12_MATH_H_INCLUDED
+#ifndef DXI_MATH_H_INCLUDED
+#define DXI_MATH_H_INCLUDED
 
 #include "pch.h"
 #include "SharedTypes.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 #include <array> // for fixed-size array helpers
 
 // Vertex attributes
@@ -180,4 +180,4 @@ static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be 
 constexpr auto ObjectMatricesSize		= sizeof(ObjectMatrices);
 constexpr auto ObjectMatricesAlignment	= alignof(ObjectMatrices);
 
-#endif // D3D12_MATH_H_INCLUDED
+#endif // DXI_MATH_H_INCLUDED

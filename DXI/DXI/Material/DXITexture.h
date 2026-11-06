@@ -1,11 +1,11 @@
 //Copyright, Damian Andrysiak 2025, All Rights Reserved.
 
-#ifndef D3D12_TEXTURE_H_INCLUDED
-#define D3D12_TEXTURE_H_INCLUDED
+#ifndef DXI_TEXTURE_H_INCLUDED
+#define DXI_TEXTURE_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 
 // Simple Smart Pointer following RAII idiom, using malloc!
 // No ctor for allocated memory, only raw buffers allowed
@@ -147,4 +147,4 @@ DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& WicFormatGUID);
 WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& WicFormatGUID);
 int GetDXGIFormatBitsPerPixel(DXGI_FORMAT& DxgiFormat);
 
-#endif // D3D12_TEXTURE_H_INCLUDED
+#endif // DXI_TEXTURE_H_INCLUDED

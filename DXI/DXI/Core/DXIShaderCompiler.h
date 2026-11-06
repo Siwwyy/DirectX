@@ -1,18 +1,18 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#ifndef D3D12_SHADER_COMPILER_H_INCLUDED
-#define D3D12_SHADER_COMPILER_H_INCLUDED
+#ifndef DXI_SHADER_COMPILER_H_INCLUDED
+#define DXI_SHADER_COMPILER_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 #include <dxcapi.h> //for new DX shader compiler API | Has to be included at the end, otherwise got many errors
 
 template<SIZE_T DefinesCount>
 struct DXShaderDefines
 {
 	// Friendship here, just in case
-	friend class D3D12ShaderCompiler;
+	friend class DXIShaderCompiler;
 
 public:
 
@@ -53,13 +53,13 @@ inline void DXShaderDefines<DefinesCount>::AddDefine(DxcDefine ShaderDefine)
 
 
 // D3D12 Shader Compiler class using old D3DCompile API and new DXC API
-class D3D12ShaderCompiler
+class DXIShaderCompiler
 {
 public:
-	DISABLE_COPY_MOVE(D3D12ShaderCompiler)
+	DISABLE_COPY_MOVE(DXIShaderCompiler)
 
-	D3D12ShaderCompiler();
-	~D3D12ShaderCompiler() = default;
+	DXIShaderCompiler();
+	~DXIShaderCompiler() = default;
 
 	template<SIZE_T DefinesCount = 0>
 	ComPtr<ID3DBlob> CompileShader(
@@ -87,7 +87,7 @@ private:
 
 // Compile shader DXI
 template<SIZE_T DefinesCount>
-FORCEINLINE ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
+FORCEINLINE ComPtr<ID3DBlob> DXIShaderCompiler::CompileShader(
 	LPCWSTR ShaderAbsolutePath, 
 	LPCWSTR EntryPoint, 
 	LPCWSTR TargetProfile, 
@@ -153,6 +153,6 @@ FORCEINLINE ComPtr<ID3DBlob> D3D12ShaderCompiler::CompileShader(
 
 
 // extern
-extern D3D12ShaderCompiler DXIShaderCompiler;
+extern DXIShaderCompiler GShaderCompiler;
 
-#endif // D3D12_SHADER_COMPILER_H_INCLUDED
+#endif // DXI_SHADER_COMPILER_H_INCLUDED

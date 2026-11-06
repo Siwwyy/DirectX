@@ -19,12 +19,10 @@
 // Lights, ShadowViewProj and NumLights come from LightsConstantBuffer in SharedTypes.h
 
 // ---------------------------------------------------------------------------------------
-//  Baseline light maths, part 1 of 2: direction and falloff, per light type.
+//  Baseline light maths, part 1 of 3: direction and falloff, per light type.
 //
 //  BASELINE is defined by LightPass.cpp alongside LIGHT_PASS. Turn it off there to compile
-//  the #else branch instead and supply your own. The shadow helpers further down sit
-//  outside these guards deliberately: occlusion is not light type maths, so a custom
-//  implementation still gets GetShadowFactor for free.
+//  the #else branch instead and supply your own.
 //
 //  Anything written in the #else branch has to keep these signatures, because ShadeSurface
 //  and LightPass call them by name.
@@ -109,6 +107,22 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
 }
 
 #endif // BASELINE
+
+// ---------------------------------------------------------------------------------------
+//  Baseline light maths, part 2 of 3: reading occlusion back out of the shadow atlas.
+//
+//  The other half of shadowing lives in the ShadowPass shaders, which fill the atlas and
+//  are guarded by a BASELINE of their own, defined in ShadowPass.cpp. The two halves have
+//  to agree on what the atlas holds, so a technique that changes one usually changes both:
+//  the 2D slices hold depth in the light's clip space and the cube faces hold distance
+//  divided by range. Change that and these lookups have to follow.
+//
+//  The #else branch reports everything as lit rather than everything as shadowed, so a
+//  half written technique leaves a scene you can still see, which is the opposite of what
+//  the lighting stubs above do: an unwritten shadow is no shadow, but unwritten lighting
+//  genuinely is black.
+// ---------------------------------------------------------------------------------------
+#ifdef BASELINE
 
 // Bias scaled by how side on the surface is to the light. A grazing surface spans more
 // depth per texel, so it needs more slack before it stops shadowing itself.
@@ -215,6 +229,61 @@ float GetShadowFactor(Texture2DArray ShadowDepth,
     return GetShadowFactor2D(ShadowDepth, ShadowSampler, LightIdx, WorldPosition, Normal);
 }
 
+#else // BASELINE
+
+// Your depth bias, if the technique needs one. Normal and LightDir are unit vectors and
+// Scale is whatever the caller thought the right magnitude was for its storage.
+float GetShadowBias(float3 Normal, float3 LightDir, float Scale)
+{
+    // TODO | Write your own bias
+    return 0.0;
+}
+
+// Your lookup for a directional or area light. ShadowDepth is an array of 2D slices and
+// Lights[LightIdx].ShadowSlot indexes it, or is NO_SHADOW_CASTER when the light casts none.
+// ShadowViewProj[LightIdx] is the matrix the slice was rendered with.
+//
+// Return 1 for fully lit down to 0 for fully occluded.
+float GetShadowFactor2D(Texture2DArray ShadowDepth,
+                        SamplerState ShadowSampler,
+                        uint LightIdx,
+                        float3 WorldPosition,
+                        float3 Normal)
+{
+    // TODO | Write your own 2D shadow lookup
+    return 1.0;
+}
+
+// Your lookup for a point light. ShadowDistance is an array of cube maps, sampled with a
+// direction rather than a projected uv, so there is no face maths to do. What each face
+// holds is up to the ShadowPass pixel shader.
+//
+// Return 1 for fully lit down to 0 for fully occluded.
+float GetShadowFactorCube(TextureCubeArray ShadowDistance,
+                          SamplerState ShadowSampler,
+                          uint LightIdx,
+                          float3 WorldPosition,
+                          float3 Normal)
+{
+    // TODO | Write your own cube shadow lookup
+    return 1.0;
+}
+
+// Your entry point. ShadeSurface calls only this one, so it is the only signature that has
+// to survive; the two above are a convenience you are free to drop.
+float GetShadowFactor(Texture2DArray ShadowDepth,
+                      TextureCubeArray ShadowDistance,
+                      SamplerState ShadowSampler,
+                      uint LightIdx,
+                      float3 WorldPosition,
+                      float3 Normal)
+{
+    // TODO | Dispatch to your own lookups, by Lights[LightIdx].Type
+    return 1.0;
+}
+
+#endif // BASELINE
+
 // Reflectance of a dielectric looked at head on. Metals take their tint from the albedo
 // instead, which is what makes them look like metal.
 #define DIELECTRIC_F0           0.04
@@ -271,7 +340,7 @@ float3 ShadeReflections(TextureCube Radiance,
 }
 
 // ---------------------------------------------------------------------------------------
-//  Baseline light maths, part 2 of 2: how the lights are accumulated over a surface.
+//  Baseline light maths, part 3 of 3: how the lights are accumulated over a surface.
 //  Lambert for the diffuse term and Phong for the specular, which is where SPECULAR_STRENGTH
 //  and SHININESS at the top of this file are used.
 // ---------------------------------------------------------------------------------------
@@ -328,10 +397,11 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
 // Your accumulation. Loop LightIdx over NumLights, read Lights[LightIdx], and build up
 // whatever response you want out of it.
 //
-// Available regardless of this switch:
 //   GetShadowFactor(ShadowDepth, ShadowDistance, ShadowSampler, LightIdx, WorldPosition, SurfaceNormal)
 //     returns 1 for fully lit down to 0 for fully occluded, and already picks the right
 //     storage for the light type. Worth skipping when a light reaches nothing anyway.
+//     Note that it is stubbed out by the same switch that brought you here, so it reports
+//     everything lit until part 2 above is written too.
 //   Lights[LightIdx].ShadowSlot is NO_SHADOW_CASTER when that light casts none.
 //
 // Normal arrives straight out of the G-buffer, so normalize it before using it.

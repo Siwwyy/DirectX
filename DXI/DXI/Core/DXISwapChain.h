@@ -1,25 +1,25 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-#ifndef D3D12_SWAPCHAIN_H_INCLUDED
-#define D3D12_SWAPCHAIN_H_INCLUDED
+#ifndef DXI_SWAPCHAIN_H_INCLUDED
+#define DXI_SWAPCHAIN_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Device.h"
+#include "DXIHelpers.h"
+#include "DXIDevice.h"
 
 // Swap chain along with its back buffers and their render target views.
 // Owns the barriers that flip a back buffer between presenting and being drawn into.
-class D3D12SwapChain
+class DXISwapChain
 {
-	DISABLE_COPY_MOVE(D3D12SwapChain)
+	DISABLE_COPY_MOVE(DXISwapChain)
 
 public:
 
-	D3D12SwapChain()	= default;
-	~D3D12SwapChain()	= default;
+	DXISwapChain()	= default;
+	~DXISwapChain()	= default;
 
 	// Creates the swap chain for the given window and a render target view per back buffer
-	void Init(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
+	void Init(const DXIDevice& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
 
 	// Format every back buffer is created with
 	_NODISCARD static DXGI_FORMAT GetFormat() noexcept
@@ -69,4 +69,4 @@ private:
 	bool								bTearingSupported	= false;// whether an unsynchronized present is allowed at all
 };
 
-#endif // D3D12_SWAPCHAIN_H_INCLUDED
+#endif // DXI_SWAPCHAIN_H_INCLUDED

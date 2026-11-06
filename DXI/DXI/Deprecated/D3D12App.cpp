@@ -3,7 +3,7 @@
 
 // Own Includes
 #include "Win32Proc.h"
-#include "D3D12Math.h"
+#include "DXIMath.h"
 #include "RenderGraph.h"
 #include "Paths.h"
 
@@ -696,7 +696,7 @@ void D3D12App::Update(float DeltaTime)
 		XMStoreFloat4x4(&CbvPerObject.LocalToWorld, TransposedPlaneScaleRotMatrix);							// store transposed world matrix in constant buffer
 		XMStoreFloat4x4(&CbvPerObject.WorldToClip, TransposedMVPMatPlane);							// store transposed wvp matrix in constant buffer
 
-		// Normal matrix, see D3D12Math.h. The inverse transpose and the transpose every
+		// Normal matrix, see DXIMath.h. The inverse transpose and the transpose every
 		// matrix gets on the way to the GPU cancel, so the plain inverse is stored.
 		XMStoreFloat4x4(&CbvPerObject.LocalToWorldNormal, XMMatrixInverse(nullptr, XMLoadFloat4x4(&PlaneScaleRotMatrix)));
 
@@ -897,8 +897,8 @@ void D3D12App::InitalizeShaders()
 	//	arguments.push_back(define.Value);
 	//}
 
-	VertexShader	= DXIShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
-	PixelShader		= DXIShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
+	VertexShader	= GShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PixelShader		= GShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 void D3D12App::InitializePSO()
@@ -1104,7 +1104,7 @@ void D3D12App::StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT P
 	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorld,		XMMatrixTranspose(LocalToWorld));
 	XMStoreFloat4x4(&PrimitiveCBVData.WorldToClip,		XMMatrixTranspose(WorldToClip));
 
-	// Normal matrix, see D3D12Math.h. The inverse transpose and the transpose every matrix
+	// Normal matrix, see DXIMath.h. The inverse transpose and the transpose every matrix
 	// gets on the way to the GPU cancel, so the plain inverse is what is stored.
 	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorldNormal, XMMatrixInverse(nullptr, LocalToWorld));
 

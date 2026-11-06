@@ -60,13 +60,13 @@
     <ClCompile Include="D3D12App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Helpers.cpp">
+    <ClCompile Include="DXIHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Math.cpp">
+    <ClCompile Include="DXIMath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12ShaderCompiler.cpp">
+    <ClCompile Include="DXIShaderCompiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Win32Proc.cpp">
@@ -87,7 +87,7 @@
     <ClCompile Include="TextRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12Texture.cpp">
+    <ClCompile Include="DXITexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RenderGraph.cpp">
@@ -135,16 +135,16 @@
     <ClCompile Include="D3D12Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D12Device.cpp">
+    <ClCompile Include="Core\DXIDevice.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D12SwapChain.cpp">
+    <ClCompile Include="Core\DXISwapChain.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D12DepthBuffer.cpp">
+    <ClCompile Include="Core\DXIDepthBuffer.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D12FrameContext.cpp">
+    <ClCompile Include="Core\DXIFrameContext.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="LightTypes\LightBase.cpp">
@@ -164,13 +164,13 @@
     <ClInclude Include="D3D12App.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Helpers.h">
+    <ClInclude Include="DXIHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Math.h">
+    <ClInclude Include="DXIMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12ShaderCompiler.h">
+    <ClInclude Include="DXIShaderCompiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
@@ -191,7 +191,7 @@
     <ClInclude Include="TextRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12Texture.h">
+    <ClInclude Include="DXITexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RenderGraph.h">
@@ -239,16 +239,16 @@
     <ClInclude Include="D3D12Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D12Device.h">
+    <ClInclude Include="Core\DXIDevice.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D12SwapChain.h">
+    <ClInclude Include="Core\DXISwapChain.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D12DepthBuffer.h">
+    <ClInclude Include="Core\DXIDepthBuffer.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D12FrameContext.h">
+    <ClInclude Include="Core\DXIFrameContext.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="LightTypes\LightBase.h">

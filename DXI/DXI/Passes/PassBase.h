@@ -4,7 +4,7 @@
 #define D3D12_PASSBASE_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12ShaderCompiler.h"
+#include "DXIShaderCompiler.h"
 #include "ShaderRegisters.h"
 #include "SharedTypes.h"
 #include "RootSignatureBuilder.h"

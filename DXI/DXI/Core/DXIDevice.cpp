@@ -1,6 +1,6 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-#include "D3D12Device.h"
+#include "DXIDevice.h"
 
 // Namespaces
 using namespace Helpers;
@@ -8,7 +8,7 @@ using namespace Helpers;
 // Direct queue, everything this engine submits is graphics work
 static constexpr D3D12_COMMAND_LIST_TYPE COMMAND_LIST_TYPE = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-void D3D12Device::Init(const D3D_FEATURE_LEVEL FeatureLevel, const D3D12DeviceOptions& Options)
+void DXIDevice::Init(const D3D_FEATURE_LEVEL FeatureLevel, const DXIDeviceOptions& Options)
 {
 	DXASSERT(!IsValid(), "Device has been already initialized");
 
@@ -51,7 +51,7 @@ void D3D12Device::Init(const D3D_FEATURE_LEVEL FeatureLevel, const D3D12DeviceOp
 	NAME_D3D12_OBJECT(CommandQueue, L"Main Command Queue");
 }
 
-UINT D3D12Device::EnableDebugLayer(const D3D12DeviceOptions& Options)
+UINT DXIDevice::EnableDebugLayer(const DXIDeviceOptions& Options)
 {
 	UINT DxgiFactoryFlags = 0;
 
@@ -94,7 +94,7 @@ UINT D3D12Device::EnableDebugLayer(const D3D12DeviceOptions& Options)
 	return DxgiFactoryFlags;
 }
 
-void D3D12Device::SetBreakOnSeverity(const bool bEnabled) const
+void DXIDevice::SetBreakOnSeverity(const bool bEnabled) const
 {
 #if DEBUG_MODE
 	ComPtr<ID3D12InfoQueue> InfoQueue;
@@ -115,7 +115,7 @@ void D3D12Device::SetBreakOnSeverity(const bool bEnabled) const
 #endif // DEBUG_MODE
 }
 
-void D3D12Device::ReportLiveObjects() const
+void DXIDevice::ReportLiveObjects() const
 {
 #if DEBUG_MODE
 	if (!IsValid())

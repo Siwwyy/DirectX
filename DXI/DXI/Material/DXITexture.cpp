@@ -1,4 +1,4 @@
-#include "D3D12Texture.h"
+#include "DXITexture.h"
 
 
 UINT GetMipCount(const UINT Width, const UINT Height)

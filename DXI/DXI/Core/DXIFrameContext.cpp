@@ -1,6 +1,6 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-#include "D3D12FrameContext.h"
+#include "DXIFrameContext.h"
 
 // Namespaces
 using namespace Helpers;
@@ -8,7 +8,7 @@ using namespace Helpers;
 // Direct queue, everything this engine submits is graphics work
 static constexpr D3D12_COMMAND_LIST_TYPE COMMAND_LIST_TYPE = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-D3D12FrameContext::~D3D12FrameContext()
+DXIFrameContext::~DXIFrameContext()
 {
 	if (FenceEvent)
 	{
@@ -17,7 +17,7 @@ D3D12FrameContext::~D3D12FrameContext()
 	}
 }
 
-void D3D12FrameContext::Init(const D3D12Device& Device, const UINT FrameCount)
+void DXIFrameContext::Init(const DXIDevice& Device, const UINT FrameCount)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the frame context");
 	DXASSERT(FrameCount > 0, "Frame context needs at least one frame");
@@ -50,7 +50,7 @@ void D3D12FrameContext::Init(const D3D12Device& Device, const UINT FrameCount)
 	NAME_D3D12_OBJECT(CommandList, L"Main Command List");
 }
 
-void D3D12FrameContext::BeginFrame(const D3D12Device& Device, const UINT FrameIdx)
+void DXIFrameContext::BeginFrame(const DXIDevice& Device, const UINT FrameIdx)
 {
 	DXASSERT(CommandList, "Frame context must be initialized before recording a frame");
 	DXASSERT(FrameIdx < CommandAllocators.size(), "Frame index is out of range");
@@ -64,7 +64,7 @@ void D3D12FrameContext::BeginFrame(const D3D12Device& Device, const UINT FrameId
 	ThrowIfFailed(CommandList->Reset(CommandAllocators[FrameIdx].Get(), nullptr));
 }
 
-void D3D12FrameContext::Execute(const D3D12Device& Device, const UINT FrameIdx)
+void DXIFrameContext::Execute(const DXIDevice& Device, const UINT FrameIdx)
 {
 	DXASSERT(CommandList, "Frame context must be initialized before submitting a frame");
 	DXASSERT(FrameIdx < Fences.size(), "Frame index is out of range");
@@ -80,7 +80,7 @@ void D3D12FrameContext::Execute(const D3D12Device& Device, const UINT FrameIdx)
 	ThrowIfFailed(Device.GetCommandQueue()->Signal(Fences[FrameIdx].Get(), FenceValues[FrameIdx]));
 }
 
-void D3D12FrameContext::Flush(const D3D12Device& Device, const UINT FrameIdx)
+void DXIFrameContext::Flush(const DXIDevice& Device, const UINT FrameIdx)
 {
 	DXASSERT(FrameIdx < CommandAllocators.size(), "Frame index is out of range");
 
@@ -90,7 +90,7 @@ void D3D12FrameContext::Flush(const D3D12Device& Device, const UINT FrameIdx)
 	WaitForFrame(Device, FrameIdx);
 }
 
-void D3D12FrameContext::WaitForGpuIdle(const D3D12Device& Device)
+void DXIFrameContext::WaitForGpuIdle(const DXIDevice& Device)
 {
 	if (!FenceEvent || Fences.empty())
 	{
@@ -116,7 +116,7 @@ void D3D12FrameContext::WaitForGpuIdle(const D3D12Device& Device)
 	WaitForFrame(Device, 0);
 }
 
-void D3D12FrameContext::WaitForFrame(const D3D12Device& Device, const UINT FrameIdx)
+void DXIFrameContext::WaitForFrame(const DXIDevice& Device, const UINT FrameIdx)
 {
 	DXASSERT(FrameIdx < Fences.size(), "Frame index is out of range");
 

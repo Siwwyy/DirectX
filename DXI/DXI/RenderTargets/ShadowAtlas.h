@@ -4,7 +4,7 @@
 #define D3D12_SHADOWATLAS_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 #include "LightBase.h"
 
 // Shadow storage for every light of the scene, kept as texture arrays rather than tiles

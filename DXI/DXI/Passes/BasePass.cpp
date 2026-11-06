@@ -32,8 +32,8 @@ BasePass::BasePass()
 	arguments.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);	//
 #endif
 
-	PSO.VertexShaderBlob	= DXIShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
-	PSO.PixelShaderBlob		= DXIShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
+	PSO.VertexShaderBlob	= GShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PSO.PixelShaderBlob		= GShaderCompiler.CompileShader(PixelShaderPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) noexcept

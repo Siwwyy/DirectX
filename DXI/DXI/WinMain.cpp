@@ -26,7 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // the process rather than from lpCmdLine, which is ANSI and already split badly.
     DXICMD::Parse();
 
-    if (DXICMD::WantsUsage())
+    if (DXICMD::ShowHelpDocs())
     {
         DXICMD::LogUsage();
     }

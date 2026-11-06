@@ -4,8 +4,8 @@
 #define RENDER_GRAPH_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 
 // Resources
 #include "D3D12Buffer.h"

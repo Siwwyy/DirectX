@@ -1,7 +1,7 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 
 // Using namespaces
 using Helpers::ThrowIfFailed;

@@ -4,8 +4,8 @@
 #define D3D12_LIGHTBASE_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
 
 // MAX_LIGHTS, NO_SHADOW_CASTER, LIGHT_TYPE_* and the Light struct itself
 #include "SharedTypes.h"

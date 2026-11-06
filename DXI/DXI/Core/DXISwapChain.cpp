@@ -1,13 +1,13 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-#include "D3D12SwapChain.h"
+#include "DXISwapChain.h"
 
 #include <string>
 
 // Namespaces
 using namespace Helpers;
 
-void D3D12SwapChain::Init(const D3D12Device& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount)
+void DXISwapChain::Init(const DXIDevice& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount)
 {
 	DXASSERT(Device.IsValid(), "Device must be initialized before the swap chain");
 	DXASSERT(WindowHandle, "Swap chain needs a window to present into");
@@ -83,14 +83,14 @@ void D3D12SwapChain::Init(const D3D12Device& Device, const HWND WindowHandle, co
 	}
 }
 
-UINT D3D12SwapChain::GetCurrentBackBufferIdx() const
+UINT DXISwapChain::GetCurrentBackBufferIdx() const
 {
 	DXASSERT(SwapChain, "Swap chain must be initialized before asking for its back buffer index");
 
 	return SwapChain->GetCurrentBackBufferIndex();
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE D3D12SwapChain::GetRtvHandle(const UINT BackBufferIdx) const
+D3D12_CPU_DESCRIPTOR_HANDLE DXISwapChain::GetRtvHandle(const UINT BackBufferIdx) const
 {
 	DXASSERT(RtvHeap, "Swap chain must be initialized before taking a handle out of it");
 	DXASSERT(BackBufferIdx < BackBufferCount, "Back buffer index is out of range");
@@ -100,7 +100,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12SwapChain::GetRtvHandle(const UINT BackBufferId
 	return Handle;
 }
 
-void D3D12SwapChain::TransitionToRenderTarget(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const
+void DXISwapChain::TransitionToRenderTarget(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const
 {
 	DXASSERT(CommandList, "Command list can not be null for transitioning a back buffer");
 	DXASSERT(BackBufferIdx < BackBufferCount, "Back buffer index is out of range");
@@ -111,7 +111,7 @@ void D3D12SwapChain::TransitionToRenderTarget(DXGraphicsCommandList * CommandLis
 	CommandList->ResourceBarrier(1, &Barrier);
 }
 
-void D3D12SwapChain::TransitionToPresent(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const
+void DXISwapChain::TransitionToPresent(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const
 {
 	DXASSERT(CommandList, "Command list can not be null for transitioning a back buffer");
 	DXASSERT(BackBufferIdx < BackBufferCount, "Back buffer index is out of range");
@@ -122,7 +122,7 @@ void D3D12SwapChain::TransitionToPresent(DXGraphicsCommandList * CommandList, co
 	CommandList->ResourceBarrier(1, &Barrier);
 }
 
-void D3D12SwapChain::Present(const UINT SyncInterval) const
+void DXISwapChain::Present(const UINT SyncInterval) const
 {
 	DXASSERT(SwapChain, "Swap chain must be initialized before presenting");
 

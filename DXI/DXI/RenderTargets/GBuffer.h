@@ -4,7 +4,7 @@
 #define D3D12_GBUFFER_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
 
 // Render targets BasePass writes the surface into and LightPass reads back.
 // The order here is the SV_Target order of BasePass and the register order of LightPass,

@@ -4,7 +4,8 @@
 #define D3D12_DEBUGUI_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
+#include "DXIHelpers.h"
+#include "DXIDevice.h"
 #include "Camera.h"
 #include "Primitive.h"
 #include "Sphere.h"
@@ -30,7 +31,7 @@ public:
 
 	// Hooks ImGui up to the window and the device. The back buffer format has to match
 	// what the UI is drawn into, and FrameCount the number of frames in flight.
-	void Init(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount);
+	void Init(const DXIDevice& Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount);
 
 	// Starts a UI frame, call it before Draw()
 	void BeginFrame();

@@ -7,8 +7,20 @@
 ShadowPass::ShadowPass()
 {
 	// Shaders compilation
-	DXShaderDefines<1> ShaderDefines;
+	DXShaderDefines<2> ShaderDefines;
 	ShaderDefines.AddDefine({ L"SHADOW_PASS", L"1" });
+
+	// Baseline shadow rendering: depth in the light's clip space for directional and area
+	// lights, distance over range in the cube faces for point lights. Comment this out to
+	// compile the #else branch of the three ShadowPass shaders and write your own.
+	//
+	// The lookup side is a separate switch, the BASELINE in LightPass.cpp, because the two
+	// halves compile in different passes. A technique that changes what the atlas holds
+	// needs both turned off, see the note in Lighting.hlsl part 2.
+	//
+	// Shaders are compiled from source at startup, so once the switch is set, iterating on
+	// the implementation itself only needs the app restarted rather than a rebuild.
+	//ShaderDefines.AddDefine({ L"BASELINE", L"1" });
 
 	const DXIPATHS::FilePath VertexShaderPath		= DXIPATHS::GetShaderDir / L"ShadowPass" / L"vertex_shader.hlsl";
 	const DXIPATHS::FilePath DistanceVSPath			= DXIPATHS::GetShaderDir / L"ShadowPass" / L"distance_vertex_shader.hlsl";
@@ -29,11 +41,11 @@ ShadowPass::ShadowPass()
 #endif
 
 	// Depth only, so this one has no pixel shader at all
-	PSO.VertexShaderBlob			= DXIShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	PSO.VertexShaderBlob			= GShaderCompiler.CompileShader(VertexShaderPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
 
 	// Distance needs a pixel shader, that is the whole point of it
-	DistancePSO.VertexShaderBlob	= DXIShaderCompiler.CompileShader(DistanceVSPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
-	DistancePSO.PixelShaderBlob		= DXIShaderCompiler.CompileShader(DistancePSPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
+	DistancePSO.VertexShaderBlob	= GShaderCompiler.CompileShader(DistanceVSPath, L"main", L"vs_6_0", arguments, &ShaderDefines);
+	DistancePSO.PixelShaderBlob		= GShaderCompiler.CompileShader(DistancePSPath, L"main", L"ps_6_0", arguments, &ShaderDefines);
 }
 
 HRESULT ShadowPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) noexcept

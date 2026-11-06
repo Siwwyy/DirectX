@@ -4,8 +4,8 @@
 #define D3D12_CUBEMAP_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Texture.h"
+#include "DXIHelpers.h"
+#include "DXITexture.h"
 
 // Cube map built out of an equirectangular panorama.
 // Free sky assets ship as a single 2:1 panorama rather than six faces, so the faces are

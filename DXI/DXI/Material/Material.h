@@ -4,8 +4,8 @@
 #define D3D12_MATERIAL_H_INCLUDED
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Texture.h"
+#include "DXIHelpers.h"
+#include "DXITexture.h"
 
 // Texture slots of a single material, one descriptor each.
 // The order here is the register order the pixel shader sees, i.e., Diffuse lands on t0, Normal on t1 and so on.

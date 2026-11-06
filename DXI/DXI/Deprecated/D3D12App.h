@@ -5,10 +5,10 @@
 
 
 #include "pch.h"
-#include "D3D12Helpers.h"
-#include "D3D12Math.h"
-#include "D3D12ShaderCompiler.h"
-#include "D3D12Texture.h"
+#include "DXIHelpers.h"
+#include "DXIMath.h"
+#include "DXIShaderCompiler.h"
+#include "DXITexture.h"
 #include "Material.h"
 #include "GBuffer.h"
 

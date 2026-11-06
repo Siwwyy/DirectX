@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
+// DXIDevice.h comes in with DebugUI.h, which needs it for the Init signature
 
 // Namespaces
 using namespace Helpers;
@@ -53,9 +54,9 @@ DebugUI::~DebugUI()
 	ImGui::DestroyContext();
 }
 
-void DebugUI::Init(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount)
+void DebugUI::Init(const DXIDevice& Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount)
 {
-	DXASSERT(Device, "Device can not be null for Initialization of the debug UI");
+	DXASSERT(Device.IsValid(), "Device can not be null for Initialization of the debug UI");
 	DXASSERT(WindowHandle, "Debug UI needs the window it draws into");
 	DXASSERT(!IsInitialized(), "Debug UI has been already initialized");
 
@@ -68,11 +69,11 @@ void DebugUI::Init(DXDevice * Device, const HWND WindowHandle, const DXGI_FORMAT
 	HeapDesc.NumDescriptors				= 1;
 	HeapDesc.Type						= D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	HeapDesc.Flags						= D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&FontHeap)));
+	ThrowIfFailed(Device.Get()->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&FontHeap)));
 	NAME_D3D12_OBJECT(FontHeap, L"Debug UI Font Heap");
 
 	ImGui_ImplWin32_Init(WindowHandle);
-	ImGui_ImplDX12_Init(Device,
+	ImGui_ImplDX12_Init(Device.Get(),
 						static_cast<int>(FrameCount),
 						BackBufferFormat,
 						FontHeap.Get(),

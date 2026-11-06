@@ -1,7 +1,7 @@
 
 //Copyright, Damian Andrysiak 2023, All Rights Reserved.
 
-#include "D3D12Math.h"
+#include "DXIMath.h"
 
 ObjectMatrices::ObjectMatrices()
     : RotVec(DX_IDENTITY_ROTATE4)
