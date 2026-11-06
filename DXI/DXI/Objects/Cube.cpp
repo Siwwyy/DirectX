@@ -1,6 +1,6 @@
 #include "Cube.h"
 
-static VertexPositionTexCoord VertexList[] =
+static VertexPositionUV VertexList[] =
 {
     // front face
     { -0.5f,  0.5f, -0.5f, 0.0f, 0.0f },
@@ -68,8 +68,8 @@ static TypeOfIndice IndicesList[] =
     20, 23, 21, // second triangle
 };
 
-using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
-static const auto TexNormalVertexList   = ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
+using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
+static const auto TexNormalVertexList   = ComputeFaceNormalTangent<VertexPositionUV, TypeOfVertex>(VertexList, IndicesList);
 static constexpr UINT VertexBufferSize  = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize   = sizeof(IndicesList);
 static constexpr UINT CubeNumIndices    = IndexBufferSize / sizeof(TypeOfIndice);

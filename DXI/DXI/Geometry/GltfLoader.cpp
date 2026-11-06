@@ -18,7 +18,7 @@
 
 using namespace DirectX;
 
-using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
+using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
 
 namespace
 {
@@ -93,7 +93,7 @@ namespace
 	}
 
 	// The accessor behind one attribute, or null when the primitive does not carry it.
-	// TexCoordIdx picks between TEXCOORD_0, TEXCOORD_1 and so on; we only ever read the first.
+	// uvIdx picks between uv_0, uv_1 and so on; we only ever read the first.
 	_NODISCARD const cgltf_accessor* FindAttribute(const cgltf_primitive& Primitive, const cgltf_attribute_type Type, const int AttributeIdx = 0)
 	{
 		for (cgltf_size Idx = 0; Idx < Primitive.attributes_count; ++Idx)
@@ -166,7 +166,7 @@ namespace
 				XMFLOAT3(Vertex0.Position.x, Vertex0.Position.y, Vertex0.Position.z),
 				XMFLOAT3(Vertex1.Position.x, Vertex1.Position.y, Vertex1.Position.z),
 				XMFLOAT3(Vertex2.Position.x, Vertex2.Position.y, Vertex2.Position.z),
-				Vertex0.TexCoord, Vertex1.TexCoord, Vertex2.TexCoord);
+				Vertex0.UV, Vertex1.UV, Vertex2.UV);
 
 			const XMVECTOR FaceTangent = XMLoadFloat4(&Frame.Tangent);
 
@@ -245,7 +245,7 @@ namespace
 		const cgltf_accessor* PositionAccessor	= FindAttribute(Primitive, cgltf_attribute_type_position);
 		const cgltf_accessor* NormalAccessor	= FindAttribute(Primitive, cgltf_attribute_type_normal);
 		const cgltf_accessor* TangentAccessor	= FindAttribute(Primitive, cgltf_attribute_type_tangent);
-		const cgltf_accessor* TexCoordAccessor	= FindAttribute(Primitive, cgltf_attribute_type_texcoord);
+		const cgltf_accessor* uvAccessor	= FindAttribute(Primitive, cgltf_attribute_type_texcoord);
 
 		LoadedMesh Mesh;
 
@@ -266,14 +266,14 @@ namespace
 			XMStoreFloat4(&Vertex.Position, XMVector3Transform(XMVectorSet(Position[0], Position[1], Position[2], 1.f), World));
 			Vertex.Position.w = 1.f;
 
-			if (TexCoordAccessor != nullptr)
+			if (uvAccessor != nullptr)
 			{
-				float TexCoord[2] = { 0.f, 0.f };
-				cgltf_accessor_read_float(TexCoordAccessor, Idx, TexCoord, 2);
+				float uv[2] = { 0.f, 0.f };
+				cgltf_accessor_read_float(uvAccessor, Idx, uv, 2);
 
 				// No V flip. glTF puts the uv origin at the top left, which is where D3D
 				// samples from as well, unlike OBJ where the origin is at the bottom
-				Vertex.TexCoord = XMFLOAT2(TexCoord[0], TexCoord[1]);
+				Vertex.UV = XMFLOAT2(uv[0], uv[1]);
 			}
 
 			if (NormalAccessor != nullptr)

@@ -6,12 +6,12 @@
 
 // G-buffer written by BasePass, registers follow the GBufferTarget order of GBuffer.h,
 // then the shadow map and the two sky cubes after them
-Texture2D GBufferAlbedo         : register(t0);
-Texture2D GBufferNormal         : register(t1);
-Texture2D GBufferWorldPosition  : register(t2);
-Texture2D GBufferMaterialParams : register(t3);
-Texture2DArray ShadowDepth      : register(t4);     // one depth slice per directional or area light
-TextureCubeArray ShadowDistance : register(t5);     // six distance faces per point light
+Texture2D           GBufferAlbedo               : register(t0);
+Texture2D           GBufferNormal               : register(t1);
+Texture2D           GBufferWorldPosition        : register(t2);
+Texture2D           GBufferMaterialParams       : register(t3);
+Texture2DArray      ShadowDepth                 : register(t4);     // one depth slice per directional or area light
+TextureCubeArray    ShadowDistance              : register(t5);     // six distance faces per point light
 // t6 and t7 were the radiance and irradiance sky cubes, see LightPass::SKY_SRV_COUNT
 
 SamplerState GBufferSampler     : register(s0);     // point, for the buffers above
@@ -24,9 +24,9 @@ static const float3 BACKGROUND_COLOR = float3(0.08, 0.10, 0.14);
 
 // Direction this pixel looks at, found by pushing it out to the far plane and back
 // through the view projection
-float3 GetViewRay(float2 TexCoord)
+float3 GetViewRay(float2 uv)
 {
-    float2 ndc      = TexCoord * float2(2.0, -2.0) + float2(-1.0, 1.0);
+    float2 ndc      = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
     float4 world    = mul(float4(ndc, 1.0, 1.0), InvViewProj);
 
     return normalize((world.xyz / world.w) - EyePosition.xyz);
@@ -34,9 +34,9 @@ float3 GetViewRay(float2 TexCoord)
 
 float4 main(FullscreenPSInput input) : SV_TARGET
 {
-    float4 albedo_sample = GBufferAlbedo.Sample(GBufferSampler, input.tex_coord);
-    float3 albedo       = albedo_sample.xyz;
-    float4 world_pos    = GBufferWorldPosition.Sample(GBufferSampler, input.tex_coord);
+    float4 albedo_sample    = GBufferAlbedo.Sample(GBufferSampler, input.uv);
+    float3 albedo           = albedo_sample.xyz;
+    float4 world_pos        = GBufferWorldPosition.Sample(GBufferSampler, input.uv);
 
     // BasePass marks written pixels with w of 1, everything else is background. Shading it
     // would be wrong anyway, its normal is zero and normalizing that would give NaN.
@@ -52,8 +52,8 @@ float4 main(FullscreenPSInput input) : SV_TARGET
         return float4(albedo, 1.0);
     }
 
-    float3 normal       = GBufferNormal.Sample(GBufferSampler, input.tex_coord).xyz;
-    float3 params       = GBufferMaterialParams.Sample(GBufferSampler, input.tex_coord).xyz;
+    float3 normal       = GBufferNormal.Sample(GBufferSampler, input.uv).xyz;
+    float3 params       = GBufferMaterialParams.Sample(GBufferSampler, input.uv).xyz;
 
     float metalness     = params.r;
 

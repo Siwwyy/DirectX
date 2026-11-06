@@ -2,7 +2,7 @@
 
 #include "ObjLoader.h"
 
-using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
+using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
 
 Model::Model(std::wstring Name, std::wstring MeshPath)
 	: Primitive(std::move(Name))

@@ -24,8 +24,8 @@ PSInput main(VSInput input)
     PSInput output;
     //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
     output.position             = mul(input.position, WorldToClip); 
-#if USE_TEXCOORD
-    output.tex_coord            = input.tex_coord;
+#if USE_uv
+    output.uv            = input.uv;
 #else
     output.color                = input.color;
 #endif

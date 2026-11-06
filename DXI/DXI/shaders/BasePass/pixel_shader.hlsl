@@ -22,13 +22,13 @@ SamplerState MaterialSampler : register(s0);
 // changes per pixel on screen, and it is what the hardware itself uses to pick a mip.
 //
 // Returns true when a debug view took over the pixel, along with the colour to show.
-bool GetDerivativeDebugColor(float2 TexCoord, float3 WorldPosition, float3 Normal, out float3 DebugColor)
+bool GetDerivativeDebugColor(float2 uv, float3 WorldPosition, float3 Normal, out float3 DebugColor)
 {
     DebugColor = float3(0.0, 0.0, 0.0);
 
     // ddx is the change across the quad horizontally, ddy vertically
-    float2 UvDdx = ddx(TexCoord);
-    float2 UvDdy = ddy(TexCoord);
+    float2 UvDdx = ddx(uv);
+    float2 UvDdy = ddy(uv);
 
     switch (DebugMode)
     {
@@ -139,7 +139,7 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
         float3 bitangent    = normalize(vertex_bitangent - normal * dot(normal, vertex_bitangent));
 
         // Unpack from the 0 to 1 the texture holds back to a signed direction
-        float3 tangent_normal = MaterialNormal.Sample(MaterialSampler, input.tex_coord).xyz * 2.0 - 1.0;
+        float3 tangent_normal = MaterialNormal.Sample(MaterialSampler, input.uv).xyz * 2.0 - 1.0;
 
         // A slot with no map reads as zero, which unpacks to (-1,-1,-1) and is not a
         // direction at all. The default material fills it with a flat normal, but a
@@ -158,22 +158,22 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
 
     // What the reflections are driven by. An empty material slot keeps a null descriptor
     // and reads back as zero, which is the right answer for metalness on a dielectric.
-    float metalness         = MaterialMetalness.Sample(MaterialSampler, input.tex_coord).r;
-    float roughness         = MaterialRoughness.Sample(MaterialSampler, input.tex_coord).r;
-    float ambient_occlusion = MaterialAO.Sample(MaterialSampler, input.tex_coord).r;
+    float metalness         = MaterialMetalness.Sample(MaterialSampler, input.uv).r;
+    float roughness         = MaterialRoughness.Sample(MaterialSampler, input.uv).r;
+    float ambient_occlusion = MaterialAO.Sample(MaterialSampler, input.uv).r;
 
     output.MaterialParams   = float4(metalness, roughness, ambient_occlusion, 1.0);
 
     // A debug view replaces the surface colour and asks LightPass to leave it alone,
     // otherwise the lighting would modulate the very numbers being inspected
     float3 debug_color;
-    if (GetDerivativeDebugColor(input.tex_coord, input.world_position.xyz, normal, debug_color))
+    if (GetDerivativeDebugColor(input.uv, input.world_position.xyz, normal, debug_color))
     {
         output.Albedo = float4(debug_color, SURFACE_UNLIT);
     }
     else
     {
-        output.Albedo = float4(MaterialDiffuse.Sample(MaterialSampler, input.tex_coord).xyz, SURFACE_LIT);
+        output.Albedo = float4(MaterialDiffuse.Sample(MaterialSampler, input.uv).xyz, SURFACE_LIT);
     }
 
     return output;

@@ -2,7 +2,7 @@
 
 using namespace DirectX;
 
-using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
+using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
 
 // The sphere at MIN_DENSITY, written out so the cheapest case costs nothing at runtime,
 // the same way Cube and Plane carry their geometry. Three latitude bands and six longitude
@@ -16,7 +16,7 @@ using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
 // Generated from the same grid maths Init uses further down, so raising the density past
 // this hands over to that generator and the shape does not change character. Do not hand
 // edit: regenerate if MIN_DENSITY or the radius ever move.
-static VertexPositionTexCoord MinDensityVertexList[] =
+static VertexPositionUV MinDensityVertexList[] =
 {
     // latitude band 0
     {  0.000000f,  0.500000f,  0.000000f,  0.166667f,  0.000000f },
@@ -112,7 +112,7 @@ static const bool bMinDensityIndicesReady = []()
 
 // Solved the same way Cube and Plane solve theirs
 static const auto MinDensityVertices =
-	ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(MinDensityVertexList, MinDensityIndices);
+	ComputeFaceNormalTangent<VertexPositionUV, TypeOfVertex>(MinDensityVertexList, MinDensityIndices);
 
 namespace
 {
@@ -172,9 +172,9 @@ HRESULT Sphere::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 	const UINT ColumnCount	= Slices + 1;
 
 	std::vector<XMFLOAT3> GridPositions;
-	std::vector<XMFLOAT2> GridTexCoords;
+	std::vector<XMFLOAT2> GridUVs;
 	GridPositions.reserve(SIZE_T(Stacks + 1) * ColumnCount);
-	GridTexCoords.reserve(SIZE_T(Stacks + 1) * ColumnCount);
+	GridUVs.reserve(SIZE_T(Stacks + 1) * ColumnCount);
 
 	for (UINT StackIdx = 0; StackIdx <= Stacks; ++StackIdx)
 	{
@@ -190,7 +190,7 @@ HRESULT Sphere::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 			const float Theta	= U * XM_2PI;
 
 			GridPositions.emplace_back(Ring * cosf(Theta), Height, Ring * sinf(Theta));
-			GridTexCoords.emplace_back(U, V);
+			GridUVs.emplace_back(U, V);
 		}
 	}
 
@@ -210,10 +210,10 @@ HRESULT Sphere::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 	const auto EmitTriangle = [&](const UINT A, const UINT B, const UINT C)
 	{
 		const XMFLOAT3 Position[3]	= { GridPositions[A], GridPositions[B], GridPositions[C] };
-		const XMFLOAT2 TexCoord[3]	= { GridTexCoords[A], GridTexCoords[B], GridTexCoords[C] };
+		const XMFLOAT2 UV[3]	= { GridUVs[A], GridUVs[B], GridUVs[C] };
 
 		const auto Frame = ComputeTriangleFrame(Position[0], Position[1], Position[2],
-												TexCoord[0], TexCoord[1], TexCoord[2]);
+												UV[0], UV[1], UV[2]);
 
 		// A sphere centred on the origin has one property worth leaning on: every face
 		// normal must point away from the centre. Catching a flipped winding here beats
@@ -229,7 +229,7 @@ HRESULT Sphere::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 		{
 			TypeOfVertex Vertex;
 			Vertex.Position		= XMFLOAT4(Position[Corner].x, Position[Corner].y, Position[Corner].z, 1.f);
-			Vertex.TexCoord		= TexCoord[Corner];
+			Vertex.UV			= UV[Corner];
 			Vertex.Normal		= Frame.Normal;
 			Vertex.Tangent		= Frame.Tangent;
 			Vertex.Bitangent	= Frame.Bitangent;

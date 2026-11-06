@@ -866,7 +866,7 @@ void D3D12App::InitalizeShaders()
 {
 	// Shaders defines
 	DXShaderDefines<1> ShaderDefines;
-	ShaderDefines.AddDefine({ L"USE_TEXCOORD", L"1" });
+	ShaderDefines.AddDefine({ L"USE_uv", L"1" });
 
 	// Shader paths
 	const DXIPATHS::FilePath VertexShaderPath	= DXIPATHS::GetShaderDir / L"vertex_shader.hlsl";
@@ -908,7 +908,7 @@ void D3D12App::InitializePSO()
 	D3D12_INPUT_ELEMENT_DESC InputElementDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "uv", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 

@@ -1,7 +1,7 @@
 struct VS_INPUT
 {
     float4 pos : POSITION;
-    float4 texCoord: TEXCOORD;
+    float4 uv: uv;
     float4 color: COLOR;
 };
 
@@ -9,7 +9,7 @@ struct VS_OUTPUT
 {
     float4 pos: SV_POSITION;
     float4 color: COLOR;
-    float2 texCoord: TEXCOORD;
+    float2 uv: uv;
 };
 
 VS_OUTPUT VSMain(VS_INPUT input, uint vertexID : SV_VertexID)
@@ -27,7 +27,7 @@ VS_OUTPUT VSMain(VS_INPUT input, uint vertexID : SV_VertexID)
     output.color = input.color;
 
     // set the texture coordinate based on which vertex it is (uv)
-    output.texCoord = float2(input.texCoord.x + (input.texCoord.z * uv.x), input.texCoord.y + (input.texCoord.w * uv.y));
+    output.uv = float2(input.uv.x + (input.uv.z * uv.x), input.uv.y + (input.uv.w * uv.y));
 
     return output;
 }

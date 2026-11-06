@@ -12,7 +12,7 @@ namespace
 	struct FaceCorner
 	{
 		int Position	= 0;
-		int TexCoord	= 0;
+		int uv	= 0;
 		int Normal		= 0;
 	};
 
@@ -55,7 +55,7 @@ namespace
 				switch (Channel)
 				{
 				case 0:		Corner.Position = Value;	break;
-				case 1:		Corner.TexCoord = Value;	break;
+				case 1:		Corner.uv = Value;	break;
 				default:	Corner.Normal	= Value;	break;
 				}
 			}
@@ -82,7 +82,7 @@ LoadedMesh LoadObjFromFile(const std::wstring& Path)
 	}
 
 	std::vector<XMFLOAT3> Positions;
-	std::vector<XMFLOAT2> TexCoords;
+	std::vector<XMFLOAT2> uvs;
 
 	// Every triangle keeps its own three corners, see the note in the header
 	std::vector<FaceCorner> Corners;
@@ -111,12 +111,12 @@ LoadedMesh LoadObjFromFile(const std::wstring& Path)
 		}
 		else if (Keyword == "vt")
 		{
-			XMFLOAT2 TexCoord(0.f, 0.f);
-			Stream >> TexCoord.x >> TexCoord.y;
+			XMFLOAT2 uv(0.f, 0.f);
+			Stream >> uv.x >> uv.y;
 
 			// OBJ measures v from the bottom, D3D from the top
-			TexCoord.y = 1.f - TexCoord.y;
-			TexCoords.push_back(TexCoord);
+			uv.y = 1.f - uv.y;
+			uvs.push_back(uv);
 		}
 		else if (Keyword == "f")
 		{
@@ -155,7 +155,7 @@ LoadedMesh LoadObjFromFile(const std::wstring& Path)
 		const size_t Base = TriangleIdx * 3;
 
 		XMFLOAT3 TrianglePositions[3]	= {};
-		XMFLOAT2 TriangleTexCoords[3]	= {};
+		XMFLOAT2 TriangleUVs[3]	= {};
 
 		for (size_t Corner = 0; Corner < 3; ++Corner)
 		{
@@ -166,23 +166,23 @@ LoadedMesh LoadObjFromFile(const std::wstring& Path)
 			TrianglePositions[Corner] = Positions[static_cast<size_t>(PositionIdx)];
 
 			// A mesh with no uvs still has to come out drawable, it just lands on one texel
-			const int TexCoordIdx = ResolveIndex(Source.TexCoord, TexCoords.size());
-			if (TexCoordIdx >= 0 && TexCoordIdx < static_cast<int>(TexCoords.size()))
+			const int uvIdx = ResolveIndex(Source.uv, uvs.size());
+			if (uvIdx >= 0 && uvIdx < static_cast<int>(uvs.size()))
 			{
-				TriangleTexCoords[Corner] = TexCoords[static_cast<size_t>(TexCoordIdx)];
+				TriangleUVs[Corner] = uvs[static_cast<size_t>(uvIdx)];
 			}
 		}
 
 		// Same solver the built in primitives use, so a loaded mesh shades identically
 		const auto Frame = ComputeTriangleFrame(TrianglePositions[0], TrianglePositions[1], TrianglePositions[2],
-												TriangleTexCoords[0], TriangleTexCoords[1], TriangleTexCoords[2]);
+												TriangleUVs[0], TriangleUVs[1], TriangleUVs[2]);
 
 		for (size_t Corner = 0; Corner < 3; ++Corner)
 		{
 			auto& Vertex = Mesh.Vertices[Base + Corner];
 
 			Vertex.Position		= XMFLOAT4(TrianglePositions[Corner].x, TrianglePositions[Corner].y, TrianglePositions[Corner].z, 1.f);
-			Vertex.TexCoord		= TriangleTexCoords[Corner];
+			Vertex.UV			= TriangleUVs[Corner];
 			Vertex.Normal		= Frame.Normal;
 			Vertex.Tangent		= Frame.Tangent;
 			Vertex.Bitangent	= Frame.Bitangent;

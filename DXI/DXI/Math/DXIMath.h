@@ -23,10 +23,10 @@ struct TexVertex
 {
 	constexpr TexVertex(float x, float y, float z, float u, float v)
 		: position(x, y, z)
-		, texcoord(u,v) {}
+		, uv(u,v) {}
 
 	DirectX::XMFLOAT3 position;
-	DirectX::XMFLOAT2 texcoord;
+	DirectX::XMFLOAT2 uv;
 };
 
 struct TexNormalVertex
@@ -35,13 +35,13 @@ struct TexNormalVertex
 	~TexNormalVertex() = default;
 	constexpr TexNormalVertex(float x, float y, float z, float u, float v, float x1, float y1, float z1)
 		: position(x, y, z)
-		, texcoord(u, v) 
+		, uv(u, v) 
 		, normal(x1, y1, z1)
 	{
 	}
 
 	DirectX::XMFLOAT3 position;
-	DirectX::XMFLOAT2 texcoord;
+	DirectX::XMFLOAT2 uv;
 	DirectX::XMFLOAT3 normal;
 };
 
@@ -98,13 +98,13 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 
 		// Assing values to out array
 		out[IdxX0] = TexNormalVertex(Vertex0.position.x, Vertex0.position.y, Vertex0.position.z,
-									 Vertex0.texcoord.x, Vertex0.texcoord.y,
+									 Vertex0.uv.x, Vertex0.uv.y,
 									XMVectorGetX(Normal), XMVectorGetY(Normal), XMVectorGetZ(Normal));
 		out[IdxX1] = TexNormalVertex(Vertex1.position.x, Vertex1.position.y, Vertex1.position.z,
-									 Vertex1.texcoord.x, Vertex1.texcoord.y,
+									 Vertex1.uv.x, Vertex1.uv.y,
 									 XMVectorGetX(Normal), XMVectorGetY(Normal), XMVectorGetZ(Normal));
 		out[IdxX2] = TexNormalVertex(Vertex2.position.x, Vertex2.position.y, Vertex2.position.z,
-									 Vertex2.texcoord.x, Vertex2.texcoord.y,
+									 Vertex2.uv.x, Vertex2.uv.y,
 									 XMVectorGetX(Normal), XMVectorGetY(Normal), XMVectorGetZ(Normal));
 	}
 	// Return

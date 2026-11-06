@@ -9,9 +9,9 @@ VertexFactory::VertexFactory(const VertexType Type)
 TriangleFrame ComputeTriangleFrame(const XMFLOAT3& Position0,
 								const XMFLOAT3& Position1,
 								const XMFLOAT3& Position2,
-								const XMFLOAT2& TexCoord0,
-								const XMFLOAT2& TexCoord1,
-								const XMFLOAT2& TexCoord2)
+								const XMFLOAT2& uv0,
+								const XMFLOAT2& uv1,
+								const XMFLOAT2& uv2)
 {
 	const auto Pos0 = XMVectorSet(Position0.x, Position0.y, Position0.z, 0.f);
 	const auto Pos1 = XMVectorSet(Position1.x, Position1.y, Position1.z, 0.f);
@@ -24,10 +24,10 @@ TriangleFrame ComputeTriangleFrame(const XMFLOAT3& Position0,
 	DXASSERT(!XMVector3NearEqual(Normal, XMVectorZero(), XMVectorSplatEpsilon()), "Normal vector can not be zero vector");
 
 	// How far the uv travels along each edge
-	const float DeltaU1 = TexCoord1.x - TexCoord0.x;
-	const float DeltaV1 = TexCoord1.y - TexCoord0.y;
-	const float DeltaU2 = TexCoord2.x - TexCoord0.x;
-	const float DeltaV2 = TexCoord2.y - TexCoord0.y;
+	const float DeltaU1 = uv1.x - uv0.x;
+	const float DeltaV1 = uv1.y - uv0.y;
+	const float DeltaU2 = uv2.x - uv0.x;
+	const float DeltaV2 = uv2.y - uv0.y;
 
 	// Solving the two edges against those deltas gives the direction U grows in.
 	// A zero determinant means the triangle has no uv area, so there is nothing to

@@ -2,7 +2,7 @@
 
 
 // Vertices/Index buffers etc.
-static const VertexPositionTexCoord VertexList[] =
+static const VertexPositionUV VertexList[] =
 {
 	{ -0.5f,  0.5f, 0.5f , 0.0f, 0.0f }, // top left
 	{ 0.5f , -0.5f, 0.5f , 1.0f, 1.0f }, // bottom right
@@ -21,8 +21,8 @@ static constexpr DWORD IndicesList[] =
 	///////////////////////////////
 };
 
-using TypeOfVertex = VertexPositionTexCoordNormalTangentBitangent;
-static const auto TexNormalVertexList           = ComputeFaceNormalTangent<VertexPositionTexCoord, TypeOfVertex>(VertexList, IndicesList);
+using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
+static const auto TexNormalVertexList           = ComputeFaceNormalTangent<VertexPositionUV, TypeOfVertex>(VertexList, IndicesList);
 static constexpr const UINT VertexBufferSize    = sizeof(TexNormalVertexList);
 static constexpr UINT IndexBufferSize           = sizeof(IndicesList);
 static constexpr UINT PlaneNumIndices           = IndexBufferSize / sizeof(TypeOfIndice);

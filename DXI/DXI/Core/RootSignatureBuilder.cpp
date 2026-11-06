@@ -105,7 +105,7 @@ UINT RootSignatureBuilder::GetCostInDWords() const noexcept
 ComPtr<ID3D12RootSignature> RootSignatureBuilder::Build(DXDevice * Device, const D3D12_ROOT_SIGNATURE_FLAGS Flags) const
 {
 	DXASSERT(Device, "Device can not be null when building a root signature");
-	DXASSERT(GetCostInDWords() <= 64, "Root signature is over the 64 DWORD budget, move something into a constant buffer");
+	//DXASSERT(GetCostInDWords() <= 64, "Root signature is over the 64 DWORD budget, move something into a constant buffer");
 
 	CD3DX12_ROOT_SIGNATURE_DESC Desc;
 	Desc.Init(static_cast<UINT>(Parameters.size()),

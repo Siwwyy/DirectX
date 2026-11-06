@@ -12,7 +12,7 @@ PSInput main(VSInput input)
 
     //if input.position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
     output.position             = mul(input.position, WorldToClip);
-    output.tex_coord            = input.tex_coord;
+    output.uv            = input.uv;
 
     // The normal gets its own matrix, LocalToWorld would shear it under a non uniform
     // scale. w of 0 keeps the translation out of it, a normal is a direction not a point.

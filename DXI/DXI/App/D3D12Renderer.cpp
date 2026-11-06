@@ -222,8 +222,9 @@ void D3D12Renderer::InitializeConstantBuffers()
 	// because the panel can add primitives after this has been created and mapped
 	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(MAX_PRIMITIVES) * PrimitiveConstantBufferSize;
 
+	// Create mapped buffers
 	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
-	CreateMappedBuffer(UINT64(CameraConstantBufferSize) * BACK_BUFFER_COUNT,			CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
+	CreateMappedBuffer(UINT64(CameraConstantBufferSize) * BACK_BUFFER_COUNT,	CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
 	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT,	LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
 
 	// Fill the first frame so nothing reads uninitialized memory before Update() runs
