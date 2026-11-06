@@ -3,7 +3,7 @@
 #include "GBuffer.h"
 #include "Material.h"
 
-#include <pix3.h>
+#include "PixEvents.h"
 
 BasePass::BasePass()
 {
@@ -106,13 +106,20 @@ HRESULT BasePass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) n
 
 void BasePass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
 {
-	PIXBeginEvent(CommandList, 0, Primitive.Name.c_str());
+	// The material is worth carrying here: this is the pass that binds it, so a capture
+	// showing which maps a draw sampled is what answers "why does that surface look wrong".
+	const auto * const PrimitiveMaterial = Primitive.GetMaterial();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::DRAW, L"%s | %s | %u indices",
+					Primitive.Name.c_str(),
+					PrimitiveMaterial ? PrimitiveMaterial->GetName().c_str() : L"no material",
+					Primitive.GetNumIndices());
 	{
 		CommandList->IASetVertexBuffers(0, 1, &Primitive.VertexFactory.VertexBufferView); // set the vertex buffer (using the vertex buffer view)
 		CommandList->IASetIndexBuffer(&Primitive.VertexFactory.IndexBufferView);
-		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0); // draw cube
+		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0);
 	}
-	PIXEndEvent(CommandList);
+	DXI_PIX_END(CommandList);
 }
 
 void BasePass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept

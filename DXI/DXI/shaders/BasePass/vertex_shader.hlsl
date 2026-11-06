@@ -3,12 +3,8 @@
 
 #include "../Common.hlsl"
 
-cbuffer ConstantBufferPerObject : register(CB_PER_OBJECT)
-{
-    float4x4 LocalToWorld;          // Only with per-object translation
-    float4x4 WorldToClip;           // Translation * View * Proj (Clip)
-    float4x4 LocalToWorldNormal;    // Inverse transpose of LocalToWorld, see D3D12Math.h
-};
+// LocalToWorld, WorldToClip and LocalToWorldNormal come from PrimitiveConstantBuffer in
+// SharedTypes.h, the one definition the C++ upload path writes into
 
 PSInput main(VSInput input)
 {
@@ -29,6 +25,6 @@ PSInput main(VSInput input)
     // Same for the bitangent, it is the other axis lying in the surface
     output.bitangent            = float4(mul(float4(input.bitangent.xyz, 0.f), LocalToWorld).xyz, 0.f);
 
-    output.pixel_world_position = mul(input.position, LocalToWorld);
+    output.world_position = mul(input.position, LocalToWorld);
     return output;
 }

@@ -195,7 +195,7 @@ HRESULT Sphere::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 	}
 
 	// Every triangle keeps its own three vertices, the same as the mesh loader does. The
-	// base pass declares its normal and tangent nointerpolation, so a vertex shared
+	// frame solver writes a face's normal into each of its vertices, so a vertex shared
 	// between faces would take the frame of whichever face was written last.
 	const UINT TriangleCount = GetTriangleCountFor(Stacks);
 

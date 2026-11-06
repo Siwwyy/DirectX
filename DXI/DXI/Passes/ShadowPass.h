@@ -5,19 +5,12 @@
 
 #include "PassBase.h"
 
-// What one shadow view needs on top of the per object matrices. Sent as root constants,
-// because it changes per view and there can be eight views in a frame.
-struct alignas(16) ShadowViewConstants
-{
-	DirectX::XMFLOAT4X4	WorldToLightClip;	// Already transposed for HLSL
-	DirectX::XMFLOAT3	LightPosition;		// World space, a cube face measures distance from it
-	float				LightRange;			// Distance is stored divided by this, so it fits 0 to 1
-};
-
-static_assert((sizeof(ShadowViewConstants) % 4) == 0, "Root constants are counted in 32 bit values");
-static_assert(offsetof(ShadowViewConstants, WorldToLightClip) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
-static_assert(offsetof(ShadowViewConstants, LightRange) == offsetof(ShadowViewConstants, LightPosition) + sizeof(DirectX::XMFLOAT3),
-			  "LightRange has to fill the row the float3 leaves open, which is where HLSL puts it");
+// ShadowViewConstants is defined in shaders/SharedTypes.h. WorldToLightClip is already
+// transposed for HLSL by the time it is written there.
+//
+// This count is why the struct is not padded to 256 like the CBV backed buffers: it is
+// sent as root constants, and at 80 bytes that is 20 of the 64 DWORDs a root signature
+// gets. Padding it would spend the entire budget.
 constexpr UINT ShadowViewConstantCount = sizeof(ShadowViewConstants) / sizeof(UINT32);
 
 

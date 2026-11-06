@@ -20,11 +20,7 @@ SamplerState GBufferSampler     : register(s0);     // point, for the buffers ab
 // as somewhere rather than as a hole in the image.
 static const float3 BACKGROUND_COLOR = float3(0.08, 0.10, 0.14);
 
-cbuffer ConstantBufferPerCamera : register(CB_PER_VIEW)
-{
-    float4   EyePosition;   // World space position of the camera, Camera::GetPosition()
-    float4x4 InvViewProj;   // Clip space back to world
-};
+// EyePosition and InvViewProj come from CameraConstantBuffer in SharedTypes.h
 
 // Direction this pixel looks at, found by pushing it out to the far plane and back
 // through the view projection

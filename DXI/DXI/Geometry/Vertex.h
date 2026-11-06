@@ -620,7 +620,9 @@ _NODISCARD TriangleFrame ComputeTriangleFrame(const DirectX::XMFLOAT3& Position0
 /// HasBitangent above. The rest carry the handedness in Tangent.w and leave the pixel
 /// shader to finish the basis with a cross product.
 ///
-/// Flat faces on purpose, matching the nointerpolation normals the shaders already use.
+/// Flat faces on purpose. The shaders interpolate the frame, but all three corners of a
+/// triangle are given the same one here, so it comes out constant across the face anyway.
+/// A mesh that wants smooth shading has to supply its own per vertex normals instead.
 /// </summary>
 template<typename In, typename Out, size_t N, size_t M>
 std::array<Out, N> ComputeFaceNormalTangent(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])

@@ -517,7 +517,7 @@ void DebugUI::Draw(Camera& Camera,
 			ImGui::TextWrapped("World units covered by one pixel. Surfaces seen edge on change fastest and light up.");
 			break;
 		case BasePassDebugMode::NormalDerivatives:
-			ImGui::TextWrapped("Normals are nointerpolation, so this is black inside a triangle and only shows up where two of them meet.");
+			ImGui::TextWrapped("Every mesh here still carries one normal per face, so this is black inside a triangle and only shows up where two of them meet. A mesh with real per vertex normals would show a gradient.");
 			break;
 		default:
 			ImGui::TextDisabled("Materials rendered normally");

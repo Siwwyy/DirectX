@@ -8,8 +8,8 @@ static constexpr bool LHCameraCoordinateSystem = true;
 // direction as (cos yaw, sin pitch, sin yaw) scaled by cos pitch, and a yaw of zero would
 // aim it down +X instead. Both places take the numbers from here so they cannot drift.
 static constexpr float INITIAL_YAW		= 90.0f;	// degrees
-static constexpr float INITIAL_PITCH	= 0.0f;		// degrees
-static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 0.0f, -1.0f, 1.0f);
+static constexpr float INITIAL_PITCH	= -20.0f;		// degrees
+static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 5.0f, -9.0f, 1.0f);
 
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	: Yaw(INITIAL_YAW)
@@ -169,7 +169,7 @@ void Camera::Update(float ElapsedSeconds) noexcept
 	XMStoreFloat4(&CameraMatrices.Up, XMLoadFloat4(&V));
 	XMStoreFloat4(&CameraMatrices.Right, XMLoadFloat4(&U));
 
-#if DEBUG_MODE
+#if DEBUG_MODE & 0 // so far disabled
 	DXLOG("X %f | Z %f | DirX %f | DirZ %f\n", CameraMatrices.Position.x, CameraMatrices.Position.z, CameraMatrices.Direction.x, CameraMatrices.Direction.z)
 	DXLOG("Rot X %f | Y %f\n", Pitch, Yaw)
 #endif

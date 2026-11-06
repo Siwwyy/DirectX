@@ -4,6 +4,7 @@
 #define D3D12_MATH_H_INCLUDED
 
 #include "pch.h"
+#include "SharedTypes.h"
 #include "D3D12Helpers.h"
 #include <array> // for fixed-size array helpers
 
@@ -121,33 +122,12 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 //constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
 //constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
 
-// Constant buffer per Primitive
-struct alignas(256) PrimitiveConstantBuffer
-{
-	DirectX::XMFLOAT4X4 LocalToWorld;		// Only with translation
-	DirectX::XMFLOAT4X4 WorldToClip;		// Translation * View * Proj (Clip)
-
-	// Normals can not use LocalToWorld. A non uniform scale shears a direction differently
-	// than it moves a point, so a normal scaled that way stops being perpendicular to its
-	// surface. The matrix that keeps it perpendicular is the inverse transpose of the
-	// world matrix, which equals the inverse scale times the rotation.
-	DirectX::XMFLOAT4X4 LocalToWorldNormal;
-};
-static_assert((sizeof(PrimitiveConstantBuffer) % 256) == 0, "Primitive Constant Buffer size must be aligned to 256-bytes boudary");
-static_assert(offsetof(PrimitiveConstantBuffer, LocalToWorld) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
-static_assert(offsetof(PrimitiveConstantBuffer, WorldToClip) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
-static_assert(offsetof(PrimitiveConstantBuffer, LocalToWorldNormal) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+// PrimitiveConstantBuffer and CameraConstantBuffer are defined in shaders/SharedTypes.h.
+// Only the size aliases below live here. Mind the field alignment note in that header
+// before adding to or reordering either of them.
 constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
 constexpr auto PrimitiveConstantBufferAlignment = alignof(PrimitiveConstantBuffer);
 
-// Constant buffer per Camera | What the pixel shaders need to know about the view
-struct alignas(256) CameraConstantBuffer
-{
-	DirectX::XMFLOAT4	EyePosition;	// World space position of the camera
-	DirectX::XMFLOAT4X4 InvViewProj;	// Clip space back to world, the sky turns a pixel into a direction with it
-};
-static_assert((sizeof(CameraConstantBuffer) % 256) == 0, "Camera Constant Buffer size must be aligned to 256-bytes boudary");
-static_assert(offsetof(CameraConstantBuffer, InvViewProj) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
 constexpr auto CameraConstantBufferSize = sizeof(CameraConstantBuffer);
 
 // Camera matrices

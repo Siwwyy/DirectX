@@ -3,13 +3,19 @@
 #include "GBuffer.h"
 #include "ShadowAtlas.h"
 
-#include <pix3.h>
+#include "PixEvents.h"
 
 LightPass::LightPass()
 {
 	// Shaders compilation
-	DXShaderDefines<1> ShaderDefines;
+	DXShaderDefines<2> ShaderDefines;
 	ShaderDefines.AddDefine({ L"LIGHT_PASS", L"1" });
+
+	// Selects the stock light maths in Lighting.hlsl. Drop this line to compile the #else
+	// branch there instead and supply your own direction, falloff and accumulation.
+	// Shaders are compiled from source at startup, so once the switch is set, iterating on
+	// the implementation itself only needs the app restarted rather than a rebuild.
+	//ShaderDefines.AddDefine({ L"BASELINE", L"0" });
 
 	const DXIPATHS::FilePath VertexShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"vertex_shader.hlsl";
 	const DXIPATHS::FilePath PixelShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"pixel_shader.hlsl";
@@ -43,7 +49,6 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 
 	//CONSTANTS
 	const DXGI_FORMAT						BACK_BUFFER_FORMAT	= DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;	//has to match the swap chain
-	const DXGI_SAMPLE_DESC					SAMPLE_DESC			= SAMPLER_HELPER::CreateSampler(1, 0);
 
 	// Setup Root Signature | Each Add hands back the index to bind that parameter against
 	{
@@ -79,7 +84,7 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 
 	// Render target | Straight into the back buffer
 	PSO.RenderTargetFormats.push_back(BACK_BUFFER_FORMAT);
-	PSO.SampleDesc						= SAMPLE_DESC;
+	PSO.SampleDesc						= SAMPLER_HELPER::CreateSampler(1, 0);
 
 	// Setup PSO
 	PSO.SetupPSO(Device);
@@ -96,11 +101,11 @@ void LightPass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const
 
 void LightPass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
 {
-	PIXBeginEvent(CommandList, 0, L"Light Pass");
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::LIGHT_PASS, L"Light Pass | fullscreen triangle");
 	{
 		// One oversized triangle covering the viewport. The PSO has no input layout,
 		// so whatever vertex buffers BasePass left bound are ignored.
 		CommandList->DrawInstanced(3, 1, 0, 0);
 	}
-	PIXEndEvent(CommandList);
+	DXI_PIX_END(CommandList);
 }

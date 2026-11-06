@@ -18,9 +18,9 @@ LightBase::LightBase(std::wstring Name)
 {
 }
 
-LightConstants LightBase::MakeBaseConstants() const noexcept
+Light LightBase::MakeBaseConstants() const noexcept
 {
-	LightConstants Constants	= {};
+	Light Constants	= {};
 	Constants.Position			= XMFLOAT3(0.f, 0.f, 0.f);
 	Constants.Intensity			= Intensity;
 	Constants.Direction			= XMFLOAT3(0.f, -1.f, 0.f);

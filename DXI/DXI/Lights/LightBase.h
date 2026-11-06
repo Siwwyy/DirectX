@@ -7,68 +7,27 @@
 #include "D3D12Helpers.h"
 #include "D3D12Math.h"
 
-// Kind of the light, has to match the Type switch inside the shaders
+// MAX_LIGHTS, NO_SHADOW_CASTER, LIGHT_TYPE_* and the Light struct itself
+#include "SharedTypes.h"
+
+// Kind of the light. Values come from the shared header so the Type switch inside the
+// shaders cannot drift from this.
 enum class LightType : UINT
 {
-	Directional = 0,
-	Point,
-	Area,
+	Directional	= LIGHT_TYPE_DIRECTIONAL,
+	Point		= LIGHT_TYPE_POINT,
+	Area		= LIGHT_TYPE_AREA,
 
 	Count
 };
-
-// How many lights fit in the light constant buffer.
-// Keep this in sync with MAX_LIGHTS inside shaders/Lighting.hlsl
-constexpr UINT MAX_LIGHTS = 4;
-
-// Value of ShadowLightIdx when no light casts a shadow this frame
-constexpr INT NO_SHADOW_CASTER = -1;
 
 // Light name, for debug purposes
 _NODISCARD const wchar_t* ToString(const LightType Type);
 
 
-// A single light as the shaders see it. Not every field matters for every type,
-// e.g., Range is point only and Size is area only, the shader branches on Type.
-// Mirrors the Light struct of shaders/Lighting.hlsl, mind the 16 bytes rows when editing.
-//
-// alignas rounds the size up to the next 16 instead of a trailing padding member. It only
-// does that at the end though, it will not insert padding in the middle, so a field that
-// would straddle a 16 bytes row still has to be placed by hand. The asserts below are
-// what catch it when it is not.
-struct alignas(16) LightConstants
-{
-	DirectX::XMFLOAT3	Position;		// World space position | Point, Area
-	float				Intensity;		// Brightness multiplier
-
-	DirectX::XMFLOAT3	Direction;		// Direction the light points at | Directional, Area normal
-	float				Range;			// Distance the light reaches | Point
-
-	DirectX::XMFLOAT3	Color;			// Linear colour
-	UINT				Type;			// LightType
-
-	DirectX::XMFLOAT2	Size;			// Width and height of the emitting surface | Area
-	INT					ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
-	float				SourceRadius;	// How big the emitter is | Point, keeps the falloff finite at the centre
-};
-
-static_assert((sizeof(LightConstants) % 16) == 0, "LightConstants must be aligned to 16-bytes rows to match the HLSL packing");
-static_assert(sizeof(LightConstants) == 64, "HLSL pads this struct to 64 inside an array, both sides have to agree on the stride");
-
-
-// Constant buffer holding every light of the scene.
-// Every light can cast, each one owning a slice of the shadow atlas. Directional and area
-// lights render a single depth view, a point light renders six faces of a cube, so only
-// the first kind needs a matrix here: a cube is looked up by direction instead.
-struct alignas(256) LightsConstantBuffer
-{
-	LightConstants		Lights[MAX_LIGHTS];					// All lights of the scene
-	DirectX::XMFLOAT4X4 ShadowViewProj[MAX_LIGHTS];			// World to that light's clip space | Directional, Area
-	UINT				NumLights;							// How many entries of Lights are filled
-};
-
-static_assert((sizeof(LightsConstantBuffer) % 256) == 0, "Lights Constant Buffer size must be aligned to 256-bytes boudary");
-static_assert(offsetof(LightsConstantBuffer, ShadowViewProj) % 16 == 0, "HLSL starts a matrix on a 16-bytes row");
+// Light and LightsConstantBuffer are defined in shaders/SharedTypes.h, so there is one of
+// each rather than a CPU copy and an HLSL copy. Mind the field alignment note there before
+// adding to or reordering either of them.
 constexpr auto LightsConstantBufferSize			= sizeof(LightsConstantBuffer);
 constexpr auto LightsConstantBufferAlignment	= alignof(LightsConstantBuffer);
 
@@ -90,7 +49,7 @@ public:
 	_NODISCARD virtual LightType GetLightType() const noexcept = 0;		// make this class abstract
 
 	// Packs this light into the layout the shaders read
-	_NODISCARD virtual LightConstants GetLightConstants() const noexcept = 0;
+	_NODISCARD virtual Light GetLightConstants() const noexcept = 0;
 
 	// Setters
 	void SetColor(const XMFLOAT3 Color) noexcept
@@ -119,7 +78,7 @@ public:
 protected:
 
 	// Fills everything the base knows about, the derived class completes the rest
-	_NODISCARD LightConstants MakeBaseConstants() const noexcept;
+	_NODISCARD Light MakeBaseConstants() const noexcept;
 
 	// Linear colour of the light
 	XMFLOAT3		Color		= XMFLOAT3(1.f, 1.f, 1.f);

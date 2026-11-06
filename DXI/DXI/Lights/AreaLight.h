@@ -23,7 +23,7 @@ public:
 	{
 		return LightType::Area;
 	}
-	_NODISCARD LightConstants GetLightConstants() const noexcept override;
+	_NODISCARD Light GetLightConstants() const noexcept override;
 
 	// Setters
 	void SetPosition(const XMFLOAT3 Position) noexcept

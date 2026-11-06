@@ -5,10 +5,11 @@
 // Own Includes
 #include "Win32Proc.h"
 #include "Paths.h"
+#include "CommandLine.h"
 #include "Model.h"
 
 #include <string>
-#include <pix3.h>
+#include "PixEvents.h"
 
 // Namespaces
 using namespace Helpers;
@@ -28,8 +29,18 @@ D3D12Renderer::D3D12Renderer(UINT WindowWidth, UINT WindowHeight, std::wstring W
 
 void D3D12Renderer::Initialize()
 {
-	// Core | Device first, everything else is built on top of it
-	Device.Init();
+	// Core | Device first, everything else is built on top of it.
+	// Every one of these is a debugging knob, so it comes off the command line.
+	D3D12DeviceOptions DeviceOptions;
+	DeviceOptions.bEnableGpuValidation	= DXICMD::HasFlag(L"gpuvalidation");
+	DeviceOptions.bEnableDebugLayer		= !DXICMD::HasFlag(L"nodebuglayer");
+	DeviceOptions.bBreakOnSeverity		= !DXICMD::HasFlag(L"nobreak");
+	DeviceOptions.bUseWarpAdapter		= DXICMD::HasFlag(L"warp");
+
+	Device.Init(D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0, DeviceOptions);
+
+	// Off by default, since a pinned frame rate says nothing about how long a frame takes
+	bVSyncEnabled = DXICMD::HasFlag(L"vsync");
 	SwapChain.Init(Device, Win32Proc::GetHwnd(), WindowWidth, WindowHeight, BACK_BUFFER_COUNT);
 	DepthBuffer.Init(Device, WindowWidth, WindowHeight);
 	FrameContext.Init(Device, BACK_BUFFER_COUNT);
@@ -487,7 +498,7 @@ void D3D12Renderer::InitializeConstantBuffers()
 	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(MAX_PRIMITIVES) * PrimitiveConstantBufferSize;
 
 	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
-	CreateMappedBuffer(UINT64(CAMERA_CBV_STRIDE) * BACK_BUFFER_COUNT,			CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
+	CreateMappedBuffer(UINT64(CameraConstantBufferSize) * BACK_BUFFER_COUNT,			CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
 	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT,	LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
 
 	// Fill the first frame so nothing reads uninitialized memory before Update() runs
@@ -646,10 +657,14 @@ void D3D12Renderer::RenderShadowPass()
 
 	auto * const CommandList = FrameContext.GetCommandList();
 
+	// Only as many lights as the atlas has slices for, which is also what the loop below
+	// walks. Hoisted above the marker so the event can name it.
+	const auto CasterCount = Lights.size() < MAX_LIGHTS ? Lights.size() : MAX_LIGHTS;
+
 	// The scene from every light in turn. A directional or area light is one depth view,
 	// a point light is six faces of a cube, so this is up to MAX_LIGHTS * 6 draws of the
 	// whole scene per frame.
-	PIXBeginEvent(CommandList, 0, L"Shadow Pass");
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::SHADOW_PASS, L"Shadow Pass | %u casters", static_cast<UINT>(CasterCount));
 	{
 		SceneShadowAtlas.TransitionToWrite(CommandList);
 
@@ -679,40 +694,54 @@ void D3D12Renderer::RenderShadowPass()
 			}
 		};
 
-		const auto CasterCount = Lights.size() < MAX_LIGHTS ? Lights.size() : MAX_LIGHTS;
-
 		for (UINT LightIdx = 0; LightIdx < static_cast<UINT>(CasterCount); ++LightIdx)
 		{
 			const auto& Light = *Lights[LightIdx];
 
-			PIXBeginEvent(CommandList, 0, Light.GetName().c_str());
-			if (Light.GetLightType() == LightType::Point)
+			DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::VIEW, L"%s | %s | slot %u",
+							Light.GetName().c_str(),
+							ToString(Light.GetLightType()),
+							LightIdx);
 			{
-				// Distance into a colour target, one face at a time
-				CommandList->SetPipelineState(SceneShadowPass.GetDistancePipelineState());
-
-				for (UINT FaceIdx = 0; FaceIdx < ShadowAtlas::CUBE_FACE_COUNT; ++FaceIdx)
+				if (Light.GetLightType() == LightType::Point)
 				{
-					SceneShadowAtlas.BindCubeFace(CommandList, LightIdx, FaceIdx);
-					RenderView(Light, FaceIdx);
+					// Distance into a colour target, one face at a time
+					CommandList->SetPipelineState(SceneShadowPass.GetDistancePipelineState());
+
+					// Same order as PointLight::GetShadowViewProj and the cube sampler, so
+					// a capture names the face rather than leaving six identical events
+					static const wchar_t* const FaceNames[ShadowAtlas::CUBE_FACE_COUNT] =
+					{
+						L"+X", L"-X", L"+Y", L"-Y", L"+Z", L"-Z"
+					};
+
+					for (UINT FaceIdx = 0; FaceIdx < ShadowAtlas::CUBE_FACE_COUNT; ++FaceIdx)
+					{
+						DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::VIEW, L"Face %s", FaceNames[FaceIdx]);
+						{
+							SceneShadowAtlas.BindCubeFace(CommandList, LightIdx, FaceIdx);
+							RenderView(Light, FaceIdx);
+						}
+						DXI_PIX_END(CommandList);
+					}
+				}
+				else
+				{
+					// Depth only, a single view is enough
+					CommandList->SetPipelineState(SceneShadowPass.GetPipelineState());
+
+					SceneShadowAtlas.BindDepthSlice(CommandList, LightIdx);
+					RenderView(Light, 0);
 				}
 			}
-			else
-			{
-				// Depth only, a single view is enough
-				CommandList->SetPipelineState(SceneShadowPass.GetPipelineState());
-
-				SceneShadowAtlas.BindDepthSlice(CommandList, LightIdx);
-				RenderView(Light, 0);
-			}
-			PIXEndEvent(CommandList);
+			DXI_PIX_END(CommandList);
 		}
 
 		// Back to the screen sized viewport for the rest of the frame
 		CommandList->RSSetViewports(1, &ViewPort);
 		CommandList->RSSetScissorRects(1, &ScissorRect);
 	}
-	PIXEndEvent(CommandList);
+	DXI_PIX_END(CommandList);
 }
 
 void D3D12Renderer::RenderBasePass()
@@ -720,7 +749,7 @@ void D3D12Renderer::RenderBasePass()
 	auto * const CommandList = FrameContext.GetCommandList();
 
 	// Surface only, every primitive lands in the G-buffer with its material applied and no lighting
-	PIXBeginEvent(CommandList, 0, L"Base Pass");
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::BASE_PASS, L"Base Pass | %zu primitives", Primitives.size());
 	{
 		SceneGBuffer.TransitionToRenderTarget(CommandList);
 		SceneGBuffer.BindAsRenderTarget(CommandList, DepthBuffer.GetDsvHandle());
@@ -760,7 +789,7 @@ void D3D12Renderer::RenderBasePass()
 			SceneBasePass.RenderPrimitive(CommandList, Primitive);
 		}
 	}
-	PIXEndEvent(CommandList);
+	DXI_PIX_END(CommandList);
 }
 
 void D3D12Renderer::RenderLightPass()
@@ -783,7 +812,7 @@ void D3D12Renderer::RenderLightPass()
 	CommandList->SetDescriptorHeaps(_countof(LightHeaps), LightHeaps);
 
 	CommandList->SetGraphicsRootDescriptorTable(SceneLightPass.GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
-	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CAMERA_CBV_STRIDE));
+	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CameraConstantBufferSize));
 	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
 
 	SceneLightPass.RenderFullScreen(CommandList);
@@ -791,10 +820,16 @@ void D3D12Renderer::RenderLightPass()
 
 void D3D12Renderer::RenderDebugUI()
 {
-	// Straight over the shaded frame. LightPass already left the back buffer bound and
-	// there is no depth, so the panel is simply drawn on top.
-	SceneDebugUI.Draw(Camera, Catalog, Primitives, Lights, Materials, DefaultMaterial.get(), StepTimer.GetFramesPerSecond());
-	SceneDebugUI.Render(FrameContext.GetCommandList());
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::UI, L"Debug UI");
+	{
+		// Straight over the shaded frame. LightPass already left the back buffer bound and
+		// there is no depth, so the panel is simply drawn on top.
+		SceneDebugUI.Draw(Camera, Catalog, Primitives, Lights, Materials, DefaultMaterial.get(), StepTimer.GetFramesPerSecond());
+		SceneDebugUI.Render(CommandList);
+	}
+	DXI_PIX_END(CommandList);
 }
 
 void D3D12Renderer::EndFrame()
@@ -824,7 +859,7 @@ void D3D12Renderer::UploadCameraConstants()
 	const auto ViewProj = Camera.GetViewMatrix() * Camera.GetProjMatrix();
 	XMStoreFloat4x4(&CameraCbv.InvViewProj, XMMatrixTranspose(XMMatrixInverse(nullptr, ViewProj)));
 
-	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CAMERA_CBV_STRIDE), &CameraCbv, sizeof(CameraCbv));
+	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CameraConstantBufferSize), &CameraCbv, sizeof(CameraCbv));
 }
 
 void D3D12Renderer::UploadLightConstants()
@@ -836,9 +871,11 @@ void D3D12Renderer::UploadLightConstants()
 
 	for (UINT LightIdx = 0; LightIdx < LightsCbv.NumLights; ++LightIdx)
 	{
-		const auto& Light = *Lights[LightIdx];
+		// Not named Light, that is now the shared struct type this loop writes into
+		const auto& SceneLight = *Lights[LightIdx];
 
-		LightsCbv.Lights[LightIdx] = Light.GetLightConstants();
+		// Get light constants i.e., per light pos, etc.
+		LightsCbv.Lights[LightIdx] = SceneLight.GetLightConstants();
 
 		// Every light casts, and the atlas has a slice per light of either kind, so the
 		// light's own index is its slot. No allocator needed.
@@ -846,9 +883,9 @@ void D3D12Renderer::UploadLightConstants()
 
 		// Only the single view kinds need a matrix here. A point light is looked up by
 		// direction, so its six face matrices never leave the shadow pass.
-		if (Light.GetLightType() != LightType::Point)
+		if (SceneLight.GetLightType() != LightType::Point)
 		{
-			XMStoreFloat4x4(&LightsCbv.ShadowViewProj[LightIdx], XMMatrixTranspose(GetLightShadowViewProj(Light)));
+			XMStoreFloat4x4(&LightsCbv.ShadowViewProj[LightIdx], XMMatrixTranspose(GetLightShadowViewProj(SceneLight)));
 		}
 		else
 		{

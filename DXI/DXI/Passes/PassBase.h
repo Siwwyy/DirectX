@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "D3D12ShaderCompiler.h"
 #include "ShaderRegisters.h"
+#include "SharedTypes.h"
 #include "RootSignatureBuilder.h"
 #include "Primitive.h"
 #include "PSO.h"

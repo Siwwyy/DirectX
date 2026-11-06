@@ -49,9 +49,9 @@ XMMATRIX AreaLight::GetShadowViewProj() const noexcept
 	return View * Proj;
 }
 
-LightConstants AreaLight::GetLightConstants() const noexcept
+Light AreaLight::GetLightConstants() const noexcept
 {
-	LightConstants Constants	= MakeBaseConstants();
+	Light Constants	= MakeBaseConstants();
 	Constants.Position			= Position;
 	Constants.Direction			= Direction;
 	Constants.Size				= Size;

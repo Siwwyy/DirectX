@@ -14,11 +14,8 @@ Texture2D MaterialAO        : register(t5);
 
 SamplerState MaterialSampler : register(s0);
 
-// A root constant, so switching views costs nothing per frame
-cbuffer ConstantBufferPerDebug : register(CB_PER_VIEW)
-{
-    uint DebugMode;     // One of BASE_PASS_DEBUG_*
-};
+// DebugMode comes from BasePassDebugConstants in SharedTypes.h, a root constant so
+// switching views costs nothing per frame
 
 // Pixels are always shaded in 2x2 quads, which is what lets ddx and ddy exist: they
 // subtract a value from its neighbour in the quad. The result is how fast that value
@@ -94,9 +91,10 @@ bool GetDerivativeDebugColor(float2 TexCoord, float3 WorldPosition, float3 Norma
 
     case BASE_PASS_DEBUG_NORMAL_DERIVATIVES:
     {
-        // The normal is nointerpolation, so it is constant inside a triangle and this
-        // stays black except on the quads straddling two triangles, which is exactly
-        // where faceting shows up.
+        // The normal interpolates, but every mesh here still carries a per face normal,
+        // so it is constant inside a triangle and this stays black except on the quads
+        // straddling two triangles, which is exactly where faceting shows up. A mesh
+        // supplying real per vertex normals would show a gradient across the face.
         DebugColor = saturate(fwidth(Normal));
         return true;
     }
@@ -156,7 +154,7 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
     output.Normal           = float4(normal, 0.0);
 
     // w of 1 tells LightPass that geometry was written here, the cleared background keeps 0
-    output.WorldPosition    = float4(input.pixel_world_position.xyz, 1.0);
+    output.WorldPosition    = float4(input.world_position.xyz, 1.0);
 
     // What the reflections are driven by. An empty material slot keeps a null descriptor
     // and reads back as zero, which is the right answer for metalness on a dielectric.
@@ -169,7 +167,7 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
     // A debug view replaces the surface colour and asks LightPass to leave it alone,
     // otherwise the lighting would modulate the very numbers being inspected
     float3 debug_color;
-    if (GetDerivativeDebugColor(input.tex_coord, input.pixel_world_position.xyz, normal, debug_color))
+    if (GetDerivativeDebugColor(input.tex_coord, input.world_position.xyz, normal, debug_color))
     {
         output.Albedo = float4(debug_color, SURFACE_UNLIT);
     }

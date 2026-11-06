@@ -23,7 +23,7 @@ public:
 	{
 		return LightType::Directional;
 	}
-	_NODISCARD LightConstants GetLightConstants() const noexcept override;
+	_NODISCARD Light GetLightConstants() const noexcept override;
 
 	// Setters
 	void SetDirection(const XMFLOAT3 Direction) noexcept;

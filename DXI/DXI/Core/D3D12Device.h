@@ -6,6 +6,27 @@
 #include "pch.h"
 #include "D3D12Helpers.h"
 
+// How the device is brought up. Every one of these is a debugging knob, so they are driven
+// off the command line rather than recompiled, see Utility/CommandLine.h.
+struct D3D12DeviceOptions
+{
+	// Instruments every shader to catch out of bounds access and uninitialised reads.
+	// Commonly 10x slower or worse, so it stays off unless something needs chasing.
+	bool bEnableGpuValidation	= false;
+
+	// The CPU side validation. Cheap and worth leaving on, but it needs the Graphics Tools
+	// optional feature installed, so there has to be a way to turn it off.
+	bool bEnableDebugLayer		= true;
+
+	// Whether a debug layer message halts in the debugger. Breaking on WARNING is
+	// aggressive and some drivers are chatty enough to make it unusable.
+	bool bBreakOnSeverity		= true;
+
+	// The software rasterizer. Slow, but it renders the same frame without a vendor driver
+	// in the way, which is how you tell a driver bug from an engine bug.
+	bool bUseWarpAdapter		= false;
+};
+
 // Factory, adapter, device and the direct command queue.
 // Every D3D12 app needs the exact same setup, so it lives here instead of being
 // copied into each one of them.
@@ -18,12 +39,10 @@ public:
 	D3D12Device()	= default;
 	~D3D12Device()	= default;
 
-	// Turns on the debug layer, creates the factory, picks a hardware adapter
-	// and creates the device along with its direct command queue.
-	// GPU based validation instruments every shader and commonly costs 10x or more,
-	// so it stays off unless something actually needs chasing down.
+	// Turns on the debug layer, creates the factory, picks an adapter and creates the
+	// device along with its direct command queue.
 	void Init(const D3D_FEATURE_LEVEL FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0,
-					const bool bEnableGpuValidation = false);
+					const D3D12DeviceOptions& Options = {});
 
 	// Reports whatever is still alive, call it once everything else has been released
 	void ReportLiveObjects() const;
@@ -55,10 +74,10 @@ public:
 private:
 
 	// Turns the debug layer on, has to happen before the device is created
-	_NODISCARD static UINT EnableDebugLayer(const bool bEnableGpuValidation);
+	_NODISCARD static UINT EnableDebugLayer(const D3D12DeviceOptions& Options);
 
-	// Stops the debug layer from breaking into the debugger on every message
-	void SilenceDebugBreaks() const;
+	// Whether a debug layer message halts in the debugger
+	void SetBreakOnSeverity(const bool bEnabled) const;
 
 	ComPtr<DXFactory4>		Factory;		// DXGI factory the adapter and swap chain come from
 	ComPtr<DXDevice>		Device;			// the device itself

@@ -50,9 +50,9 @@ XMMATRIX DirectionalLight::GetShadowViewProj() const noexcept
 	return View * Proj;
 }
 
-LightConstants DirectionalLight::GetLightConstants() const noexcept
+Light DirectionalLight::GetLightConstants() const noexcept
 {
-	LightConstants Constants	= MakeBaseConstants();
+	Light Constants	= MakeBaseConstants();
 	Constants.Direction			= Direction;
 	return Constants;
 }

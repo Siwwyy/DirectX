@@ -35,6 +35,6 @@ PSInput main(VSInput input)
     //output.normal               = normalize(world_normal);
     output.normal               = world_normal;
 
-    output.pixel_world_position = mul(input.position, LocalToWorld); 
+    output.world_position = mul(input.position, LocalToWorld); 
     return output;
 }

@@ -22,12 +22,15 @@ struct LoadedMesh
 // triangles. Negative (relative) indices are resolved. Everything else, materials and
 // smoothing groups included, is skipped.
 //
-// Normals in the file are ignored and recomputed per face. That is not laziness: the base
-// pass declares its normal and tangent nointerpolation, so a vertex shared between faces
-// would take the frame of whichever face happened to be written last. The loader instead
+// Normals in the file are ignored and recomputed per face. That is not laziness: the frame
+// solver writes a face's normal into each of its vertices by index, so a vertex shared
+// between faces would end up holding whichever face was written last. The loader instead
 // gives every triangle its own three vertices, which is what makes a flat shaded mesh come
 // out right. The cost is a larger vertex buffer and an index buffer that is simply
-// 0, 1, 2, ... Smooth shading would mean dropping nointerpolation from the shaders.
+// 0, 1, 2, ...
+//
+// The shaders interpolate the normal now, so smooth shading is available: it needs this
+// loader to read the file's vn data, or to average face normals where the file has none.
 //
 // Throws std::runtime_error when the file cannot be opened or holds no triangles.
 _NODISCARD LoadedMesh LoadObjFromFile(const std::wstring& Path);

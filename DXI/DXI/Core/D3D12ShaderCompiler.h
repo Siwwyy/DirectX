@@ -16,6 +16,17 @@ struct DXShaderDefines
 
 public:
 
+	// Ctor & Dctor
+	~DXShaderDefines() = default;
+	DXShaderDefines()
+	{
+		// Default init
+		for (UINT i = 0; i < DefinesCount; ++i)
+		{
+			Defines[i] = EmptyDxcDefine;
+		}
+	}
+
 	// Add Define to the array of defines
 	FORCEINLINE void AddDefine(DxcDefine ShaderDefine);
 
@@ -26,12 +37,16 @@ private:
 
 	// Current index of the define to be added
 	SIZE_T CurrentIndex = 0;
+
+	// Special registered sign of empty define
+	const DxcDefine EmptyDxcDefine = { L"EMPTYDEFINE", L"0" };
 };
 
 template<SIZE_T DefinesCount>
 inline void DXShaderDefines<DefinesCount>::AddDefine(DxcDefine ShaderDefine)
 {
 	DXASSERT(CurrentIndex < DefinesCount, "Cannot add more defines than the specified DefinesCount");
+	DXASSERT(std::wstring(EmptyDxcDefine.Name) != std::wstring(ShaderDefine.Name), "Cannot add define with the same empty dxc name!");
 	Defines[CurrentIndex] = ShaderDefine;
 	++CurrentIndex;
 }

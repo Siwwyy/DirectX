@@ -60,9 +60,9 @@ XMMATRIX PointLight::GetShadowViewProj(const UINT FaceIdx) const noexcept
 	return View * Proj;
 }
 
-LightConstants PointLight::GetLightConstants() const noexcept
+Light PointLight::GetLightConstants() const noexcept
 {
-	LightConstants Constants	= MakeBaseConstants();
+	Light Constants	= MakeBaseConstants();
 	Constants.Position			= Position;
 	Constants.Range				= Range;
 	Constants.SourceRadius		= SourceRadius;

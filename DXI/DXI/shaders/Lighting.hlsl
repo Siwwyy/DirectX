@@ -9,47 +9,27 @@
 #ifndef LIGHTING_HLSL_INCLUDED
 #define LIGHTING_HLSL_INCLUDED
 
-// Kinds of light, has to match LightType of LightTypes/LightBase.h
-#define LIGHT_TYPE_DIRECTIONAL  0
-#define LIGHT_TYPE_POINT        1
-#define LIGHT_TYPE_AREA         2
-
-// How many lights fit in the lights constant buffer.
-// Keep this in sync with MAX_LIGHTS of LightTypes/LightBase.h
-#define MAX_LIGHTS              4
-
-// Value of ShadowLightIdx when no light casts a shadow.
-// Keep this in sync with NO_SHADOW_CASTER of LightTypes/LightBase.h
-#define NO_SHADOW_CASTER        -1
+// LIGHT_TYPE_*, MAX_LIGHTS, NO_SHADOW_CASTER and the Light struct all come from
+// SharedTypes.h, which Common.hlsl includes. One definition, compiled as both languages.
 
 // TODO | Should come from the material Specular and Roughness slots instead of being fixed
 #define SPECULAR_STRENGTH       0.5
 #define SHININESS               32.0
 
-// A single light of the scene.
-// Mirrors LightConstants of LightTypes/LightBase.h, mind the 16 bytes rows when editing.
-struct Light
-{
-    float3  Position;       // World space position | Point, Area
-    float   Intensity;      // Brightness multiplier
+// Lights, ShadowViewProj and NumLights come from LightsConstantBuffer in SharedTypes.h
 
-    float3  Direction;      // Direction the light points at | Directional, Area normal
-    float   Range;          // Distance the light reaches | Point
-
-    float3  Color;          // Linear colour
-    uint    Type;           // One of LIGHT_TYPE_*
-
-    float2  Size;           // Width and height of the emitting surface | Area
-    int     ShadowSlot;     // Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
-    float   SourceRadius;   // How big the emitter is | Point, keeps the falloff finite at the centre
-};
-
-cbuffer ConstantBufferPerLights : register(CB_PER_LIGHTS)
-{
-    Light    Lights[MAX_LIGHTS];                // Every light placed in the scene
-    float4x4 ShadowViewProj[MAX_LIGHTS];        // World to that light's clip space | Directional, Area
-    uint     NumLights;                         // How many entries of Lights are filled
-};
+// ---------------------------------------------------------------------------------------
+//  Baseline light maths, part 1 of 2: direction and falloff, per light type.
+//
+//  BASELINE is defined by LightPass.cpp alongside LIGHT_PASS. Turn it off there to compile
+//  the #else branch instead and supply your own. The shadow helpers further down sit
+//  outside these guards deliberately: occlusion is not light type maths, so a custom
+//  implementation still gets GetShadowFactor for free.
+//
+//  Anything written in the #else branch has to keep these signatures, because ShadeSurface
+//  and LightPass call them by name.
+// ---------------------------------------------------------------------------------------
+#ifdef BASELINE
 
 // How much of a positional light reaches a point this far away.
 //
@@ -103,6 +83,32 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
 
     return ToLight / Distance;
 }
+
+#else // BASELINE
+
+// Your falloff. InLight carries Range and SourceRadius; DistanceSqr is squared on purpose,
+// so a square root is only needed if the maths actually wants one.
+float GetDistanceAttenuation(Light InLight, float DistanceSqr)
+{
+    // TODO | Write your own falloff
+    return 0.0;
+}
+
+// Your per type direction. Returns the unit vector from the shaded pixel *towards* the
+// light, and writes how much of the light reaches that pixel into Attenuation.
+//
+//   LIGHT_TYPE_DIRECTIONAL | parallel rays, nothing to spread out
+//   LIGHT_TYPE_POINT       | radiates from InLight.Position, bounded by InLight.Range
+//   LIGHT_TYPE_AREA        | a rectangle at InLight.Position facing InLight.Direction,
+//                            InLight.Size across, emitting from one side only
+float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Attenuation)
+{
+    // TODO | Write your own per type direction and attenuation
+    Attenuation = 0.0;
+    return float3(0.0, 1.0, 0.0);
+}
+
+#endif // BASELINE
 
 // Bias scaled by how side on the surface is to the light. A grazing surface spans more
 // depth per texel, so it needs more slack before it stops shadowing itself.
@@ -264,6 +270,13 @@ float3 ShadeReflections(TextureCube Radiance,
     return (DiffuseIBL + SpecularIBL) * AmbientOcclusion;
 }
 
+// ---------------------------------------------------------------------------------------
+//  Baseline light maths, part 2 of 2: how the lights are accumulated over a surface.
+//  Lambert for the diffuse term and Phong for the specular, which is where SPECULAR_STRENGTH
+//  and SHININESS at the top of this file are used.
+// ---------------------------------------------------------------------------------------
+#ifdef BASELINE
+
 // Accumulates every light of the scene over a single surface sample.
 // Every light is shadowed by its own slice of the atlas, so the shadow storage is passed
 // in rather than a single precomputed factor.
@@ -309,5 +322,31 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
 
     return (Diffuse + Specular) * Albedo;
 }
+
+#else // BASELINE
+
+// Your accumulation. Loop LightIdx over NumLights, read Lights[LightIdx], and build up
+// whatever response you want out of it.
+//
+// Available regardless of this switch:
+//   GetShadowFactor(ShadowDepth, ShadowDistance, ShadowSampler, LightIdx, WorldPosition, SurfaceNormal)
+//     returns 1 for fully lit down to 0 for fully occluded, and already picks the right
+//     storage for the light type. Worth skipping when a light reaches nothing anyway.
+//   Lights[LightIdx].ShadowSlot is NO_SHADOW_CASTER when that light casts none.
+//
+// Normal arrives straight out of the G-buffer, so normalize it before using it.
+float3 ShadeSurface(Texture2DArray ShadowDepth,
+                    TextureCubeArray ShadowDistance,
+                    SamplerState ShadowSampler,
+                    float3 Albedo,
+                    float3 Normal,
+                    float3 WorldPosition,
+                    float3 EyePosition)
+{
+    // TODO | Write your own light accumulation
+    return float3(0.0, 0.0, 0.0);
+}
+
+#endif // BASELINE
 
 #endif // LIGHTING_HLSL_INCLUDED

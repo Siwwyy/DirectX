@@ -2,7 +2,7 @@
 #include "Paths.h"
 #include "ShadowAtlas.h"
 
-#include <pix3.h>
+#include "PixEvents.h"
 
 ShadowPass::ShadowPass()
 {
@@ -102,13 +102,18 @@ HRESULT ShadowPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList)
 
 void ShadowPass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept
 {
-	PIXBeginEvent(CommandList, 0, "Shadow Pass");
+	// Named per primitive, since this pass draws the whole scene once per light view and a
+	// capture is unreadable otherwise. No material here: a shadow view only writes depth
+	// or distance, so which material the surface carries makes no difference.
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::DRAW, L"%s | %u indices",
+					Primitive.Name.c_str(),
+					Primitive.GetNumIndices());
 	{
 		CommandList->IASetVertexBuffers(0, 1, &Primitive.VertexFactory.VertexBufferView);
 		CommandList->IASetIndexBuffer(&Primitive.VertexFactory.IndexBufferView);
 		CommandList->DrawIndexedInstanced(Primitive.GetNumIndices(), 1, 0, 0, 0);
 	}
-	PIXEndEvent(CommandList);
+	DXI_PIX_END(CommandList);
 }
 
 void ShadowPass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
