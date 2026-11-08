@@ -159,6 +159,10 @@ void D3D12Renderer::InitializeSponzaScene()
 								: DX_IDENTITY_TRANSLATE3;
 
 	LoadGltfScene((DXIPATHS::GetModelDir / L"sponza" / L"Sponza.gltf").Str(), Placement);
+
+	// for redbull
+	//LoadGltfScene((DXIPATHS::GetModelDir / L"redbull_rb22" / L"scene.gltf").Str(), Placement);
+	//LoadGltfScene((DXIPATHS::GetModelDir / L"2018-renault-megane-rs-trophy-300" / L"scene.gltf").Str(), Placement);
 }
 
 void D3D12Renderer::InitializeCornellBoxScene()

@@ -32,7 +32,7 @@ float3 GetViewRay(float2 uv)
     return normalize((world.xyz / world.w) - EyePosition.xyz);
 }
 
-float4 main(FullscreenPSInput input) : SV_TARGET
+float4 main(FullScreenPSInput input) : SV_TARGET
 {
     float4 albedo_sample    = GBufferAlbedo.Sample(GBufferSampler, input.uv);
     float3 albedo           = albedo_sample.xyz;
@@ -64,10 +64,10 @@ float4 main(FullscreenPSInput input) : SV_TARGET
 
     // Direct lighting from the lights placed in the scene, each one occluded by its own
     // slice of the shadow atlas
-    float3 direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, albedo, normal, world_pos.xyz, EyePosition.xyz);
+    //float3 direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, albedo, normal, world_pos.xyz, EyePosition.xyz);
 
     // No image based lighting while the sky is out. ShadeReflections in Lighting.hlsl is
     // still there and takes its cubes as parameters, so restoring this is a call away.
     // Metalness, roughness and occlusion are read above and reach nothing for now.
-    return float4(direct, 1.0);
+    return float4(LightPass(albedo, normal, world_pos.xyz, EyePosition.xyz), 1.0);
 }

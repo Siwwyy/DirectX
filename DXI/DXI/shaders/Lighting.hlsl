@@ -417,6 +417,69 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
     return float3(0.0, 0.0, 0.0);
 }
 
+void DirectionalLightPass(
+    float3 Albedo           /* Albedo  */,
+    float3 Normal           /* Per pixel Normal vector */,
+    float3 WorldPosition    /* Pixel/Fragment World Pos */,
+    float3 EyeDirection     /* Camera World Pos */,
+    Light DirectionalLight,
+    out float3 Diffuse, 
+    out float3 Specular)
+{
+    // Direction to the pixel from light 
+	float3 LightDirection = normalize(-DirectionalLight.Direction);
+
+    // Diffuse shading
+    float DiffuseFactor = max(dot(Normal, LightDirection), 0.0);
+
+    // Specular shading
+    float3 ReflectDirection = reflect(-LightDirection, Normal);
+    float SpecularFactor    = pow(max(dot(EyeDirection, ReflectDirection), 0.0), SHININESS);
+
+    // combine results
+    Diffuse     = DiffuseFactor;
+    Specular    = SpecularFactor;
+}
+
+// https://learnopengl.com/Lighting/Light-casters
+float3 LightPass(
+    float3 Albedo           /* Albedo  */,
+    float3 Normal           /* Per pixel Normal vector */,
+    float3 WorldPosition    /* Pixel/Fragment World Pos */,
+    float3 EyePosition      /* Camera World Pos */)
+{
+    // Normalize just in case
+    float3 SurfaceNormal    = normalize(Normal);
+
+	// Direction from pixel to the viewer (eye/camera)
+    float3 EyeDirection     = normalize(EyePosition - WorldPosition);
+
+	// Accumulated light contributions  
+    float3 Diffuse = float3(0.0, 0.0, 0.0);
+    float3 Specular = float3(0.0, 0.0, 0.0);
+
+	// loop though all lights in the scene and accumulate their contributions
+    for (uint LightIdx = 0; LightIdx < NumLights; ++LightIdx)
+    {
+        // Three light types so far
+        if(Lights[LightIdx].Type == LIGHT_TYPE_DIRECTIONAL)
+        {
+			Light DirectionalLight = Lights[LightIdx];
+            DirectionalLightPass(Albedo, Normal, WorldPosition, EyeDirection, DirectionalLight, Diffuse, Specular);
+        }
+        else if (Lights[LightIdx].Type == LIGHT_TYPE_POINT)
+        {
+            // TODO | Handle point light
+        }
+        else if (Lights[LightIdx].Type == LIGHT_TYPE_AREA)
+        {
+            // TODO | Handle spot light
+        }
+    }
+
+	return (Diffuse + Specular) * Albedo;
+}
+
 #endif // BASELINE
 
 #endif // LIGHTING_HLSL_INCLUDED

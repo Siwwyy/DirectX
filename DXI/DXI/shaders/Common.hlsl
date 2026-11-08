@@ -20,14 +20,14 @@ struct VSInput
     // loaded model do, so this costs them nothing. A mesh that supplies a real per vertex
     // normal gets smooth shading out of it.
     float4 position                     : POSITION;
-    float2 uv                           : uv;
+    float2 uv                           : TEXCOORD;
     float3 normal                       : NORMAL;
     float4 tangent                      : TANGENT;      // w is the bitangent handedness
     float4 bitangent                    : BINORMAL;     // w unused
 #else
     float4 position                     : POSITION;
     #if USE_uv
-        float2 uv                       : uv;
+        float2 uv                       : TEXCOORD;
     #else
         float4 color                    : COLOR;
     #endif
@@ -44,7 +44,7 @@ struct PSInput
     // pixel shader can read a tangent space normal map.
     float4 position                     : SV_POSITION;
     float4 world_position               : POSITION;
-    float2 uv                           : uv;
+    float2 uv                           : TEXCOORD;
     float3 normal                       : NORMAL;       // interpolated, so the pixel shader renormalizes
     float4 tangent                      : TANGENT;      // w is the bitangent handedness
     float4 bitangent                    : BINORMAL;     // w unused
@@ -52,7 +52,7 @@ struct PSInput
     float4 position                     : SV_POSITION;
     float4 world_position               : POSITION;
     #if USE_uv
-        float2 uv                       : uv;
+        float2 uv                       : TEXCOORD;
     #else
         float4 color                    : COLOR;
     #endif
@@ -88,10 +88,10 @@ struct GBufferOutput
 
 
 // Input of a fullscreen pass, LightPass builds it straight out of SV_VertexID
-struct FullscreenPSInput
+struct FullScreenPSInput
 {
     float4 position                     : SV_POSITION;
-    float2 uv                           : uv;
+    float2 uv                           : TEXCOORD;
 };
 
 
