@@ -261,10 +261,19 @@ void D3D12Renderer::InitializePasses()
 
 	SceneGBuffer.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
+	// Depth sits immediately after the colour targets, so the pixel shader reads the whole
+	// surface description as one run of registers.
+	//
+	// Anything that recreates the depth buffer has to rewrite this view as well, exactly as
+	// it does for the G-buffer's. The view outlives the resource it points at otherwise, and
+	// the symptom is a frame sampling freed memory rather than a crash.
 	SrvHandle.Offset(GBufferTargetCount, IncrementSize);
+	DepthBuffer.CreateShaderResourceView(Device, SrvHandle);
+
+	SrvHandle.Offset(GBUFFER_DEPTH_SRV_COUNT, IncrementSize);
 	SceneShadowAtlas.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
-	// The sky cubes used to follow the shadow atlas here, at t6 and t7
+	// The sky cubes used to follow the shadow atlas here, at t7 and t8
 }
 
 XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx) const
@@ -368,6 +377,8 @@ void D3D12Renderer::BeginFrame()
 	CommandList->RSSetScissorRects(1, &ScissorRect);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	// The previous frame's light pass left this readable, and a clear needs it writable
+	DepthBuffer.TransitionToDepthWrite(CommandList);
 	DepthBuffer.Clear(CommandList);
 
 	// Opens the UI frame, the widgets are filled in once the passes are done
@@ -478,6 +489,7 @@ void D3D12Renderer::RenderBasePass()
 	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::BASE_PASS, L"Base Pass | %zu primitives", Primitives.size());
 	{
 		SceneGBuffer.TransitionToRenderTarget(CommandList);
+		DepthBuffer.TransitionToDepthWrite(CommandList);
 		SceneGBuffer.BindAsRenderTarget(CommandList, DepthBuffer.GetDsvHandle());
 		SceneGBuffer.Clear(CommandList);
 
@@ -522,8 +534,11 @@ void D3D12Renderer::RenderLightPass()
 {
 	auto * const CommandList = FrameContext.GetCommandList();
 
-	// Shades what BasePass wrote, straight into the back buffer
+	// Shades what BasePass wrote, straight into the back buffer.
+	// Depth comes along with the G-buffer now: the base pass rendered through it, so it has
+	// to be flipped to a readable state before this pass samples the same memory.
 	SceneGBuffer.TransitionToShaderResource(CommandList);
+	DepthBuffer.TransitionToShaderResource(CommandList);
 	SceneShadowAtlas.TransitionToShaderResource(CommandList);
 
 	// No depth here, the G-buffer already resolved which surface is visible
@@ -643,7 +658,7 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// Normal matrix. It is the inverse transpose of the world matrix, and everything here
 	// goes to the GPU transposed, so the two transposes cancel and the plain inverse is
 	// what gets stored. It looks like a missing transpose but it is not.
-	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldNormal, XMMatrixInverse(nullptr, LocalToWorld));
+	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorld));
 
 	// No light matrix here any more. ShadowPass renders the same object from several
 	// lights per frame, so it takes the light half as root constants instead.

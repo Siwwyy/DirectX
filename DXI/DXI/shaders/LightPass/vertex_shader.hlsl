@@ -11,12 +11,12 @@
 //   id 2 -> uv (0,2) -> clip (-1, -3)
 //
 // One oversized triangle covers the whole viewport and avoids the seam two quad halves would have.
-FullScreenPSInput main(uint vertex_id : SV_VertexID)
+FullScreenPSInput main(uint VertexId : SV_VertexID)
 {
-    FullScreenPSInput output;
+    FullScreenPSInput Output;
 
-    output.uv    = float2((vertex_id << 1) & 2, vertex_id & 2);
-    output.position     = float4(output.uv * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
+    Output.UV    = float2((VertexId << 1) & 2, VertexId & 2);
+    Output.Position     = float4(Output.UV * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
 
-    return output;
+    return Output;
 }

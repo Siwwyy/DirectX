@@ -22,13 +22,13 @@ SamplerState MaterialSampler : register(s0);
 // changes per pixel on screen, and it is what the hardware itself uses to pick a mip.
 //
 // Returns true when a debug view took over the pixel, along with the colour to show.
-bool GetDerivativeDebugColor(float2 uv, float3 WorldPosition, float3 Normal, out float3 DebugColor)
+bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, out float3 DebugColor)
 {
     DebugColor = float3(0.0, 0.0, 0.0);
 
     // ddx is the change across the quad horizontally, ddy vertically
-    float2 UvDdx = ddx(uv);
-    float2 UvDdy = ddy(uv);
+    float2 UvDdx = ddx(UV);
+    float2 UvDdy = ddy(UV);
 
     switch (DebugMode)
     {
@@ -108,20 +108,20 @@ bool GetDerivativeDebugColor(float2 uv, float3 WorldPosition, float3 Normal, out
 // SV_IsFrontFace is a pixel shader system value, so it comes in next to PSInput rather
 // than inside it. For a single sided material it is always true, since the back faces
 // never make it out of the rasterizer.
-GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
+GBufferOutput main(PSInput Input, bool bIsFrontFace : SV_IsFrontFace)
 {
-    GBufferOutput output;
+    GBufferOutput Output;
 
     // A two sided surface keeps its back faces, and those point away from the viewer,
     // so their normal has to be flipped or the underside comes out unlit
-    float3 normal           = normalize(input.normal);
-    float3 vertex_bitangent = input.bitangent.xyz;
-    if (!is_front_face)
+    float3 Normal           = normalize(Input.Normal);
+    float3 VertexBitangent = Input.Bitangent.xyz;
+    if (!bIsFrontFace)
     {
         // The bitangent goes with it. It was built against the front facing normal, and
         // cross(-N, T) is -cross(N, T), so leaving it alone would mirror the map in v.
-        normal           = -normal;
-        vertex_bitangent = -vertex_bitangent;
+        Normal           = -Normal;
+        VertexBitangent = -VertexBitangent;
     }
 
     // Normal mapping. The map stores a direction in tangent space, where z points out of
@@ -130,51 +130,51 @@ GBufferOutput main(PSInput input, bool is_front_face : SV_IsFrontFace)
     {
         // Re-orthogonalize, the interpolation and the normal flip above can leave the
         // tangent slightly off perpendicular
-        float3 tangent      = normalize(input.tangent.xyz - normal * dot(normal, input.tangent.xyz));
+        float3 Tangent      = normalize(Input.Tangent.xyz - Normal * dot(Normal, Input.Tangent.xyz));
 
         // The bitangent comes in from the vertex rather than out of a cross product. Only
         // its normal component is removed, so whatever angle it makes with the tangent
         // survives. That angle is the reason for storing it: on sheared uvs the two axes
         // are not perpendicular, and squaring them up would put the error back.
-        float3 bitangent    = normalize(vertex_bitangent - normal * dot(normal, vertex_bitangent));
+        float3 Bitangent    = normalize(VertexBitangent - Normal * dot(Normal, VertexBitangent));
 
         // Unpack from the 0 to 1 the texture holds back to a signed direction
-        float3 tangent_normal = MaterialNormal.Sample(MaterialSampler, input.uv).xyz * 2.0 - 1.0;
+        float3 TangentNormal = MaterialNormal.Sample(MaterialSampler, Input.UV).xyz * 2.0 - 1.0;
 
         // A slot with no map reads as zero, which unpacks to (-1,-1,-1) and is not a
         // direction at all. The default material fills it with a flat normal, but a
         // material loaded without one still has to come out of here unchanged.
-        if (dot(tangent_normal, tangent_normal) > 0.01)
+        if (dot(TangentNormal, TangentNormal) > 0.01)
         {
-            float3x3 TangentToWorld = float3x3(tangent, bitangent, normal);
-            normal = normalize(mul(normalize(tangent_normal), TangentToWorld));
+            float3x3 TangentToWorld = float3x3(Tangent, Bitangent, Normal);
+            Normal = normalize(mul(normalize(TangentNormal), TangentToWorld));
         }
     }
 
-    output.Normal           = float4(normal, 0.0);
+    Output.Normal           = float4(Normal, 0.0);
 
     // w of 1 tells LightPass that geometry was written here, the cleared background keeps 0
-    output.WorldPosition    = float4(input.world_position.xyz, 1.0);
+    Output.WorldPosition    = float4(Input.WorldPosition.xyz, 1.0);
 
     // What the reflections are driven by. An empty material slot keeps a null descriptor
     // and reads back as zero, which is the right answer for metalness on a dielectric.
-    float metalness         = MaterialMetalness.Sample(MaterialSampler, input.uv).r;
-    float roughness         = MaterialRoughness.Sample(MaterialSampler, input.uv).r;
-    float ambient_occlusion = MaterialAO.Sample(MaterialSampler, input.uv).r;
+    float Metalness         = MaterialMetalness.Sample(MaterialSampler, Input.UV).r;
+    float Roughness         = MaterialRoughness.Sample(MaterialSampler, Input.UV).r;
+    float AmbientOcclusion = MaterialAO.Sample(MaterialSampler, Input.UV).r;
 
-    output.MaterialParams   = float4(metalness, roughness, ambient_occlusion, 1.0);
+    Output.MaterialParams   = float4(Metalness, Roughness, AmbientOcclusion, 1.0);
 
     // A debug view replaces the surface colour and asks LightPass to leave it alone,
     // otherwise the lighting would modulate the very numbers being inspected
-    float3 debug_color;
-    if (GetDerivativeDebugColor(input.uv, input.world_position.xyz, normal, debug_color))
+    float3 DebugColor;
+    if (GetDerivativeDebugColor(Input.UV, Input.WorldPosition.xyz, Normal, DebugColor))
     {
-        output.Albedo = float4(debug_color, SURFACE_UNLIT);
+        Output.Albedo = float4(DebugColor, SURFACE_UNLIT);
     }
     else
     {
-        output.Albedo = float4(MaterialDiffuse.Sample(MaterialSampler, input.uv).xyz, SURFACE_LIT);
+        Output.Albedo = float4(MaterialDiffuse.Sample(MaterialSampler, Input.UV).xyz, SURFACE_LIT);
     }
 
-    return output;
+    return Output;
 }

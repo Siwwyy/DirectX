@@ -31,12 +31,13 @@ public:
 	// while the sky is out; putting it back to 2 is the first step of restoring it.
 	static constexpr UINT SKY_SRV_COUNT = 0;
 
-	// Everything the pass samples, in t0 to t7 order: the G-buffer targets, the shadow
-	// atlas, then the sky cubes. The root signature range below and the heap the caller
-	// fills have to be exactly this long, so both take the number from here.
+	// Everything the pass samples, in register order: the G-buffer targets, the depth the
+	// base pass wrote, the shadow atlas, then the sky cubes. The root signature range below
+	// and the heap the caller fills have to be exactly this long, so both take the number
+	// from here. GBUFFER_DEPTH_SRV_COUNT comes from SharedTypes.h, alongside the targets.
 	_NODISCARD static constexpr UINT GetSrvCount() noexcept
 	{
-		return GBufferTargetCount + ShadowAtlas::GetSrvCount() + SKY_SRV_COUNT;
+		return GBufferTargetCount + GBUFFER_DEPTH_SRV_COUNT + ShadowAtlas::GetSrvCount() + SKY_SRV_COUNT;
 	}
 
 	// Root parameter indices, the caller binds them before RenderFullscreen. Assigned by

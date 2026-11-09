@@ -12,8 +12,6 @@ G-buffer), `LightPass` (shades it with a full screen triangle), then the ImGui p
 - Scenes: a built in test set, Sponza, and the Cornell Box
 - Loaders: Wavefront OBJ, glTF 2.0
 - Constant buffers defined once and shared by C++ and HLSL, `DXI/shaders/SharedTypes.h`
-- `BASELINE` switches, one per pass, that swap the stock lighting or shadowing for stubs
-  to write your own against. Set in `LightPass.cpp` and `ShadowPass.cpp`
 - PIX markers per pass and per object
 - Debug panel spawns primitives and lights from assets found on disk
 

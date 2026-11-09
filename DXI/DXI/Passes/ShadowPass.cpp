@@ -7,20 +7,8 @@
 ShadowPass::ShadowPass()
 {
 	// Shaders compilation
-	DXShaderDefines<2> ShaderDefines;
+	DXShaderDefines<1> ShaderDefines;
 	ShaderDefines.AddDefine({ L"SHADOW_PASS", L"1" });
-
-	// Baseline shadow rendering: depth in the light's clip space for directional and area
-	// lights, distance over range in the cube faces for point lights. Comment this out to
-	// compile the #else branch of the three ShadowPass shaders and write your own.
-	//
-	// The lookup side is a separate switch, the BASELINE in LightPass.cpp, because the two
-	// halves compile in different passes. A technique that changes what the atlas holds
-	// needs both turned off, see the note in Lighting.hlsl part 2.
-	//
-	// Shaders are compiled from source at startup, so once the switch is set, iterating on
-	// the implementation itself only needs the app restarted rather than a rebuild.
-	//ShaderDefines.AddDefine({ L"BASELINE", L"1" });
 
 	const DXIPATHS::FilePath VertexShaderPath		= DXIPATHS::GetShaderDir / L"ShadowPass" / L"vertex_shader.hlsl";
 	const DXIPATHS::FilePath DistanceVSPath			= DXIPATHS::GetShaderDir / L"ShadowPass" / L"distance_vertex_shader.hlsl";

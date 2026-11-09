@@ -698,7 +698,7 @@ void D3D12App::Update(float DeltaTime)
 
 		// Normal matrix, see DXIMath.h. The inverse transpose and the transpose every
 		// matrix gets on the way to the GPU cancel, so the plain inverse is stored.
-		XMStoreFloat4x4(&CbvPerObject.LocalToWorldNormal, XMMatrixInverse(nullptr, XMLoadFloat4x4(&PlaneScaleRotMatrix)));
+		XMStoreFloat4x4(&CbvPerObject.LocalToWorldUniformScale, XMMatrixInverse(nullptr, XMLoadFloat4x4(&PlaneScaleRotMatrix)));
 
 		// copy our ConstantBuffer instance to the mapped constant buffer resource
 		memcpy(CbvGPUAddress[CurrentFrameIdx] + (2 * PrimitiveConstantBufferSize), &CbvPerObject, sizeof(CbvPerObject));
@@ -1106,7 +1106,7 @@ void D3D12App::StoreCBVDataForPrimitive(const Primitive& Primitive, const UINT P
 
 	// Normal matrix, see DXIMath.h. The inverse transpose and the transpose every matrix
 	// gets on the way to the GPU cancel, so the plain inverse is what is stored.
-	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorldNormal, XMMatrixInverse(nullptr, LocalToWorld));
+	XMStoreFloat4x4(&PrimitiveCBVData.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorld));
 
 	// copy our ConstantBuffer instance to the mapped constant buffer resource
 	memcpy(PrimitivesConstantBufferPtr + (PrimitiveIdx * PrimitiveConstantBufferSize), &PrimitiveCBVData, PrimitiveConstantBufferSize /* size of */);

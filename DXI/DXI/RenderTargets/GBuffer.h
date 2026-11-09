@@ -6,17 +6,23 @@
 #include "pch.h"
 #include "DXIHelpers.h"
 
+// GBUFFER_* and the GBufferOutput struct the base pass writes
+#include "SharedTypes.h"
+
 // Render targets BasePass writes the surface into and LightPass reads back.
 // The order here is the SV_Target order of BasePass and the register order of LightPass,
 // i.e., Albedo is SV_Target0 and t0, Normal is SV_Target1 and t1 and so on.
+//
+// Values come from the shared header so this list and the shader's GBufferOutput cannot
+// drift, the same arrangement LightType has with LIGHT_TYPE_*.
 enum class GBufferTarget : UINT
 {
-	Albedo = 0,				// Surface colour straight out of the material diffuse slot
-	Normal = 1,				// World space normal
-	WorldPosition = 2,		// World space position, w is 1 where geometry was written and 0 for the background
-	MaterialParams = 3,		// r metalness, g roughness, b ambient occlusion | what drives the reflections
+	Albedo			= GBUFFER_ALBEDO,			// Surface colour straight out of the material diffuse slot
+	Normal			= GBUFFER_NORMAL,			// World space normal
+	WorldPosition	= GBUFFER_WORLD_POSITION,	// World space position, w is 1 where geometry was written and 0 for the background
+	MaterialParams	= GBUFFER_MATERIAL_PARAMS,	// r metalness, g roughness, b ambient occlusion | what drives the reflections
 
-	Count
+	Count			= GBUFFER_TARGET_COUNT
 };
 
 // How many render targets the G-buffer is made of

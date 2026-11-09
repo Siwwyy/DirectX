@@ -30,5 +30,7 @@ Light LightBase::MakeBaseConstants() const noexcept
 	Constants.Size				= XMFLOAT2(0.f, 0.f);
 	Constants.ShadowSlot		= NO_SHADOW_CASTER;		// the renderer fills this once it hands out atlas slices
 	Constants.SourceRadius		= 0.f;					// only a point light has a size that matters here
+	Constants.TypeParams		= XMFLOAT3(0.f, 0.f, 0.f);
+	Constants.SpecularScale		= SpecularScale;
 	return Constants;
 }

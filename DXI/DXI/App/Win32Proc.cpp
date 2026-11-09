@@ -10,15 +10,15 @@ HWND Win32Proc::hwnd			= nullptr;
 POINT Win32Proc::LastMousePos	= {};
 bool Win32Proc::bIsRotating		= false;
 
-int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
+int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * DX12App)
 {
 	// Parse Command line arguments
 	//TODO Parsing command line arguments
 
 	//Constants
-	const std::wstring	windowTitleStr	= dx12App->GetWindowName();
-	const LONG          MaxWidth		= dx12App->GetWindowWidth();
-	const LONG          MaxHeight		= dx12App->GetWindowHeight();
+	const std::wstring	windowTitleStr	= DX12App->GetWindowName();
+	const LONG          MaxWidth		= DX12App->GetWindowWidth();
+	const LONG          MaxHeight		= DX12App->GetWindowHeight();
 
 	// Initialization of window class
 	WNDCLASSEX windowClass{};
@@ -46,10 +46,10 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 		nullptr,        // We have no parent window.
 		nullptr,        // We aren't using menus.
 		hInstance,
-		dx12App);
+		DX12App);
 
 	//TODO Add initialization of DX12 environment
-	dx12App->Initialize();
+	DX12App->Initialize();
 
 	ShowWindow(hwnd, nCmdShow);
 
@@ -66,7 +66,7 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 	}
 
 	//TODO Destroy DX12 environment here
-	dx12App->Destroy();
+	DX12App->Destroy();
 
 	// Return this part of the WM_QUIT message to Windows.
 	return static_cast<char>(msg.wParam);
@@ -74,8 +74,8 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App)
 
 LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	CurrentApp* dx12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-	//DXASSERT(dx12App == nullptr, "Can not retrieve app pointer");
+	CurrentApp* DX12App = reinterpret_cast<CurrentApp*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	//DXASSERT(DX12App == nullptr, "Can not retrieve app pointer");
 
 	// The debug UI gets first look at every message. When it takes one, the camera must
 	// not act on it too, otherwise dragging a slider would also spin the view.
@@ -103,7 +103,7 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		// Typing into a widget should not also drive the camera
 		if (!DebugUI::WantsKeyboard())
 		{
-			dx12App->OnKeyDown(static_cast<UINT8>(wParam));
+			DX12App->OnKeyDown(static_cast<UINT8>(wParam));
 		}
 	}
 	return 0;
@@ -111,7 +111,7 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	//WM KEYUP
 	case WM_KEYUP:
 	{
-		dx12App->OnKeyUp(static_cast<UINT8>(wParam));
+		DX12App->OnKeyUp(static_cast<UINT8>(wParam));
 	}
 
 	return 0;
@@ -143,9 +143,9 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	{
 		const POINT MousePos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 
-		if (bIsRotating && dx12App)
+		if (bIsRotating && DX12App)
 		{
-			dx12App->OnMouseMove(MousePos.x - LastMousePos.x, MousePos.y - LastMousePos.y);
+			DX12App->OnMouseMove(MousePos.x - LastMousePos.x, MousePos.y - LastMousePos.y);
 		}
 
 		// Tracked even while idle, otherwise the first move of a drag would jump
@@ -156,15 +156,15 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	case WM_PAINT:
 	{
 		//auto DeltaTime = timer.GetFrameDelta();
-		dx12App->Update(static_cast<float>(0.0)); //or DeltaTime
-		dx12App->Render();
+		DX12App->Update(static_cast<float>(0.0)); //or DeltaTime
+		DX12App->Render();
 	}
 	return 0;
 
 	case WM_CLOSE:
 	case WM_DESTROY:
 	{
-		dx12App->Destroy();
+		DX12App->Destroy();
 		PostQuitMessage(0);
 	}
 	return 0;

@@ -61,6 +61,13 @@ public:
 		this->Intensity = Intensity;
 	}
 
+	// How strongly this light shows up in a highlight. How tight that highlight is belongs
+	// to the material, which drives the exponent from its roughness map.
+	void SetSpecularScale(const float SpecularScale) noexcept
+	{
+		this->SpecularScale = SpecularScale;
+	}
+
 	// Getters
 	_NODISCARD inline const auto& GetColor() const noexcept
 	{
@@ -69,6 +76,10 @@ public:
 	_NODISCARD inline auto GetIntensity() const noexcept
 	{
 		return Intensity;
+	}
+	_NODISCARD inline auto GetSpecularScale() const noexcept
+	{
+		return SpecularScale;
 	}
 	_NODISCARD inline const auto& GetName() const noexcept
 	{
@@ -85,6 +96,9 @@ protected:
 
 	// Brightness multiplier of the colour
 	float			Intensity	= 1.f;
+
+	// Highlight strength. 0.5 reproduces the SPECULAR_STRENGTH constant this replaced.
+	float			SpecularScale = 0.5f;
 
 	// Name of light (for debug purposes)
 	std::wstring	Name		= L"Light";

@@ -74,12 +74,21 @@
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_AREA			2
 
-// A single light of the scene. Not every field matters for every type, the shader branches
-// on Type: Range is point only, Size is area only, Direction is directional and area only.
+// A single light of the scene.
+//
+// Per type properties live here alongside the shared ones, tagged in the comment with which
+// types read them. That is the only way a single array can carry them: every light sits in
+// the same Lights[] and one shader loop walks the lot, so there is no compile time point at
+// which "this one is a point light" is known. #ifdef cannot help, it resolves once for the
+// whole shader. The cost of a field no type reads is four bytes per light.
+//
+// If per type data ever outgrows that, the next step is a pass per type, compiled once each
+// with its own light struct and blended additively, which is where a real #ifdef would live.
 //
 // Laid out so no vector straddles a 16 byte row, which is what HLSL requires. The float3
 // and float pairings below are deliberate: each fills exactly one row, which is why this
-// needs no padding members.
+// needs no padding members. A float3 after a float would not, it would be pushed to the
+// next row and silently disagree with the C++ side.
 struct SHARED_ALIGN(16) Light
 {
 	float3	Position;		// World space position | Point, Area
@@ -94,7 +103,46 @@ struct SHARED_ALIGN(16) Light
 	float2	Size;			// Width and height of the emitting surface | Area
 	int		ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
 	float	SourceRadius;	// How big the emitter is | Point, keeps the falloff finite at the centre
+
+	float3	TypeParams;		// Unused | reserved for whichever type needs it next
+	float	SpecularScale;	// Highlight strength of this light, 1 is neutral | all types
 };
+
+
+// ---------------------------------------------------------------------------------------
+//  G-buffer
+// ---------------------------------------------------------------------------------------
+
+// Which target holds what. GBufferTarget of RenderTargets/GBuffer.h derives its values from
+// these, the way LightType derives from LIGHT_TYPE_*, so the render target order, the SRV
+// order in the light pass heap and the SV_Target order below cannot drift apart.
+//
+// The one thing that cannot be shared is the semantics themselves: HLSL will not build a
+// SV_Target token out of a number, the same limitation that keeps ShaderRegisters.hlsl
+// spelling out b0 and b1 by hand. GBufferOutput below is therefore written out in this
+// order and has to be kept in it.
+#define GBUFFER_ALBEDO				0
+#define GBUFFER_NORMAL				1
+#define GBUFFER_WORLD_POSITION		2
+#define GBUFFER_MATERIAL_PARAMS		3
+#define GBUFFER_TARGET_COUNT		4
+
+// Depth is not one of the four. It is the depth buffer the base pass already writes, read
+// back as a shader resource rather than copied into a target of its own, so it costs no
+// extra memory. See DXIDepthBuffer, which carries a typeless resource with a D32_FLOAT view
+// to render through and an R32_FLOAT view to sample.
+#define GBUFFER_DEPTH_SRV_COUNT		1
+
+// Output of BasePass, one entry per target. Mirrors the GBUFFER_* order above.
+#ifdef BASE_PASS
+struct GBufferOutput
+{
+	float4 Albedo			: SV_Target0;	// Surface colour out of the material diffuse slot
+	float4 Normal			: SV_Target1;	// World space normal
+	float4 WorldPosition	: SV_Target2;	// World space position, w marks that geometry was written here
+	float4 MaterialParams	: SV_Target3;	// r metalness, g roughness, b ambient occlusion
+};
+#endif // BASE_PASS
 
 
 // ---------------------------------------------------------------------------------------
@@ -164,7 +212,7 @@ CBUFFER_BEGIN(PrimitiveConstantBuffer, CB_PER_OBJECT, 256)
 	// than it moves a point, so a normal scaled that way stops being perpendicular to its
 	// surface. The matrix that keeps it perpendicular is the inverse transpose of the
 	// world matrix, which equals the inverse scale times the rotation.
-	float4x4 LocalToWorldNormal;
+	float4x4 LocalToWorldUniformScale;
 CBUFFER_END
 #endif
 

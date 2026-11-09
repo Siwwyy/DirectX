@@ -12,22 +12,30 @@
 // LIGHT_TYPE_*, MAX_LIGHTS, NO_SHADOW_CASTER and the Light struct all come from
 // SharedTypes.h, which Common.hlsl includes. One definition, compiled as both languages.
 
-// TODO | Should come from the material Specular and Roughness slots instead of being fixed
-#define SPECULAR_STRENGTH       0.5
-#define SHININESS               32.0
+// Phong exponent for a given roughness.
+//
+// Both used to be fixed, SPECULAR_STRENGTH at 0.5 and SHININESS at 32. The strength is now
+// per light, see Light::SpecularScale, and the exponent comes from the material's roughness
+// map, which was already being sampled and thrown away.
+//
+// The mapping is the usual Blinn-Phong equivalence, 2/alpha^2 - 2 with alpha the squared
+// roughness. It is worth knowing that the neutral roughness SetDefaults writes, 128 of 255,
+// lands on an exponent of about 30, so an untextured surface shades almost exactly as it
+// did with the old constant.
+//
+// Clamped at both ends: a roughness of 0 runs the exponent to infinity, and a roughness of 1
+// takes it to zero, where pow() returns 1 everywhere and the whole surface is a highlight.
+float GetSpecularExponent(float Roughness)
+{
+    float Alpha = Roughness * Roughness;
+    return clamp((2.0 / max(Alpha * Alpha, 1e-4)) - 2.0, 1.0, 2048.0);
+}
 
 // Lights, ShadowViewProj and NumLights come from LightsConstantBuffer in SharedTypes.h
 
 // ---------------------------------------------------------------------------------------
-//  Baseline light maths, part 1 of 3: direction and falloff, per light type.
-//
-//  BASELINE is defined by LightPass.cpp alongside LIGHT_PASS. Turn it off there to compile
-//  the #else branch instead and supply your own.
-//
-//  Anything written in the #else branch has to keep these signatures, because ShadeSurface
-//  and LightPass call them by name.
+//  Light maths, part 1 of 3: direction and falloff, per light type.
 // ---------------------------------------------------------------------------------------
-#ifdef BASELINE
 
 // How much of a positional light reaches a point this far away.
 //
@@ -82,47 +90,15 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     return ToLight / Distance;
 }
 
-#else // BASELINE
-
-// Your falloff. InLight carries Range and SourceRadius; DistanceSqr is squared on purpose,
-// so a square root is only needed if the maths actually wants one.
-float GetDistanceAttenuation(Light InLight, float DistanceSqr)
-{
-    // TODO | Write your own falloff
-    return 0.0;
-}
-
-// Your per type direction. Returns the unit vector from the shaded pixel *towards* the
-// light, and writes how much of the light reaches that pixel into Attenuation.
-//
-//   LIGHT_TYPE_DIRECTIONAL | parallel rays, nothing to spread out
-//   LIGHT_TYPE_POINT       | radiates from InLight.Position, bounded by InLight.Range
-//   LIGHT_TYPE_AREA        | a rectangle at InLight.Position facing InLight.Direction,
-//                            InLight.Size across, emitting from one side only
-float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Attenuation)
-{
-    // TODO | Write your own per type direction and attenuation
-    Attenuation = 0.0;
-    return float3(0.0, 1.0, 0.0);
-}
-
-#endif // BASELINE
 
 // ---------------------------------------------------------------------------------------
-//  Baseline light maths, part 2 of 3: reading occlusion back out of the shadow atlas.
+//  Light maths, part 2 of 3: reading occlusion back out of the shadow atlas.
 //
-//  The other half of shadowing lives in the ShadowPass shaders, which fill the atlas and
-//  are guarded by a BASELINE of their own, defined in ShadowPass.cpp. The two halves have
-//  to agree on what the atlas holds, so a technique that changes one usually changes both:
-//  the 2D slices hold depth in the light's clip space and the cube faces hold distance
-//  divided by range. Change that and these lookups have to follow.
-//
-//  The #else branch reports everything as lit rather than everything as shadowed, so a
-//  half written technique leaves a scene you can still see, which is the opposite of what
-//  the lighting stubs above do: an unwritten shadow is no shadow, but unwritten lighting
-//  genuinely is black.
+//  The other half of shadowing lives in the ShadowPass shaders, which fill the atlas. The
+//  two have to agree on what it holds, so a technique that changes one usually changes
+//  both: the 2D slices hold depth in the light's clip space and the cube faces hold
+//  distance divided by range. Change that and these lookups have to follow.
 // ---------------------------------------------------------------------------------------
-#ifdef BASELINE
 
 // Bias scaled by how side on the surface is to the light. A grazing surface spans more
 // depth per texel, so it needs more slack before it stops shadowing itself.
@@ -166,11 +142,11 @@ float GetShadowFactor2D(Texture2DArray ShadowDepth,
     float2 TexelSize = 1.0 / float2(Width, Height);
 
     float Lit = 0.0;
-    for (int y = -1; y <= 1; ++y)
+    for (int Y = -1; Y <= 1; ++Y)
     {
-        for (int x = -1; x <= 1; ++x)
+        for (int X = -1; X <= 1; ++X)
         {
-            float3 SampleUV = float3(ShadowUV + float2(x, y) * TexelSize, float(Slot));
+            float3 SampleUV = float3(ShadowUV + float2(X, Y) * TexelSize, float(Slot));
             float  Occluder = ShadowDepth.SampleLevel(ShadowSampler, SampleUV, 0).r;
             Lit += ((LightNDC.z - Bias) <= Occluder) ? 1.0 : 0.0;
         }
@@ -229,60 +205,6 @@ float GetShadowFactor(Texture2DArray ShadowDepth,
     return GetShadowFactor2D(ShadowDepth, ShadowSampler, LightIdx, WorldPosition, Normal);
 }
 
-#else // BASELINE
-
-// Your depth bias, if the technique needs one. Normal and LightDir are unit vectors and
-// Scale is whatever the caller thought the right magnitude was for its storage.
-float GetShadowBias(float3 Normal, float3 LightDir, float Scale)
-{
-    // TODO | Write your own bias
-    return 0.0;
-}
-
-// Your lookup for a directional or area light. ShadowDepth is an array of 2D slices and
-// Lights[LightIdx].ShadowSlot indexes it, or is NO_SHADOW_CASTER when the light casts none.
-// ShadowViewProj[LightIdx] is the matrix the slice was rendered with.
-//
-// Return 1 for fully lit down to 0 for fully occluded.
-float GetShadowFactor2D(Texture2DArray ShadowDepth,
-                        SamplerState ShadowSampler,
-                        uint LightIdx,
-                        float3 WorldPosition,
-                        float3 Normal)
-{
-    // TODO | Write your own 2D shadow lookup
-    return 1.0;
-}
-
-// Your lookup for a point light. ShadowDistance is an array of cube maps, sampled with a
-// direction rather than a projected uv, so there is no face maths to do. What each face
-// holds is up to the ShadowPass pixel shader.
-//
-// Return 1 for fully lit down to 0 for fully occluded.
-float GetShadowFactorCube(TextureCubeArray ShadowDistance,
-                          SamplerState ShadowSampler,
-                          uint LightIdx,
-                          float3 WorldPosition,
-                          float3 Normal)
-{
-    // TODO | Write your own cube shadow lookup
-    return 1.0;
-}
-
-// Your entry point. ShadeSurface calls only this one, so it is the only signature that has
-// to survive; the two above are a convenience you are free to drop.
-float GetShadowFactor(Texture2DArray ShadowDepth,
-                      TextureCubeArray ShadowDistance,
-                      SamplerState ShadowSampler,
-                      uint LightIdx,
-                      float3 WorldPosition,
-                      float3 Normal)
-{
-    // TODO | Dispatch to your own lookups, by Lights[LightIdx].Type
-    return 1.0;
-}
-
-#endif // BASELINE
 
 // Reflectance of a dielectric looked at head on. Metals take their tint from the albedo
 // instead, which is what makes them look like metal.
@@ -340,25 +262,32 @@ float3 ShadeReflections(TextureCube Radiance,
 }
 
 // ---------------------------------------------------------------------------------------
-//  Baseline light maths, part 3 of 3: how the lights are accumulated over a surface.
-//  Lambert for the diffuse term and Phong for the specular, which is where SPECULAR_STRENGTH
-//  and SHININESS at the top of this file are used.
+//  Light maths, part 3 of 3: how the lights are accumulated over a surface.
+//  Lambert for the diffuse term and Phong for the specular, the latter taking its exponent
+//  from the material's roughness and its strength from each light.
 // ---------------------------------------------------------------------------------------
-#ifdef BASELINE
 
 // Accumulates every light of the scene over a single surface sample.
 // Every light is shadowed by its own slice of the atlas, so the shadow storage is passed
 // in rather than a single precomputed factor.
+//
+// Roughness comes from the material, so the tightness of the highlight is a property of the
+// surface. How strongly each light shows up in it is a property of the light, see
+// SpecularScale below.
 float3 ShadeSurface(Texture2DArray ShadowDepth,
                     TextureCubeArray ShadowDistance,
                     SamplerState ShadowSampler,
                     float3 Albedo,
                     float3 Normal,
                     float3 WorldPosition,
-                    float3 EyePosition)
+                    float3 EyePosition,
+                    float Roughness)
 {
     float3 SurfaceNormal    = normalize(Normal);
     float3 EyeDirection     = normalize(EyePosition - WorldPosition);
+
+    // One exponent for the whole surface sample, the lights only scale what it produces
+    float SpecularExponent  = GetSpecularExponent(Roughness);
 
     float3 Diffuse          = float3(0.0, 0.0, 0.0);
     float3 Specular         = float3(0.0, 0.0, 0.0);
@@ -385,94 +314,12 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
 
         // Specular | Phong, mirror the light around the normal and compare it against the eye direction
         float3 ReflectDir   = reflect(-LightDir, SurfaceNormal);
-        float Spec          = pow(max(dot(EyeDirection, ReflectDir), 0.0), SHININESS);
-        Specular           += SPECULAR_STRENGTH * Spec * Radiance;
+        float Spec          = pow(max(dot(EyeDirection, ReflectDir), 0.0), SpecularExponent);
+        Specular           += CurrentLight.SpecularScale * Spec * Radiance;
     }
 
     return (Diffuse + Specular) * Albedo;
 }
 
-#else // BASELINE
-
-// Your accumulation. Loop LightIdx over NumLights, read Lights[LightIdx], and build up
-// whatever response you want out of it.
-//
-//   GetShadowFactor(ShadowDepth, ShadowDistance, ShadowSampler, LightIdx, WorldPosition, SurfaceNormal)
-//     returns 1 for fully lit down to 0 for fully occluded, and already picks the right
-//     storage for the light type. Worth skipping when a light reaches nothing anyway.
-//     Note that it is stubbed out by the same switch that brought you here, so it reports
-//     everything lit until part 2 above is written too.
-//   Lights[LightIdx].ShadowSlot is NO_SHADOW_CASTER when that light casts none.
-//
-// Normal arrives straight out of the G-buffer, so normalize it before using it.
-float3 ShadeSurface(Texture2DArray ShadowDepth,
-                    TextureCubeArray ShadowDistance,
-                    SamplerState ShadowSampler,
-                    float3 Albedo,
-                    float3 Normal,
-                    float3 WorldPosition,
-                    float3 EyePosition)
-{
-    // TODO | Write your own light accumulation
-    return float3(0.0, 0.0, 0.0);
-}
-
-float3 DirectionalLightPass(
-    float3 Normal               /* Per pixel Normal vector, should be normalized */,
-    float3 WorldPosition        /* Pixel/Fragment World Pos */,
-    float3 ViewPosition         /* Camera World Pos */,
-    Light DirectionalLight      /* Directional Light */
-)
-{
-    // Direction of the light
-	float3 LightDirection   = normalize(-DirectionalLight.Direction);
-    
-    // Direction from pixel to the viewer (eye/camera)
-    float3 ViewDirection    = normalize(ViewPosition - WorldPosition);
-
-    // Diffuse shading
-    float DiffuseFactor     = max(dot(Normal, LightDirection), 0.0);
-
-    // Specular shading
-    float3 ReflectDirection = reflect(-LightDirection, Normal);
-    float SpecularFactor    = pow(max(dot(ViewDirection, ReflectDirection), 0.0), DirectionalLight.Intensity);
-    
-    // combine results
-    return DiffuseFactor + SpecularFactor + float3(0, 0, 0) /* Ambient Component */;
-}
-
-// https://learnopengl.com/Lighting/Light-casters
-float3 LightPass(
-    float3 Normal           /* Per pixel Normal vector, should be normalized */,
-    float3 WorldPosition    /* Pixel/Fragment World Pos */,
-    float3 ViewPosition     /* Camera World Pos */
-)
-{
-	// Accumulated light contributions  
-    float3 DiffuseSpecularAmbient = float3(0.0, 0.0, 0.0);
-
-	// loop though all lights in the scene and accumulate their contributions
-    for (uint LightIdx = 0; LightIdx < NumLights; ++LightIdx)
-    {
-        // Three light types so far
-        if(Lights[LightIdx].Type == LIGHT_TYPE_DIRECTIONAL)
-        {
-            DiffuseSpecularAmbient += DirectionalLightPass(Normal, WorldPosition, ViewPosition, Lights[LightIdx]);
-        }
-        else if (Lights[LightIdx].Type == LIGHT_TYPE_POINT)
-        {
-            // TODO | Handle point light
-        }
-        else if (Lights[LightIdx].Type == LIGHT_TYPE_AREA)
-        {
-            // TODO | Handle spot light
-        }
-    }
-
-    //return (Diffuse + Specular + float3(0.0, 0.0, 0.0) /* Ambient for now disabled */) * Albedo;
-    return DiffuseSpecularAmbient;
-}
-
-#endif // BASELINE
 
 #endif // LIGHTING_HLSL_INCLUDED

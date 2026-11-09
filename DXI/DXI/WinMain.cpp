@@ -32,9 +32,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
     }
 
     // Which app actually runs is the CurrentApp alias of Win32Proc.h
-    CurrentApp dx12App(static_cast<UINT>(DXICMD::GetInt(L"width", 1280)),
-                       static_cast<UINT>(DXICMD::GetInt(L"height", 720)),
+    CurrentApp DX12App(static_cast<UINT>(DXICMD::GetInt(L"width", 1920)),
+                       static_cast<UINT>(DXICMD::GetInt(L"height", 1080)),
                        L"MyApp");
 
-    return Win32Proc::Run(hInstance, nCmdShow, &dx12App);
+    return Win32Proc::Run(hInstance, nCmdShow, &DX12App);
 }

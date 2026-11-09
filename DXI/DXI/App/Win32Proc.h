@@ -14,7 +14,7 @@ class Win32Proc
 {
 public:
 
-    static int Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * dx12App);
+    static int Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * DX12App);
     static HWND GetHwnd() { return hwnd; }
 
 protected:

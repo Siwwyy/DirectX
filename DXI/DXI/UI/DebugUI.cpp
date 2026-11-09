@@ -197,6 +197,14 @@ void DebugUI::DrawLightProperties(LightBase& Light)
 		Light.SetIntensity(Intensity);
 	}
 
+	// How tight the highlight is comes from the material's roughness map, this is only how
+	// strongly this particular light shows up in it
+	float SpecularScale = Light.GetSpecularScale();
+	if (ImGui::DragFloat("Specular", &SpecularScale, 0.01f, 0.f, 4.f))
+	{
+		Light.SetSpecularScale(SpecularScale);
+	}
+
 	// The rest depends on what kind of light it is
 	switch (Light.GetLightType())
 	{
