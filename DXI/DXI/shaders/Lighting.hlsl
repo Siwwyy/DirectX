@@ -417,46 +417,39 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
     return float3(0.0, 0.0, 0.0);
 }
 
-void DirectionalLightPass(
-    float3 Albedo           /* Albedo  */,
-    float3 Normal           /* Per pixel Normal vector */,
-    float3 WorldPosition    /* Pixel/Fragment World Pos */,
-    float3 EyeDirection     /* Camera World Pos */,
-    Light DirectionalLight,
-    out float3 Diffuse, 
-    out float3 Specular)
+float3 DirectionalLightPass(
+    float3 Normal               /* Per pixel Normal vector, should be normalized */,
+    float3 WorldPosition        /* Pixel/Fragment World Pos */,
+    float3 ViewPosition         /* Camera World Pos */,
+    Light DirectionalLight      /* Directional Light */
+)
 {
-    // Direction to the pixel from light 
-	float3 LightDirection = normalize(-DirectionalLight.Direction);
+    // Direction of the light
+	float3 LightDirection   = normalize(-DirectionalLight.Direction);
+    
+    // Direction from pixel to the viewer (eye/camera)
+    float3 ViewDirection    = normalize(ViewPosition - WorldPosition);
 
     // Diffuse shading
-    float DiffuseFactor = max(dot(Normal, LightDirection), 0.0);
+    float DiffuseFactor     = max(dot(Normal, LightDirection), 0.0);
 
     // Specular shading
     float3 ReflectDirection = reflect(-LightDirection, Normal);
-    float SpecularFactor    = pow(max(dot(EyeDirection, ReflectDirection), 0.0), SHININESS);
-
+    float SpecularFactor    = pow(max(dot(ViewDirection, ReflectDirection), 0.0), DirectionalLight.Intensity);
+    
     // combine results
-    Diffuse     = DiffuseFactor;
-    Specular    = SpecularFactor;
+    return DiffuseFactor + SpecularFactor + float3(0, 0, 0) /* Ambient Component */;
 }
 
 // https://learnopengl.com/Lighting/Light-casters
 float3 LightPass(
-    float3 Albedo           /* Albedo  */,
-    float3 Normal           /* Per pixel Normal vector */,
+    float3 Normal           /* Per pixel Normal vector, should be normalized */,
     float3 WorldPosition    /* Pixel/Fragment World Pos */,
-    float3 EyePosition      /* Camera World Pos */)
+    float3 ViewPosition     /* Camera World Pos */
+)
 {
-    // Normalize just in case
-    float3 SurfaceNormal    = normalize(Normal);
-
-	// Direction from pixel to the viewer (eye/camera)
-    float3 EyeDirection     = normalize(EyePosition - WorldPosition);
-
 	// Accumulated light contributions  
-    float3 Diffuse = float3(0.0, 0.0, 0.0);
-    float3 Specular = float3(0.0, 0.0, 0.0);
+    float3 DiffuseSpecularAmbient = float3(0.0, 0.0, 0.0);
 
 	// loop though all lights in the scene and accumulate their contributions
     for (uint LightIdx = 0; LightIdx < NumLights; ++LightIdx)
@@ -464,8 +457,7 @@ float3 LightPass(
         // Three light types so far
         if(Lights[LightIdx].Type == LIGHT_TYPE_DIRECTIONAL)
         {
-			Light DirectionalLight = Lights[LightIdx];
-            DirectionalLightPass(Albedo, Normal, WorldPosition, EyeDirection, DirectionalLight, Diffuse, Specular);
+            DiffuseSpecularAmbient += DirectionalLightPass(Normal, WorldPosition, ViewPosition, Lights[LightIdx]);
         }
         else if (Lights[LightIdx].Type == LIGHT_TYPE_POINT)
         {
@@ -477,7 +469,8 @@ float3 LightPass(
         }
     }
 
-	return (Diffuse + Specular) * Albedo;
+    //return (Diffuse + Specular + float3(0.0, 0.0, 0.0) /* Ambient for now disabled */) * Albedo;
+    return DiffuseSpecularAmbient;
 }
 
 #endif // BASELINE

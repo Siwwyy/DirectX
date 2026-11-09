@@ -52,7 +52,7 @@ float4 main(FullScreenPSInput input) : SV_TARGET
         return float4(albedo, 1.0);
     }
 
-    float3 normal       = GBufferNormal.Sample(GBufferSampler, input.uv).xyz;
+    float3 normal       = normalize(GBufferNormal.Sample(GBufferSampler, input.uv)).xyz;
     float3 params       = GBufferMaterialParams.Sample(GBufferSampler, input.uv).xyz;
 
     float metalness     = params.r;
@@ -69,5 +69,7 @@ float4 main(FullScreenPSInput input) : SV_TARGET
     // No image based lighting while the sky is out. ShadeReflections in Lighting.hlsl is
     // still there and takes its cubes as parameters, so restoring this is a call away.
     // Metalness, roughness and occlusion are read above and reach nothing for now.
-    return float4(LightPass(albedo, normal, world_pos.xyz, EyePosition.xyz), 1.0);
+    float4 DiffuseSpecularAmbientFactor = float4(LightPass(normal, world_pos.xyz, EyePosition.xyz), 1.0);
+    return DiffuseSpecularAmbientFactor * albedo_sample;
+
 }
