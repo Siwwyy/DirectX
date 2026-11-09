@@ -1,0 +1,33 @@
+---
+description: PascalCase naming, in HLSL as well as C++
+globs: *.hlsl,*.h,*.hpp,*.cpp
+alwaysApply: false
+---
+
+# PascalCase everywhere, shaders included
+
+Types, functions, members, locals and parameters are all PascalCase. This holds in HLSL
+exactly as it does in C++: `WorldPosition`, not `world_position`; `AlbedoSample`, not
+`albedo_sample`; `Input`, not `input`.
+
+Booleans keep the `b` prefix, as in `bTwoSided`, `bDestroyed`, `bIsFrontFace`.
+
+## What is not ours to rename
+
+- `main`, which the compiler is told to look for by name
+- HLSL semantics: `POSITION`, `TEXCOORD`, `SV_Position`, `SV_Target0`
+- Register bindings, intrinsics and keywords
+- Microsoft's types, `ID3D12Device` and friends. Note that `DXDevice` and `DXResource` in
+  DXIHelpers.h are `#define` macros for those, so anything spelled `DXDevice`-something
+  expands textually
+
+## Renaming in bulk
+
+Comment prose is not code. A blind replace turns "world space normal" into "world space
+Normal" and "ambient occlusion" into "ambient Occlusion" across every file it touches, so
+restrict the replace to code, or restore the comment text afterwards and re-apply only the
+references that name a member through a dot, like `Input.Position`.
+
+In PowerShell, compare with `-cne` rather than `-ne`. String comparison is case insensitive
+by default, so a guard like `if ($new -ne $old) { write }` silently skips every file whose
+only change was casing, which is most of them in a rename like this.
