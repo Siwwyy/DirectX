@@ -43,14 +43,21 @@ struct PSInput
     // and the world position on top of the normal. The tangent rides along so the
     // pixel shader can read a tangent space normal map.
     float4 Position                     : SV_POSITION;
-    float4 WorldPosition               : POSITION;
+    float4 WorldPosition                : POSITION;
     float2 UV                           : TEXCOORD;
     float3 Normal                       : NORMAL;       // interpolated, so the pixel shader renormalizes
     float4 Tangent                      : TANGENT;      // w is the bitangent handedness
     float4 Bitangent                    : BINORMAL;     // w unused
+
+    // Both clip space positions, for the velocity target. SV_POSITION cannot stand in for
+    // the current one: by the time the pixel shader sees it the perspective divide and the
+    // viewport transform have already happened, and velocity needs the undivided w of each
+    // frame separately.
+    float4 CurrentClip                  : TEXCOORD1;
+    float4 PrevClip                     : TEXCOORD2;
 #else
     float4 Position                     : SV_POSITION;
-    float4 WorldPosition               : POSITION;
+    float4 WorldPosition                : POSITION;
     #if USE_TEXCOORD
         float2 UV                       : TEXCOORD;
     #else
@@ -73,6 +80,10 @@ struct PSInput
 #define DEBUG_UV_SCALE                      200.0
 #define DEBUG_WORLD_SCALE                   20.0
 #define DEBUG_MIP_RANGE                     8.0
+
+// A uv step per frame is small even when the camera whips around, so the velocity view
+// needs considerably more amplification than the derivative views do
+#define DEBUG_VELOCITY_SCALE                20.0
 
 // Derivatives are signed, the albedo target is UNORM and clamps anything negative to
 // black. Remapping around this puts zero at mid grey so the sign stays visible.
@@ -98,7 +109,7 @@ struct FullScreenPSInput
 // which a depth only pass never has to carry.
 struct ShadowDistancePSInput
 {
-    float4 Position                     : SV_POSITION;
+    float4 Position                    : SV_POSITION;
     float3 WorldPosition               : POSITION;
 };
 

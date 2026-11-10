@@ -53,10 +53,7 @@ private:
 	std::vector<D3D12_ROOT_PARAMETER>		Parameters;
 	std::vector<D3D12_STATIC_SAMPLER_DESC>	Samplers;
 
-	// A descriptor table holds a pointer to its ranges rather than a copy, so the ranges
-	// have to outlive Build and keep their addresses while later parameters are added.
-	// A deque is used because push_back on one never moves the elements already in it.
-	std::deque<D3D12_DESCRIPTOR_RANGE>		Ranges;
+	std::deque<D3D12_DESCRIPTOR_RANGE>		Ranges;		// A deque, because a table points at these and push_back must not move them
 };
 
 #endif // D3D12_ROOTSIGNATUREBUILDER_H_INCLUDED

@@ -63,6 +63,15 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 
 	// Store View Mat
 	XMStoreFloat4x4(&CameraMatrices.ViewMat, Matrix);
+
+	// Starts the previous frame equal to this one, so a camera that has only just been
+	// built reports no motion rather than measuring against the identity
+	AdvanceFrame();
+}
+
+void Camera::AdvanceFrame() noexcept
+{
+	XMStoreFloat4x4(&CameraMatrices.PrevViewProjMat, GetViewMatrix() * GetProjMatrix());
 }
 
 void Camera::Reset()

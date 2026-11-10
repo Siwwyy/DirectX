@@ -125,7 +125,8 @@ struct SHARED_ALIGN(16) Light
 #define GBUFFER_NORMAL				1
 #define GBUFFER_WORLD_POSITION		2
 #define GBUFFER_MATERIAL_PARAMS		3
-#define GBUFFER_TARGET_COUNT		4
+#define GBUFFER_VELOCITY			4
+#define GBUFFER_TARGET_COUNT		5
 
 // Depth is not one of the four. It is the depth buffer the base pass already writes, read
 // back as a shader resource rather than copied into a target of its own, so it costs no
@@ -141,6 +142,7 @@ struct GBufferOutput
 	float4 Normal			: SV_Target1;	// World space normal
 	float4 WorldPosition	: SV_Target2;	// World space position, w marks that geometry was written here
 	float4 MaterialParams	: SV_Target3;	// r metalness, g roughness, b ambient occlusion
+	float2 Velocity			: SV_Target4;	// Where this pixel was last frame, in uv, see PrevWorldToClip
 };
 #endif // BASE_PASS
 
@@ -163,7 +165,8 @@ struct GBufferOutput
 #define BASE_PASS_DEBUG_MIP_LEVEL			4
 #define BASE_PASS_DEBUG_WORLD_DERIVATIVES	5
 #define BASE_PASS_DEBUG_NORMAL_DERIVATIVES	6
-#define BASE_PASS_DEBUG_COUNT				7
+#define BASE_PASS_DEBUG_VELOCITY			7
+#define BASE_PASS_DEBUG_COUNT				8
 
 
 // ---------------------------------------------------------------------------------------
@@ -205,14 +208,10 @@ struct GBufferOutput
 // b0 | Per object. Rebound per draw, by both the base pass and every shadow view.
 #if defined(__cplusplus) || defined(BASE_PASS) || defined(SHADOW_PASS)
 CBUFFER_BEGIN(PrimitiveConstantBuffer, CB_PER_OBJECT, 256)
-	float4x4 LocalToWorld;			// Only with translation
-	float4x4 WorldToClip;			// Translation * View * Proj (Clip)
-
-	// Normals can not use LocalToWorld. A non uniform scale shears a direction differently
-	// than it moves a point, so a normal scaled that way stops being perpendicular to its
-	// surface. The matrix that keeps it perpendicular is the inverse transpose of the
-	// world matrix, which equals the inverse scale times the rotation.
-	float4x4 LocalToWorldUniformScale;
+	float4x4 LocalToWorld;				// Only with translation
+	float4x4 WorldToClip;				// Translation * View * Proj (Clip)
+	float4x4 LocalToWorldUniformScale;	// Inverse transpose, keeps a normal perpendicular under a non uniform scale
+	float4x4 PrevWorldToClip;			// Last frame's LocalToWorld * view projection | velocity, equals WorldToClip when still
 CBUFFER_END
 #endif
 

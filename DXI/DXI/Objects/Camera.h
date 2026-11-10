@@ -23,6 +23,15 @@ public:
 	void Reset();
 	void Update(float ElapsedSeconds) noexcept;
 
+	/**
+	 * Rolls this frame's view projection forward into next frame's previous one, which is
+	 * what the velocity target measures camera motion against.
+	 *
+	 * Once per frame, after anything that reads the previous value. The constructor calls
+	 * it too, so a new camera starts with no motion rather than measuring against identity.
+	 */
+	void AdvanceFrame() noexcept;
+
 	// Movement
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
@@ -48,6 +57,10 @@ public:
 	_NODISCARD inline const auto GetProjMatrix() const
 	{
 		return XMLoadFloat4x4(&CameraMatrices.ProjMat);						// Proj mat
+	}
+	_NODISCARD inline const auto GetPrevViewProjMatrix() const
+	{
+		return XMLoadFloat4x4(&CameraMatrices.PrevViewProjMat);				// View * Proj, previous frame
 	}
 	_NODISCARD inline const auto& GetPosition() const
 	{

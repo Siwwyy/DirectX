@@ -1,8 +1,58 @@
 ---
-description: PascalCase naming, in HLSL as well as C++
+description: PascalCase naming and comment style for members and functions, in HLSL as well as C++
 globs: *.hlsl,*.h,*.hpp,*.cpp
 alwaysApply: false
 ---
+
+# A function gets a /** */ block
+
+```cpp
+/**
+ * What it does, and anything the caller would otherwise have to read the body to learn.
+ *
+ * @param Handle    Where the view is written, the caller owns the heap
+ * @return          1 for fully lit down to 0 for fully occluded
+ */
+```
+
+The summary comes first and carries the weight. `@param` and `@return` are for facts the
+signature does not already state:
+
+- Skip `@param Device  The device`. A parameter whose name says everything gets no line.
+- Skip `@return` on a `void`, and on a getter whose name is the answer.
+- Do document units, ranges, ownership, null meaning, and which state a call requires.
+
+Constraints the caller must honour go in the summary, not a `@param`: that a transition has
+to happen first, or that the GPU must be idle, is about the call rather than an argument.
+
+Same block in HLSL. Doxygen is not run over the shaders, but one convention is worth more
+than a tool.
+
+# A struct member gets one trailing comment, never a paragraph above it
+
+```cpp
+float4x4 PrevWorldToClip;   // Last frame's LocalToWorld * view projection | velocity
+```
+
+Not this:
+
+```cpp
+// Where this object's vertices landed on the previous frame, for the velocity target.
+// One matrix rather than two, because the object transform and the camera both moved
+// and only their product matters.
+float4x4 PrevWorldToClip;
+```
+
+Columns stay aligned down the struct, so the fields read as a table. Where a `|` appears it
+separates what the field is from which cases care about it, as `Light` does throughout.
+
+If the reasoning genuinely does not fit, it belongs in the block above the struct, not above
+the field. SharedTypes.h already does this: the row alignment rules and the per type note sit
+at the top, and every member is one line.
+
+This applies to declarations. A local inside a function body is different: a block above it
+explaining why a computation is shaped the way it is carries information the line cannot, and
+those stay. The older `/// <summary>` doc comments in Vertex.h are also left alone.
 
 # PascalCase everywhere, shaders included
 

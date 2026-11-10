@@ -498,7 +498,8 @@ void DebugUI::Draw(Camera& Camera,
 			"ddy(uv) raw, signed",
 			"Mip level (texel density)",
 			"World derivatives (fwidth of position)",
-			"Normal derivatives (fwidth of normal)"
+			"Normal derivatives (fwidth of normal)",
+			"Velocity (uv motion since last frame)"
 		};
 		static_assert(IM_ARRAYSIZE(ModeNames) == static_cast<int>(BasePassDebugMode::Count),
 						"Every BasePassDebugMode needs a label in the panel");
@@ -527,6 +528,9 @@ void DebugUI::Draw(Camera& Camera,
 			break;
 		case BasePassDebugMode::NormalDerivatives:
 			ImGui::TextWrapped("Every mesh here still carries one normal per face, so this is black inside a triangle and only shows up where two of them meet. A mesh with real per vertex normals would show a gradient.");
+			break;
+		case BasePassDebugMode::Velocity:
+			ImGui::TextWrapped("Where each pixel was last frame, red for horizontal motion and green for vertical, biased around mid grey so the sign shows. A still camera over a still scene is flat grey, so any colour at all means something moved. Amplified 20x, a uv step is small.");
 			break;
 		default:
 			ImGui::TextDisabled("Materials rendered normally");

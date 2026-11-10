@@ -17,12 +17,20 @@ SamplerState MaterialSampler : register(s0);
 // DebugMode comes from BasePassDebugConstants in SharedTypes.h, a root constant so
 // switching views costs nothing per frame
 
-// Pixels are always shaded in 2x2 quads, which is what lets ddx and ddy exist: they
-// subtract a value from its neighbour in the quad. The result is how fast that value
-// changes per pixel on screen, and it is what the hardware itself uses to pick a mip.
-//
-// Returns true when a debug view took over the pixel, along with the colour to show.
-bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, out float3 DebugColor)
+/**
+ * The debug views, selected by the DebugMode root constant.
+ *
+ * Most of them are derivatives. Pixels are always shaded in 2x2 quads, which is what lets
+ * ddx and ddy exist: they subtract a value from its neighbour in the quad, giving how fast
+ * it changes per pixel on screen, which is what the hardware itself uses to pick a mip.
+ *
+ * @param Velocity     Already computed by the caller, so the view shows exactly what the
+ *                     velocity target holds rather than a second derivation of it
+ * @param DebugColor   The colour to show, written only when the return value is true
+ * @return             True when a view took over this pixel, in which case the caller
+ *                     flags it SURFACE_UNLIT so LightPass leaves the colour alone
+ */
+bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, float2 Velocity, out float3 DebugColor)
 {
     DebugColor = float3(0.0, 0.0, 0.0);
 
@@ -99,6 +107,20 @@ bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, out
         return true;
     }
 
+    case BASE_PASS_DEBUG_VELOCITY:
+    {
+        // What the velocity target holds, scaled up to be visible. A uv step is a fraction
+        // of the screen, so a fast pan is still only a few hundredths and would otherwise
+        // read as black.
+        //
+        // Red is horizontal motion and green vertical, both biased around mid grey so the
+        // sign survives: brighter than grey is one way, darker the other. A still camera
+        // over a still scene is therefore flat grey, which is the useful property, since
+        // any colour at all means something moved.
+        DebugColor = float3(saturate(Velocity * DEBUG_VELOCITY_SCALE + DEBUG_SIGNED_BIAS), DEBUG_SIGNED_BIAS);
+        return true;
+    }
+
     default:
         return false;
     }
@@ -164,10 +186,29 @@ GBufferOutput main(PSInput Input, bool bIsFrontFace : SV_IsFrontFace)
 
     Output.MaterialParams   = float4(Metalness, Roughness, AmbientOcclusion, 1.0);
 
+    // Where this pixel was on the previous frame, as a step in uv.
+    //
+    // Both clip positions are divided by their own w, which is the whole reason they are
+    // carried separately rather than reconstructed: the perspective divide is what turns a
+    // rotation of the camera into the right amount of screen motion at every depth. The
+    // y flip is the usual one, clip space counts up and uv counts down.
+    //
+    // Interpolating the clip positions and dividing per pixel is not the same as
+    // interpolating the divided result, and this is the order that is correct.
+    float2 CurrentUV        = (Input.CurrentClip.xy / Input.CurrentClip.w) * float2(0.5, -0.5) + 0.5;
+    float2 PrevUV           = (Input.PrevClip.xy / Input.PrevClip.w) * float2(0.5, -0.5) + 0.5;
+
+    // A vertex behind the eye on either frame has a w of zero or less and the divide is
+    // meaningless. It still rasterizes, because the triangle it belongs to was clipped
+    // rather than dropped, so the guard is not optional.
+    Output.Velocity         = (Input.CurrentClip.w > 0.0 && Input.PrevClip.w > 0.0)
+                                ? CurrentUV - PrevUV
+                                : float2(0.0, 0.0);
+
     // A debug view replaces the surface colour and asks LightPass to leave it alone,
     // otherwise the lighting would modulate the very numbers being inspected
     float3 DebugColor;
-    if (GetDerivativeDebugColor(Input.UV, Input.WorldPosition.xyz, Normal, DebugColor))
+    if (GetDerivativeDebugColor(Input.UV, Input.WorldPosition.xyz, Normal, Output.Velocity, DebugColor))
     {
         Output.Albedo = float4(DebugColor, SURFACE_UNLIT);
     }

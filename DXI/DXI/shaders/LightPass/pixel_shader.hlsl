@@ -14,10 +14,11 @@ Texture2D           GBufferAlbedo               : register(t0);
 Texture2D           GBufferNormal               : register(t1);
 Texture2D           GBufferWorldPosition        : register(t2);
 Texture2D           GBufferMaterialParams       : register(t3);
-Texture2D           GBufferDepth                : register(t4);
-Texture2DArray      ShadowDepth                 : register(t5);     // one depth slice per directional or area light
-TextureCubeArray    ShadowDistance              : register(t6);     // six distance faces per point light
-// t7 and t8 were the radiance and irradiance sky cubes, see LightPass::SKY_SRV_COUNT
+Texture2D           GBufferVelocity             : register(t4);     // uv step since the previous frame, nothing shades with it yet
+Texture2D           GBufferDepth                : register(t5);
+Texture2DArray      ShadowDepth                 : register(t6);     // one depth slice per directional or area light
+TextureCubeArray    ShadowDistance              : register(t7);     // six distance faces per point light
+// t8 and t9 were the radiance and irradiance sky cubes, see LightPass::SKY_SRV_COUNT
 
 SamplerState GBufferSampler     : register(s0);     // point, for the buffers above
 

@@ -191,6 +191,16 @@ private:
 	// GPU address of a primitive's constants for the frame being recorded
 	_NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GetPrimitiveCbvAddress(const SIZE_T PrimitiveIdx) const;
 
+	/**
+	 * Rolls every transform the velocity target depends on forward by one frame, the
+	 * primitives and the camera alike.
+	 *
+	 * Runs after the constants have been uploaded, so this frame still wrote the previous
+	 * values. Doing it earlier makes every pixel report zero motion, which renders fine
+	 * and is therefore easy to miss.
+	 */
+	void VelocityPass();
+
 	// Constants / Misc
 	static constexpr UINT	BACK_BUFFER_COUNT	= 3;											//how many frames are in flight
 	static constexpr UINT	MAX_MATERIALS		= 64;											//how many materials fit in the shared descriptor heap, Sponza alone declares 25
@@ -217,12 +227,8 @@ private:
 	DXIFrameContext		FrameContext;
 	UINT					CurrentFrameIdx = 0;
 
-	// Off by default, otherwise the frame rate is pinned to the refresh rate and says
-	// nothing about how long the frame actually takes
-	bool					bVSyncEnabled	= false;
-
-	// Set by Destroy(), after which Update() and Render() do nothing
-	bool					bDestroyed		= false;
+	bool					bVSyncEnabled	= false;	// Off by default, a pinned frame rate says nothing about frame cost
+	bool					bDestroyed		= false;	// Set by Destroy(), after which Update() and Render() do nothing
 
 	// Deferred rendering | ShadowPass writes depth from the light, BasePass writes the
 	// surface, LightPass shades it and looks the occlusion up in the shadow map
@@ -236,9 +242,7 @@ private:
 	BasePass				SceneBasePass;
 	LightPass				SceneLightPass;
 
-	// Everything LightPass samples has to live in one shader visible heap, because only
-	// one CBV/SRV/UAV heap can be bound at a time
-	ComPtr<DXDescriptorHeap>	LightInputsHeap;
+	ComPtr<DXDescriptorHeap>	LightInputsHeap;	// One heap for everything LightPass samples, only one can be bound at a time
 
 	// Materials | Every material takes its descriptors out of the one shared heap,
 	// one per primitive so each object looks different

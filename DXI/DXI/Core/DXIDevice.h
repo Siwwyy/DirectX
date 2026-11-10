@@ -10,21 +10,10 @@
 // off the command line rather than recompiled, see Utility/CommandLine.h.
 struct DXIDeviceOptions
 {
-	// Instruments every shader to catch out of bounds access and uninitialised reads.
-	// Commonly 10x slower or worse, so it stays off unless something needs chasing.
-	bool bEnableGpuValidation	= false;
-
-	// The CPU side validation. Cheap and worth leaving on, but it needs the Graphics Tools
-	// optional feature installed, so there has to be a way to turn it off.
-	bool bEnableDebugLayer		= true;
-
-	// Whether a debug layer message halts in the debugger. Breaking on WARNING is
-	// aggressive and some drivers are chatty enough to make it unusable.
-	bool bBreakOnSeverity		= true;
-
-	// The software rasterizer. Slow, but it renders the same frame without a vendor driver
-	// in the way, which is how you tell a driver bug from an engine bug.
-	bool bUseWarpAdapter		= false;
+	bool bEnableGpuValidation	= false;	// Instruments every shader, commonly 10x slower or worse
+	bool bEnableDebugLayer		= true;		// CPU side validation, needs the Graphics Tools optional feature
+	bool bBreakOnSeverity		= true;		// Whether a debug layer message halts in the debugger
+	bool bUseWarpAdapter		= false;	// Software rasterizer, tells a driver bug from an engine bug
 };
 
 // Factory, adapter, device and the direct command queue.

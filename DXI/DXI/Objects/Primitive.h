@@ -68,6 +68,26 @@ public:
 	{
 		return Matrices.WorldMat;
 	}
+
+	/**
+	 * Where this object was on the previous frame, for the velocity target.
+	 */
+	_NODISCARD inline const auto GetPrevWorldMatrix() const
+	{
+		return PrevWorldMat;
+	}
+
+	/**
+	 * Rolls this frame's transform forward into next frame's previous one.
+	 *
+	 * Once per frame, after the constants have been uploaded and before anything moves the
+	 * object. Also once when the object is first placed, otherwise it reports a frame of
+	 * motion from wherever it was created to where it was put.
+	 */
+	void AdvanceFrame() noexcept
+	{
+		PrevWorldMat = Matrices.WorldMat;
+	}
 	_NODISCARD inline const auto GetPosVector() const
 	{
 		return Matrices.PositionVec;
@@ -109,6 +129,8 @@ private:
 
 	// Matrices
 	ObjectMatrices				Matrices;
+
+	DirectX::XMFLOAT4X4			PrevWorldMat = {};	// World matrix as of the previous frame | velocity, filled by AdvanceFrame
 
 	// Number of indices
 	UINT						NumIndices;

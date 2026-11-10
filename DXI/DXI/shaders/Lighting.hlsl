@@ -12,19 +12,20 @@
 // LIGHT_TYPE_*, MAX_LIGHTS, NO_SHADOW_CASTER and the Light struct all come from
 // SharedTypes.h, which Common.hlsl includes. One definition, compiled as both languages.
 
-// Phong exponent for a given roughness.
-//
-// Both used to be fixed, SPECULAR_STRENGTH at 0.5 and SHININESS at 32. The strength is now
-// per light, see Light::SpecularScale, and the exponent comes from the material's roughness
-// map, which was already being sampled and thrown away.
-//
-// The mapping is the usual Blinn-Phong equivalence, 2/alpha^2 - 2 with alpha the squared
-// roughness. It is worth knowing that the neutral roughness SetDefaults writes, 128 of 255,
-// lands on an exponent of about 30, so an untextured surface shades almost exactly as it
-// did with the old constant.
-//
-// Clamped at both ends: a roughness of 0 runs the exponent to infinity, and a roughness of 1
-// takes it to zero, where pow() returns 1 everywhere and the whole surface is a highlight.
+/**
+ * Phong exponent for a given roughness, the usual Blinn-Phong equivalence of 2/alpha^2 - 2
+ * with alpha the squared roughness.
+ *
+ * Replaces a fixed SHININESS of 32. The neutral roughness SetDefaults writes, 128 of 255,
+ * lands on an exponent of about 30, so an untextured surface shades almost exactly as it
+ * did before. How strongly each light shows in the highlight is separate, see
+ * Light::SpecularScale.
+ *
+ * @param Roughness   0 to 1 out of the material's roughness map
+ * @return            Clamped to 1 .. 2048. A roughness of 0 runs the exponent to infinity,
+ *                    and 1 takes it to zero, where pow() returns 1 and the whole surface
+ *                    becomes a highlight
+ */
 float GetSpecularExponent(float Roughness)
 {
     float Alpha = Roughness * Roughness;

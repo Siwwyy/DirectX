@@ -14,6 +14,11 @@ PSInput main(VSInput Input)
     Output.Position             = mul(Input.Position, WorldToClip);
     Output.UV            = Input.UV;
 
+    // Same vertex through this frame's and the previous frame's matrices. The difference
+    // between where the two land on screen is what the velocity target stores.
+    Output.CurrentClip          = Output.Position;
+    Output.PrevClip             = mul(Input.Position, PrevWorldToClip);
+
     // The normal gets its own matrix, LocalToWorld would shear it under a non uniform
     // scale. w of 0 keeps the translation out of it, a normal is a direction not a point.
     Output.Normal               = mul(float4(Input.Normal, 0.f), LocalToWorldUniformScale).xyz;

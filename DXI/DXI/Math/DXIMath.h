@@ -136,6 +136,8 @@ struct alignas(256) CameraMatrices
 	DirectX::XMFLOAT4X4 ProjMat;			// this will store our projection matrix
 	DirectX::XMFLOAT4X4 ViewMat;			// this will store our view matrix
 
+	DirectX::XMFLOAT4X4 PrevViewProjMat;	// View * Proj as of the previous frame | velocity, per camera
+
 	DirectX::XMFLOAT4	Position;			// Position of the camera.
 	DirectX::XMFLOAT4	Direction;			// N | Direction of the camera.
 	DirectX::XMFLOAT4	Up;					// V | Up direction of the camera, typically < 0.0f, 1.0f, 0.0f >.

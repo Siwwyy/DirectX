@@ -21,6 +21,7 @@ enum class BasePassDebugMode : UINT
 	MipLevel			= BASE_PASS_DEBUG_MIP_LEVEL,			// Texel density, the mip the hardware would pick from it
 	WorldDerivatives	= BASE_PASS_DEBUG_WORLD_DERIVATIVES,	// How fast the world position moves per pixel
 	NormalDerivatives	= BASE_PASS_DEBUG_NORMAL_DERIVATIVES,	// Where the shading normal jumps between quads
+	Velocity			= BASE_PASS_DEBUG_VELOCITY,				// The velocity target, amplified enough to be visible
 
 	Count				= BASE_PASS_DEBUG_COUNT
 };

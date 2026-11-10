@@ -21,6 +21,7 @@ enum class GBufferTarget : UINT
 	Normal			= GBUFFER_NORMAL,			// World space normal
 	WorldPosition	= GBUFFER_WORLD_POSITION,	// World space position, w is 1 where geometry was written and 0 for the background
 	MaterialParams	= GBUFFER_MATERIAL_PARAMS,	// r metalness, g roughness, b ambient occlusion | what drives the reflections
+	Velocity		= GBUFFER_VELOCITY,			// Screen space motion since the previous frame, in uv | what TAA and motion blur read
 
 	Count			= GBUFFER_TARGET_COUNT
 };

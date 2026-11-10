@@ -20,6 +20,7 @@ const wchar_t* ToString(const GBufferTarget Target)
 	case GBufferTarget::Normal:			return L"Normal";
 	case GBufferTarget::WorldPosition:	return L"WorldPosition";
 	case GBufferTarget::MaterialParams:	return L"MaterialParams";
+	case GBufferTarget::Velocity:		return L"Velocity";
 	default:							return L"Unknown";
 	}
 }
@@ -32,6 +33,7 @@ DXGI_FORMAT GBuffer::GetFormat(const GBufferTarget Target)
 	case GBufferTarget::Normal:			return DXGI_FORMAT::DXGI_FORMAT_R16G16B16A16_FLOAT;		// signed, so it needs a float format | maybe change to DXGI_FORMAT_R32G32B32A32_FLOAT for better precision
 	case GBufferTarget::WorldPosition:	return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;		// full precision, positions leave the unit range
 	case GBufferTarget::MaterialParams:	return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;			// three factors in the unit range
+	case GBufferTarget::Velocity:		return DXGI_FORMAT::DXGI_FORMAT_R16G16_FLOAT;			// signed, and a uv step is small, so half precision is ample
 	default:							return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 	}
 }

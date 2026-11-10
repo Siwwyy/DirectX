@@ -145,6 +145,11 @@ void D3D12Renderer::ProcessPendingSpawns()
 								DX_IDENTITY_ROTATE3,
 								DX_IDENTITY_SCALE3);
 
+		// Previous frame starts equal to this one, so something that has just appeared
+		// reports no motion. This runs after the transform on purpose: seeding before it
+		// would have the object appear to fly in from wherever it was spawned.
+		Spawned->AdvanceFrame();
+
 		Primitives.emplace_back(std::move(Spawned));
 	}
 
@@ -226,6 +231,11 @@ void D3D12Renderer::InitializeConstantBuffers()
 	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
 	CreateMappedBuffer(UINT64(CameraConstantBufferSize) * BACK_BUFFER_COUNT,	CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
 	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT,	LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
+
+	// Seeds the previous transforms with the current ones before anything is uploaded, so
+	// the opening frame compares the scene against where it already is and reports no
+	// motion. Without this the first frame would measure against the identity matrix.
+	VelocityPass();
 
 	// Fill the first frame so nothing reads uninitialized memory before Update() runs
 	UploadCameraConstants();
@@ -350,6 +360,11 @@ void D3D12Renderer::Render()
 	{
 		UploadPrimitiveConstants(*Primitives[PrimitiveIdx], static_cast<UINT>(PrimitiveIdx));
 	}
+
+	// Every upload above has read the previous transforms, so they can be replaced now.
+	// Doing it before the uploads would make the velocity target read zero every frame,
+	// which is the quiet kind of wrong: the scene still renders, it just never moves.
+	VelocityPass();
 
 	RenderShadowPass();
 	RenderBasePass();
@@ -660,6 +675,14 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// what gets stored. It looks like a missing transpose but it is not.
 	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorld));
 
+	// The same product as WorldToClip, built from last frame's halves. Both have to be last
+	// frame's: a camera that moved and an object that moved both show up as motion, and
+	// pairing this frame's object matrix with last frame's camera would report the camera's
+	// movement as though the object had done it.
+	const auto PrevPrimitiveWorldMatrix	= Primitive.GetPrevWorldMatrix();
+	const XMMATRIX PrevWorldToClip		= XMLoadFloat4x4(&PrevPrimitiveWorldMatrix) * Camera.GetPrevViewProjMatrix();
+	XMStoreFloat4x4(&PrimitiveCbv.PrevWorldToClip, XMMatrixTranspose(PrevWorldToClip));
+
 	// No light matrix here any more. ShadowPass renders the same object from several
 	// lights per frame, so it takes the light half as root constants instead.
 
@@ -668,6 +691,16 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// frames still in flight reading from the wrong offsets.
 	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveConstantBufferSize;
 	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveConstantBufferSize), &PrimitiveCbv, PrimitiveConstantBufferSize);
+}
+
+void D3D12Renderer::VelocityPass()
+{
+	for (auto& Primitive : Primitives)
+	{
+		Primitive->AdvanceFrame();
+	}
+
+	Camera.AdvanceFrame();
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS D3D12Renderer::GetPrimitiveCbvAddress(const SIZE_T PrimitiveIdx) const
