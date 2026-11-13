@@ -32,7 +32,9 @@ public:
 
 	~Model() override = default;
 
-	// Uploads the mesh, reading it off disk first if it was not supplied at construction
+	/**
+	 * Uploads the mesh, reading it off disk first if it was not supplied at construction
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList) override;
 
 	_NODISCARD const std::wstring& GetMeshPath() const noexcept

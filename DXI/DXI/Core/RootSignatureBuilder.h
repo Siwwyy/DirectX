@@ -22,11 +22,15 @@ public:
 	RootSignatureBuilder()	= default;
 	~RootSignatureBuilder()	= default;
 
-	// b | A constant buffer read straight out of a GPU address, no descriptor needed
+	/**
+	 * b | A constant buffer read straight out of a GPU address, no descriptor needed
+	 */
 	UINT AddConstantBufferView(const UINT ShaderRegister, const D3D12_SHADER_VISIBILITY Visibility);
 
-	// b | Values living in the root signature itself. Cheapest to change, but they come
-	// out of the 64 DWORD budget the whole signature shares, so keep them small.
+	/**
+	 * b | Values living in the root signature itself. Cheapest to change, but they come
+	 * out of the 64 DWORD budget the whole signature shares, so keep them small.
+	 */
 	UINT AddRootConstants(const UINT ShaderRegister, const UINT Num32BitValues, const D3D12_SHADER_VISIBILITY Visibility);
 
 	// t, u or b | One contiguous range of descriptors out of the bound heap
@@ -41,11 +45,15 @@ public:
 						const D3D12_TEXTURE_ADDRESS_MODE AddressMode,
 						const D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_PIXEL);
 
-	// Serializes and creates. Throws with the serializer's own message on failure, which
-	// names the offending parameter and is far more use than the HRESULT alone.
+	/**
+	 * Serializes and creates. Throws with the serializer's own message on failure, which
+	 * names the offending parameter and is far more use than the HRESULT alone.
+	 */
 	_NODISCARD ComPtr<ID3D12RootSignature> Build(DXDevice * Device, const D3D12_ROOT_SIGNATURE_FLAGS Flags) const;
 
-	// How many DWORDs the parameters so far take out of the 64 the signature gets
+	/**
+	 * How many DWORDs the parameters so far take out of the 64 the signature gets
+	 */
 	_NODISCARD UINT GetCostInDWords() const noexcept;
 
 private:

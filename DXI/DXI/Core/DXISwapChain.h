@@ -18,7 +18,9 @@ public:
 	DXISwapChain()	= default;
 	~DXISwapChain()	= default;
 
-	// Creates the swap chain for the given window and a render target view per back buffer
+	/**
+	 * Creates the swap chain for the given window and a render target view per back buffer
+	 */
 	void Init(const DXIDevice& Device, const HWND WindowHandle, const UINT Width, const UINT Height, const UINT BackBufferCount);
 
 	// Format every back buffer is created with
@@ -27,19 +29,27 @@ public:
 		return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
 
-	// Index of the back buffer the next frame goes into
+	/**
+	 * Index of the back buffer the next frame goes into
+	 */
 	_NODISCARD UINT GetCurrentBackBufferIdx() const;
 
-	// Render target view of one of the back buffers
+	/**
+	 * Render target view of one of the back buffers
+	 */
 	_NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE GetRtvHandle(const UINT BackBufferIdx) const;
 
-	// Barriers | A back buffer is presentable until a pass draws into it
+	/**
+	 * Barriers | A back buffer is presentable until a pass draws into it
+	 */
 	void TransitionToRenderTarget(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const;
 	void TransitionToPresent(DXGraphicsCommandList * CommandList, const UINT BackBufferIdx) const;
 
-	// Hands the finished frame over to the compositor.
-	// A SyncInterval of 0 presents without waiting for the vblank, which is the only way
-	// past the refresh rate of the display, 1 locks the frame rate to it.
+	/**
+	 * Hands the finished frame over to the compositor.
+	 * A SyncInterval of 0 presents without waiting for the vblank, which is the only way
+	 * past the refresh rate of the display, 1 locks the frame rate to it.
+	 */
 	void Present(const UINT SyncInterval = 1) const;
 
 	// Whether the display chain can present without waiting for a vblank at all.

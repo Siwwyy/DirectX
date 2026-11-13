@@ -124,5 +124,5 @@ void BasePass::RenderPrimitive(DXGraphicsCommandList * const CommandList, const 
 
 void BasePass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
 {
-	// nothing here, so far...
+// nothing here, so far...
 }

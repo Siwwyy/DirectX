@@ -15,7 +15,9 @@ public:
 	Cube(std::wstring Name);
 	~Cube() = default;
 
-	// Init
+	/**
+	 * Init
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
 private:

@@ -72,7 +72,9 @@ public:
 	AssetCatalog()	= default;
 	~AssetCatalog()	= default;
 
-	// Walks the content root for material folders and the models folder for meshes
+	/**
+	 * Walks the content root for material folders and the models folder for meshes
+	 */
 	void Scan();
 
 	_NODISCARD const std::vector<ModelAsset>& GetModels() const noexcept

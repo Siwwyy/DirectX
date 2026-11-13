@@ -27,7 +27,9 @@ public:
 		}
 	}
 
-	// Add Define to the array of defines
+	/**
+	 * Add Define to the array of defines
+	 */
 	FORCEINLINE void AddDefine(DxcDefine ShaderDefine);
 
 private:

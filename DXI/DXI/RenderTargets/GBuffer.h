@@ -29,7 +29,9 @@ enum class GBufferTarget : UINT
 // How many render targets the G-buffer is made of
 constexpr UINT GBufferTargetCount = static_cast<UINT>(GBufferTarget::Count);
 
-// Target name, for debug purposes
+/**
+ * Target name, for debug purposes
+ */
 _NODISCARD const wchar_t* ToString(const GBufferTarget Target);
 
 
@@ -45,30 +47,44 @@ public:
 	GBuffer()	= default;
 	~GBuffer()	= default;
 
-	// Creates the targets at the given size along with their descriptors
+	/**
+	 * Creates the targets at the given size along with their descriptors
+	 */
 	void Init(DXDevice * Device, const UINT Width, const UINT Height);
 
-	// Format of a target, the passes need these to build their PSOs
+	/**
+	 * Format of a target, the passes need these to build their PSOs
+	 */
 	_NODISCARD static DXGI_FORMAT GetFormat(const GBufferTarget Target);
 
-	// Writes one shader resource view per target starting at the given slot, in the
-	// GBufferTarget order. The caller owns the heap, because LightPass has to see these
-	// views and the shadow map through one single shader visible heap.
+	/**
+	 * Writes one shader resource view per target starting at the given slot, in the
+	 * GBufferTarget order. The caller owns the heap, because LightPass has to see these
+	 * views and the shadow map through one single shader visible heap.
+	 */
 	void CreateShaderResourceViews(DXDevice * Device, const D3D12_CPU_DESCRIPTOR_HANDLE StartHandle, const UINT IncrementSize) const;
 
-	// Barriers | BasePass writes the targets, LightPass samples them
+	/**
+	 * Barriers | BasePass writes the targets, LightPass samples them
+	 */
 	void TransitionToRenderTarget(DXGraphicsCommandList * CommandList);
 	void TransitionToShaderResource(DXGraphicsCommandList * CommandList);
 
-	// Binds every target at once, BasePass draws into all of them
+	/**
+	 * Binds every target at once, BasePass draws into all of them
+	 */
 	void BindAsRenderTarget(DXGraphicsCommandList * CommandList, const D3D12_CPU_DESCRIPTOR_HANDLE DsvHandle) const;
 
-	// Clears every target, the background colour ends up in Albedo
+	/**
+	 * Clears every target, the background colour ends up in Albedo
+	 */
 	void Clear(DXGraphicsCommandList * CommandList) const;
 
 private:
 
-	// CPU handle of a single render target view
+	/**
+	 * CPU handle of a single render target view
+	 */
 	_NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE GetRtvHandle(const GBufferTarget Target) const;
 
 	ComPtr<DXResource>			Targets[GBufferTargetCount];	// the off screen surfaces themselves

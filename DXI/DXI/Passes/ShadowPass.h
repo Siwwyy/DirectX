@@ -30,10 +30,14 @@ public:
 	ShadowPass();
 	~ShadowPass() = default;
 
-	// Init
+	/**
+	 * Init
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept override;
 
-	// Render | Draws one primitive into whichever view is currently bound
+	/**
+	 * Render | Draws one primitive into whichever view is currently bound
+	 */
 	void RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept override;
 	void RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept override;
 

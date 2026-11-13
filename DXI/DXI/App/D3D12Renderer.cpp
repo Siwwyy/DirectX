@@ -208,7 +208,9 @@ void D3D12Renderer::InitializeConstantBuffers()
 	// Every buffer holds one region per frame in flight, so the GPU never reads what the CPU is writing
 	const auto CreateMappedBuffer = [this](const UINT64 SizeInBytes, ComPtr<DXResource>& OutBuffer, UINT8** OutAddress, LPCWSTR Name)
 	{
-		const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes);
+		// Rounded here rather than at every call site, so no buffer can be created at a
+		// size a constant buffer view cannot span
+		const auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(AlignConstantBufferSize(SizeInBytes));
 		ThrowIfFailed(Device.Get()->CreateCommittedResource(
 			&DX_HEAP_PROPERTY_UPLOAD,			// this heap will be used to upload the constant buffer data
 			D3D12_HEAP_FLAG_NONE,				// no flags
@@ -225,12 +227,14 @@ void D3D12Renderer::InitializeConstantBuffers()
 
 	// Sized for the capacity rather than for what the scene happens to hold right now,
 	// because the panel can add primitives after this has been created and mapped
-	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(MAX_PRIMITIVES) * PrimitiveConstantBufferSize;
+	// Strides rather than sizes, because every offset taken into these has to be something
+	// a constant buffer view can start at
+	const UINT64 PrimitiveRegionSize = static_cast<UINT64>(MAX_PRIMITIVES) * PrimitiveCbvStride;
 
 	// Create mapped buffers
-	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,					PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
-	CreateMappedBuffer(UINT64(CameraConstantBufferSize) * BACK_BUFFER_COUNT,	CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
-	CreateMappedBuffer(UINT64(LightsConstantBufferSize) * BACK_BUFFER_COUNT,	LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
+	CreateMappedBuffer(PrimitiveRegionSize * BACK_BUFFER_COUNT,			PrimitiveCBV,	&PrimitiveCbvAddress,	L"Primitive Constant Buffer");
+	CreateMappedBuffer(CameraCbvStride * BACK_BUFFER_COUNT,				CameraCBV,		&CameraCbvAddress,		L"Camera Constant Buffer");
+	CreateMappedBuffer(LightsCbvStride * BACK_BUFFER_COUNT,				LightsCBV,		&LightsCbvAddress,		L"Lights Constant Buffer");
 
 	// Seeds the previous transforms with the current ones before anything is uploaded, so
 	// the opening frame compares the scene against where it already is and reports no
@@ -283,7 +287,7 @@ void D3D12Renderer::InitializePasses()
 	SrvHandle.Offset(GBUFFER_DEPTH_SRV_COUNT, IncrementSize);
 	SceneShadowAtlas.CreateShaderResourceViews(Device.Get(), SrvHandle, IncrementSize);
 
-	// The sky cubes used to follow the shadow atlas here, at t7 and t8
+// The sky cubes used to follow the shadow atlas here, at t7 and t8
 }
 
 XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx) const
@@ -334,7 +338,7 @@ void D3D12Renderer::Update(float DeltaTime)
 
 	// NOTE | The constant uploads deliberately do not happen here. Update() runs before
 	// BeginFrame() picks the frame index, so writing them now would target the region the
-	// GPU may still be reading. Render() uploads them once the index is known.
+// GPU may still be reading. Render() uploads them once the index is known.
 }
 
 void D3D12Renderer::Render()
@@ -568,8 +572,8 @@ void D3D12Renderer::RenderLightPass()
 	CommandList->SetDescriptorHeaps(_countof(LightHeaps), LightHeaps);
 
 	CommandList->SetGraphicsRootDescriptorTable(SceneLightPass.GBufferTableIdx,	LightInputsHeap->GetGPUDescriptorHandleForHeapStart());
-	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CameraConstantBufferSize));
-	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsConstantBufferSize));
+	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.CameraCBVIdx,	CameraCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * CameraCbvStride));
+	CommandList->SetGraphicsRootConstantBufferView(SceneLightPass.LightsCBVIdx,	LightsCBV->GetGPUVirtualAddress() + (UINT64(CurrentFrameIdx) * LightsCbvStride));
 
 	SceneLightPass.RenderFullScreen(CommandList);
 }
@@ -600,7 +604,7 @@ void D3D12Renderer::EndFrame()
 
 	// No wait here on purpose. Execute() signalled this frame's fence, and BeginFrame()
 	// blocks on it only once this frame index comes back around, which leaves the CPU
-	// free to record the next frames in the meantime.
+// free to record the next frames in the meantime.
 }
 
 void D3D12Renderer::UploadCameraConstants()
@@ -615,7 +619,7 @@ void D3D12Renderer::UploadCameraConstants()
 	const auto ViewProj = Camera.GetViewMatrix() * Camera.GetProjMatrix();
 	XMStoreFloat4x4(&CameraCbv.InvViewProj, XMMatrixTranspose(XMMatrixInverse(nullptr, ViewProj)));
 
-	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CameraConstantBufferSize), &CameraCbv, sizeof(CameraCbv));
+	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CameraCbvStride), &CameraCbv, sizeof(CameraCbv));
 }
 
 void D3D12Renderer::UploadLightConstants()
@@ -649,7 +653,7 @@ void D3D12Renderer::UploadLightConstants()
 		}
 	}
 
-	memcpy(LightsCbvAddress + (SIZE_T(CurrentFrameIdx) * LightsConstantBufferSize), &LightsCbv, sizeof(LightsCbv));
+	memcpy(LightsCbvAddress + (SIZE_T(CurrentFrameIdx) * LightsCbvStride), &LightsCbv, sizeof(LightsCbv));
 }
 
 void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const UINT PrimitiveIdx)
@@ -689,8 +693,8 @@ void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const U
 	// The stride between frame regions is the capacity, not the current count. Using the
 	// count would move every region the moment the panel adds a primitive, leaving the
 	// frames still in flight reading from the wrong offsets.
-	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveConstantBufferSize;
-	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveConstantBufferSize), &PrimitiveCbv, PrimitiveConstantBufferSize);
+	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveCbvStride;
+	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveCbvStride), &PrimitiveCbv, PrimitiveConstantBufferSize);
 }
 
 void D3D12Renderer::VelocityPass()
@@ -708,8 +712,8 @@ D3D12_GPU_VIRTUAL_ADDRESS D3D12Renderer::GetPrimitiveCbvAddress(const SIZE_T Pri
 	DXASSERT(PrimitiveCBV, "Primitive constant buffer must be created before binding it");
 	DXASSERT(PrimitiveIdx < Primitives.size(), "Primitive index is out of range");
 
-	const UINT64 FrameOffset = UINT64(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveConstantBufferSize;
-	return PrimitiveCBV->GetGPUVirtualAddress() + FrameOffset + (UINT64(PrimitiveIdx) * PrimitiveConstantBufferSize);
+	const UINT64 FrameOffset = UINT64(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveCbvStride;
+	return PrimitiveCBV->GetGPUVirtualAddress() + FrameOffset + (UINT64(PrimitiveIdx) * PrimitiveCbvStride);
 }
 
 void D3D12Renderer::Destroy()

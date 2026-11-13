@@ -19,23 +19,35 @@
 // so nothing has to be threaded down from WinMain.
 namespace DXICMD
 {
-	// Call once, before anything reads a switch
+	/**
+	 * Call once, before anything reads a switch
+	 */
 	void Parse();
 
-	// True when the switch is present at all, with or without a value
+	/**
+	 * True when the switch is present at all, with or without a value
+	 */
 	_NODISCARD bool HasFlag(const wchar_t* Name);
 
-	// Value of a switch, or Fallback when it is absent or not a number
+	/**
+	 * Value of a switch, or Fallback when it is absent or not a number
+	 */
 	_NODISCARD int GetInt(const wchar_t* Name, const int Fallback);
 
-	// Value of a switch as written, or Fallback when it is absent or carries no value.
-	// Case is preserved, unlike the switch name, so compare it with _wcsicmp.
+	/**
+	 * Value of a switch as written, or Fallback when it is absent or carries no value.
+	 * Case is preserved, unlike the switch name, so compare it with _wcsicmp.
+	 */
 	_NODISCARD std::wstring GetString(const wchar_t* Name, const wchar_t* Fallback);
 
-	// Everything the switches do, written to the debug output. Triggered by -help.
+	/**
+	 * Everything the switches do, written to the debug output. Triggered by -help.
+	 */
 	void LogUsage();
 
-	// Whether -help, -h or -? was asked for
+	/**
+	 * Whether -help, -h or -? was asked for
+	 */
 	_NODISCARD bool ShowHelpDocs();
 }
 

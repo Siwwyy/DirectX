@@ -33,7 +33,9 @@ public:
 	void Init(const D3D_FEATURE_LEVEL FeatureLevel = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0,
 					const DXIDeviceOptions& Options = {});
 
-	// Reports whatever is still alive, call it once everything else has been released
+	/**
+	 * Reports whatever is still alive, call it once everything else has been released
+	 */
 	void ReportLiveObjects() const;
 
 	// Getters
@@ -62,10 +64,14 @@ public:
 
 private:
 
-	// Turns the debug layer on, has to happen before the device is created
+	/**
+	 * Turns the debug layer on, has to happen before the device is created
+	 */
 	_NODISCARD static UINT EnableDebugLayer(const DXIDeviceOptions& Options);
 
-	// Whether a debug layer message halts in the debugger
+	/**
+	 * Whether a debug layer message halts in the debugger
+	 */
 	void SetBreakOnSeverity(const bool bEnabled) const;
 
 	ComPtr<DXFactory4>		Factory;		// DXGI factory the adapter and swap chain come from

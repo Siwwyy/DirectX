@@ -27,15 +27,19 @@ public:
 	Sphere(std::wstring Name, const UINT Density = DEFAULT_DENSITY);
 	~Sphere() override = default;
 
-	// Generates the mesh for the current density, then uploads it
+	/**
+	 * Generates the mesh for the current density, then uploads it
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList) override;
 
-	// Latitude bands. Longitude segments come out at twice this, which keeps the
-	// triangles roughly equilateral: longitude wraps a full 360 degrees while latitude
-	// only spans 180.
-	//
-	// Has to be set before Init. Changing it afterwards does not rebuild the vertex
-	// buffer, which would need a command list to upload the new one with.
+	/**
+	 * Latitude bands. Longitude segments come out at twice this, which keeps the
+	 * triangles roughly equilateral: longitude wraps a full 360 degrees while latitude
+	 * only spans 180.
+	 *
+	 * Has to be set before Init. Changing it afterwards does not rebuild the vertex
+	 * buffer, which would need a command list to upload the new one with.
+	 */
 	void SetDensity(const UINT InDensity) noexcept;
 
 	_NODISCARD UINT GetDensity() const noexcept
@@ -43,8 +47,10 @@ public:
 		return Density;
 	}
 
-	// Triangles the given density produces. Two per quad, except the rows against each
-	// pole which degenerate into a single fan.
+	/**
+	 * Triangles the given density produces. Two per quad, except the rows against each
+	 * pole which degenerate into a single fan.
+	 */
 	_NODISCARD static UINT GetTriangleCountFor(const UINT Density) noexcept;
 
 private:

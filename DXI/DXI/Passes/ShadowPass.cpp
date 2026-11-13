@@ -118,5 +118,5 @@ void ShadowPass::RenderPrimitive(DXGraphicsCommandList * const CommandList, cons
 
 void ShadowPass::RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept
 {
-	// Nothing here so far...
+// Nothing here so far...
 }

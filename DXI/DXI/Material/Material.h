@@ -24,7 +24,9 @@ enum class MaterialTextureSlot : UINT
 // How many descriptors a single material takes out of the shared heap
 constexpr UINT MaterialTextureSlotCount = static_cast<UINT>(MaterialTextureSlot::Count);
 
-// Slot name, for resource naming in PIX and for asserts
+/**
+ * Slot name, for resource naming in PIX and for asserts
+ */
 _NODISCARD const wchar_t* ToString(const MaterialTextureSlot Slot);
 
 
@@ -40,16 +42,24 @@ public:
 	MaterialHeap()	= default;
 	~MaterialHeap() = default;
 
-	// Creates the heap with room for MaxMaterials materials
+	/**
+	 * Creates the heap with room for MaxMaterials materials
+	 */
 	void Init(DXDevice * Device, const UINT MaxMaterials);
 
-	// Reserves the descriptor range of one material and returns its index
+	/**
+	 * Reserves the descriptor range of one material and returns its index
+	 */
 	_NODISCARD UINT Allocate();
 
-	// CPU handle of a single slot, this is where a texture writes its SRV
+	/**
+	 * CPU handle of a single slot, this is where a texture writes its SRV
+	 */
 	_NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(const UINT MaterialIdx, const MaterialTextureSlot Slot) const;
 
-	// GPU handle of the first slot of a material, this is the descriptor table to bind
+	/**
+	 * GPU handle of the first slot of a material, this is the descriptor table to bind
+	 */
 	_NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle(const UINT MaterialIdx) const;
 
 	// Getters
@@ -68,7 +78,9 @@ public:
 
 private:
 
-	// Flat descriptor index of a slot inside the heap
+	/**
+	 * Flat descriptor index of a slot inside the heap
+	 */
 	_NODISCARD UINT GetDescriptorIdx(const UINT MaterialIdx, const MaterialTextureSlot Slot) const;
 
 	ComPtr<DXDescriptorHeap>	Heap;							// the one big heap every material lives in
@@ -90,36 +102,48 @@ public:
 	Material(std::wstring Name);
 	~Material()	= default;
 
-	// Reserves this material's range in the shared heap and points every slot at a null descriptor
+	/**
+	 * Reserves this material's range in the shared heap and points every slot at a null descriptor
+	 */
 	void Init(DXDevice * Device, MaterialHeap& InMaterialHeap);
 
-	// Loads a texture from disk into one of the slots, overwriting its null descriptor
+	/**
+	 * Loads a texture from disk into one of the slots, overwriting its null descriptor
+	 */
 	void LoadTexture(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, std::wstring TexturePath);
 
-	// Fills a slot with a single colour instead of an image, which is how a material
-	// gets sensible values for a map it has no texture for
+	/**
+	 * Fills a slot with a single colour instead of an image, which is how a material
+	 * gets sensible values for a map it has no texture for
+	 */
 	void SetSolidColor(DXDevice * Device, DXGraphicsCommandList * CommandList, const MaterialTextureSlot Slot, const BYTE (&Rgba)[4]);
 
-	// Gives every slot a neutral value: mid grey surface, flat normal, no metal, half
-	// rough and unoccluded. A mesh drawn with this is visible and obviously untextured
-	// rather than black.
+	/**
+	 * Gives every slot a neutral value: mid grey surface, flat normal, no metal, half
+	 * rough and unoccluded. A mesh drawn with this is visible and obviously untextured
+	 * rather than black.
+	 */
 	void SetDefaults(DXDevice * Device, DXGraphicsCommandList * CommandList);
 
-	// Descriptor table to bind for this material, covers every slot at once
+	/**
+	 * Descriptor table to bind for this material, covers every slot at once
+	 */
 	_NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptorTable() const;
 
-	// Drops the staging copies of the textures.
-	//
-	// A texture is uploaded by writing it into an upload heap and copying from there into
-	// the default heap the shader reads, and the upload heap has to outlive the copy, which
-	// is why it is held at all. Once the command list carrying that copy has been waited
-	// on, it is dead weight: an exact duplicate of every texture, sitting in system memory
-	// for as long as the material does.
-	//
-	// Six cubes never made that worth noticing. A scene arriving with twenty five materials
-	// of 1k maps does: the duplicates come to a few hundred megabytes.
-	//
-	// Only safe after the GPU has finished the copies, so call it past a flush.
+	/**
+	 * Drops the staging copies of the textures.
+	 *
+	 * A texture is uploaded by writing it into an upload heap and copying from there into
+	 * the default heap the shader reads, and the upload heap has to outlive the copy, which
+	 * is why it is held at all. Once the command list carrying that copy has been waited
+	 * on, it is dead weight: an exact duplicate of every texture, sitting in system memory
+	 * for as long as the material does.
+	 *
+	 * Six cubes never made that worth noticing. A scene arriving with twenty five materials
+	 * of 1k maps does: the duplicates come to a few hundred megabytes.
+	 *
+	 * Only safe after the GPU has finished the copies, so call it past a flush.
+	 */
 	void ReleaseUploadHeaps();
 
 	// Setters

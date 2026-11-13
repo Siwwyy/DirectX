@@ -36,10 +36,14 @@ public:
 	BasePass();
 	~BasePass() = default;
 
-	// Render
+	/**
+	 * Render
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept override;
 
-	// Initialize the pipeline state object (PSO) for the base pass
+	/**
+	 * Initialize the pipeline state object (PSO) for the base pass
+	 */
 	void RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept override;
 	void RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept override;
 

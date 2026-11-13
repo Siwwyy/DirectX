@@ -16,7 +16,9 @@
 // Namespaces
 using namespace Helpers;
 
-// Declared by the Win32 backend for exactly this, forwarding messages into ImGui
+/**
+ * Declared by the Win32 backend for exactly this, forwarding messages into ImGui
+ */
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace

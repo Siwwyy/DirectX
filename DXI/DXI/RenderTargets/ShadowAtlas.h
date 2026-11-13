@@ -29,7 +29,9 @@ public:
 	ShadowAtlas()	= default;
 	~ShadowAtlas()	= default;
 
-	// Creates both arrays with room for MAX_LIGHTS casters of either kind
+	/**
+	 * Creates both arrays with room for MAX_LIGHTS casters of either kind
+	 */
 	void Init(DXDevice * Device, const UINT Resolution, const UINT CubeResolution);
 
 	// Formats the passes need for their PSOs
@@ -46,18 +48,26 @@ public:
 		return DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT;	// one channel, the distance to the light
 	}
 
-	// Writes both views, the 2D array first and the cube array after it
+	/**
+	 * Writes both views, the 2D array first and the cube array after it
+	 */
 	void CreateShaderResourceViews(DXDevice * Device, const D3D12_CPU_DESCRIPTOR_HANDLE StartHandle, const UINT IncrementSize) const;
 
-	// Barriers | The passes write these, LightPass samples them
+	/**
+	 * Barriers | The passes write these, LightPass samples them
+	 */
 	void TransitionToWrite(DXGraphicsCommandList * CommandList);
 	void TransitionToShaderResource(DXGraphicsCommandList * CommandList);
 
-	// Binds one depth slice for a directional or area light and resets it
+	/**
+	 * Binds one depth slice for a directional or area light and resets it
+	 */
 	void BindDepthSlice(DXGraphicsCommandList * CommandList, const UINT Slot) const;
 
-	// Binds one cube face of one point light. The colour target takes the distance, the
-	// shared depth is only there to resolve what is in front of what.
+	/**
+	 * Binds one cube face of one point light. The colour target takes the distance, the
+	 * shared depth is only there to resolve what is in front of what.
+	 */
 	void BindCubeFace(DXGraphicsCommandList * CommandList, const UINT Slot, const UINT FaceIdx) const;
 
 	// Getters

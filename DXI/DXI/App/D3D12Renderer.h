@@ -98,19 +98,25 @@ public:
 
 private:
 
-	// Initialization, split per concern instead of one long function
+	/**
+	 * Initialization, split per concern instead of one long function
+	 */
 	void InitializeConstantBuffers();
 	void InitializeMaterials();
 	void InitializeScene();
 	void InitializePasses();
 
-	// The setups InitializeScene picks between, plus the lights they share
+	/**
+	 * The setups InitializeScene picks between, plus the lights they share
+	 */
 	void InitializeDefaultScene();
 	void InitializeSponzaScene();
 	void InitializeCornellBoxScene();
 	void InitializeSceneLights();
 
-	// Which scene was asked for. Reads -scene, falling back to the built in one.
+	/**
+	 * Which scene was asked for. Reads -scene, falling back to the built in one.
+	 */
 	_NODISCARD static SceneSetup GetRequestedScene();
 
 	// Whether the active setup includes each half, so a conditional reads as a question
@@ -128,26 +134,36 @@ private:
 		return ActiveScene == SceneSetup::CornellBox;
 	}
 
-	// Loads one material out of a Poly Haven style folder, where every map is named
-	// <AssetName>_<suffix>_1k.png, appends it to Materials and hands it back.
-	// Missing maps keep their null descriptor. Ownership stays in Materials, the
-	// reference is there so the caller can keep setting properties on what it just made.
+	/**
+	 * Loads one material out of a Poly Haven style folder, where every map is named
+	 * <AssetName>_<suffix>_1k.png, appends it to Materials and hands it back.
+	 * Missing maps keep their null descriptor. Ownership stays in Materials, the
+	 * reference is there so the caller can keep setting properties on what it just made.
+	 */
 	Material& LoadMaterial(const wchar_t* AssetName);
 
-	// For a model that ships a single colour map rather than a folder of PBR maps. The
-	// remaining slots take the neutral values SetDefaults fills in.
+	/**
+	 * For a model that ships a single colour map rather than a folder of PBR maps. The
+	 * remaining slots take the neutral values SetDefaults fills in.
+	 */
 	Material& CreateMaterialWithDiffuse(const wchar_t* Name, const std::wstring& DiffusePath);
 
-	// A flat untextured colour, for a scene whose surfaces are specified as reflectances
-	// rather than shipped as images. Rgba is linear, not sRGB, matching SetSolidColor.
+	/**
+	 * A flat untextured colour, for a scene whose surfaces are specified as reflectances
+	 * rather than shipped as images. Rgba is linear, not sRGB, matching SetSolidColor.
+	 */
 	Material& CreateMaterialWithColor(const wchar_t* Name, const BYTE (&Rgba)[4], const BYTE Roughness = 128);
 
-	// Loads a catalog material the first time something asks for it and remembers where
-	// it landed. Returns null when the shared heap is full or the index is out of range.
+	/**
+	 * Loads a catalog material the first time something asks for it and remembers where
+	 * it landed. Returns null when the shared heap is full or the index is out of range.
+	 */
 	Material* EnsureMaterialLoaded(const int CatalogIdx);
 
-	// An already loaded material by name, or null. Lets the scene ask for one without
-	// depending on the order InitializeMaterials happens to load them in.
+	/**
+	 * An already loaded material by name, or null. Lets the scene ask for one without
+	 * depending on the order InitializeMaterials happens to load them in.
+	 */
 	_NODISCARD Material* FindMaterial(const std::wstring& Name) const;
 
 	// Appends an entire glTF file to the scene: one Material per material it declares and
@@ -165,8 +181,10 @@ private:
 						const XMFLOAT3 Rotation		= DX_IDENTITY_ROTATE3,
 						const XMFLOAT3 Scale		= DX_IDENTITY_SCALE3);
 
-	// Drains whatever the panel asked for. Called once per frame, after BeginFrame, so
-	// the command list is open for the vertex and texture uploads a spawn performs.
+	/**
+	 * Drains whatever the panel asked for. Called once per frame, after BeginFrame, so
+	 * the command list is open for the vertex and texture uploads a spawn performs.
+	 */
 	void ProcessPendingSpawns();
 
 	// Frame
@@ -179,8 +197,10 @@ private:
 	void RenderLightPass();
 	void RenderDebugUI();
 
-	// World to clip for one light, and whether it needs the cube pipeline.
-	// A point light has six of these, one per cube face.
+	/**
+	 * World to clip for one light, and whether it needs the cube pipeline.
+	 * A point light has six of these, one per cube face.
+	 */
 	_NODISCARD XMMATRIX GetLightShadowViewProj(const LightBase& Light, const UINT FaceIdx = 0) const;
 
 	// Uploads
@@ -188,7 +208,9 @@ private:
 	void UploadLightConstants();
 	void UploadPrimitiveConstants(const Primitive& Primitive, const UINT PrimitiveIdx);
 
-	// GPU address of a primitive's constants for the frame being recorded
+	/**
+	 * GPU address of a primitive's constants for the frame being recorded
+	 */
 	_NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GetPrimitiveCbvAddress(const SIZE_T PrimitiveIdx) const;
 
 	/**
@@ -204,7 +226,6 @@ private:
 	// Constants / Misc
 	static constexpr UINT	BACK_BUFFER_COUNT	= 3;											//how many frames are in flight
 	static constexpr UINT	MAX_MATERIALS		= 64;											//how many materials fit in the shared descriptor heap, Sponza alone declares 25
-	static constexpr UINT	CAMERA_CBV_STRIDE	= CameraConstantBufferSize;							//already a multiple of the constant buffer alignment
 	static constexpr UINT	SKY_FACE_RESOLUTION	= 512;												//per radiance cube face, projected out of the panorama on the CPU
 	static constexpr UINT	SKY_IRRADIANCE_RESOLUTION = 32;											//irradiance barely varies with direction, so it stays tiny
 	static constexpr UINT	SHADOW_MAP_RESOLUTION = 2048;										//per slice, for directional and area lights

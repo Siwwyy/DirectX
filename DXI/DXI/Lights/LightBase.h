@@ -21,7 +21,9 @@ enum class LightType : UINT
 	Count
 };
 
-// Light name, for debug purposes
+/**
+ * Light name, for debug purposes
+ */
 _NODISCARD const wchar_t* ToString(const LightType Type);
 
 
@@ -29,7 +31,10 @@ _NODISCARD const wchar_t* ToString(const LightType Type);
 // each rather than a CPU copy and an HLSL copy. Mind the field alignment note there before
 // adding to or reordering either of them.
 constexpr auto LightsConstantBufferSize			= sizeof(LightsConstantBuffer);
-constexpr auto LightsConstantBufferAlignment	= alignof(LightsConstantBuffer);
+constexpr auto LightsCbvStride					= AlignConstantBufferSize(LightsConstantBufferSize);
+
+static_assert((LightsConstantBufferSize % 16) == 0, "LightsConstantBuffer needs a size divisible by 16");
+static_assert((sizeof(Light) % 16) == 0,            "Light needs a size divisible by 16, it sits in an array");
 
 
 // Base of every light type. Holds what all of them share, the derived classes add
@@ -48,7 +53,9 @@ public:
 	// Kind of this light
 	_NODISCARD virtual LightType GetLightType() const noexcept = 0;		// make this class abstract
 
-	// Packs this light into the layout the shaders read
+	/**
+	 * Packs this light into the layout the shaders read
+	 */
 	_NODISCARD virtual Light GetLightConstants() const noexcept = 0;
 
 	// Setters
@@ -88,7 +95,9 @@ public:
 
 protected:
 
-	// Fills everything the base knows about, the derived class completes the rest
+	/**
+	 * Fills everything the base knows about, the derived class completes the rest
+	 */
 	_NODISCARD Light MakeBaseConstants() const noexcept;
 
 	// Linear colour of the light

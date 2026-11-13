@@ -15,7 +15,9 @@ public:
 	Plane(std::wstring Name);
 	~Plane() = default;
 
-	// Init
+	/**
+	 * Init
+	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
 private:

@@ -32,8 +32,10 @@ public:
 	}
 	void SetRange(const float Range) noexcept;
 
-	// Radius of the emitter itself. A real bulb is not a mathematical point, and the
-	// inverse square falloff runs to infinity at one, so this is where it stops climbing.
+	/**
+	 * Radius of the emitter itself. A real bulb is not a mathematical point, and the
+	 * inverse square falloff runs to infinity at one, so this is where it stops climbing.
+	 */
 	void SetSourceRadius(const float SourceRadius) noexcept;
 
 	// Getters
@@ -50,9 +52,11 @@ public:
 		return SourceRadius;
 	}
 
-	// A point light shines everywhere, so its shadow needs all six directions.
-	// FaceIdx follows the D3D cube order +X -X +Y -Y +Z -Z, and each face is a 90 degree
-	// perspective, which is exactly what tiles a cube without gaps or overlap.
+	/**
+	 * A point light shines everywhere, so its shadow needs all six directions.
+	 * FaceIdx follows the D3D cube order +X -X +Y -Y +Z -Z, and each face is a 90 degree
+	 * perspective, which is exactly what tiles a cube without gaps or overlap.
+	 */
 	_NODISCARD XMMATRIX GetShadowViewProj(const UINT FaceIdx) const noexcept;
 
 	// Near plane the shadow faces are rendered with, the lighting needs it to match

@@ -25,7 +25,9 @@ public:
 			const XMFLOAT3 InitScale);
 	virtual ~Primitive() = default;
 
-	// Init
+	/**
+	 * Init
+	 */
 	virtual HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList);
 
 	// Setters

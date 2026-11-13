@@ -42,8 +42,10 @@ public:
 						const UINT FaceResolution = 32,
 						const std::wstring& Name = L"Irradiance CubeMap");
 
-	// Writes the cube shader resource view at the given slot. The caller owns the heap,
-	// because the pass that samples this also samples other things out of one heap.
+	/**
+	 * Writes the cube shader resource view at the given slot. The caller owns the heap,
+	 * because the pass that samples this also samples other things out of one heap.
+	 */
 	void CreateShaderResourceView(DXDevice * Device, const D3D12_CPU_DESCRIPTOR_HANDLE SrvHandle) const;
 
 	// Getters

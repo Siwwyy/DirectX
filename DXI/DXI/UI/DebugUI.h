@@ -29,11 +29,15 @@ public:
 	DebugUI()	= default;
 	~DebugUI();
 
-	// Hooks ImGui up to the window and the device. The back buffer format has to match
-	// what the UI is drawn into, and FrameCount the number of frames in flight.
+	/**
+	 * Hooks ImGui up to the window and the device. The back buffer format has to match
+	 * what the UI is drawn into, and FrameCount the number of frames in flight.
+	 */
 	void Init(const DXIDevice& Device, const HWND WindowHandle, const DXGI_FORMAT BackBufferFormat, const UINT FrameCount);
 
-	// Starts a UI frame, call it before Draw()
+	/**
+	 * Starts a UI frame, call it before Draw()
+	 */
 	void BeginFrame();
 
 	// What the panel has asked to be added to the scene. The renderer drains these at the
@@ -60,16 +64,22 @@ public:
 				Material * const DefaultMaterial,
 				const UINT FramesPerSecond);
 
-	// Records the UI draw calls. The caller has to have the back buffer bound already,
-	// and this binds its own descriptor heap for the font.
+	/**
+	 * Records the UI draw calls. The caller has to have the back buffer bound already,
+	 * and this binds its own descriptor heap for the font.
+	 */
 	void Render(DXGraphicsCommandList * CommandList);
 
-	// Forwards a window message to ImGui, returns true when the UI consumed it so the
-	// camera does not also react to the same click or key
+	/**
+	 * Forwards a window message to ImGui, returns true when the UI consumed it so the
+	 * camera does not also react to the same click or key
+	 */
 	_NODISCARD static bool HandleWindowMessage(const HWND WindowHandle, const UINT Message, const WPARAM WParam, const LPARAM LParam);
 
-	// Whether the UI currently wants the mouse or the keyboard, so the camera can stay
-	// still while a widget is being dragged
+	/**
+	 * Whether the UI currently wants the mouse or the keyboard, so the camera can stay
+	 * still while a widget is being dragged
+	 */
 	_NODISCARD static bool WantsMouse();
 	_NODISCARD static bool WantsKeyboard();
 
@@ -102,7 +112,9 @@ private:
 								Material * const DefaultMaterial);
 	void DrawLightProperties(LightBase& Light);
 
-	// The pickers that fill PendingPrimitiveSpawns and PendingLightSpawns
+	/**
+	 * The pickers that fill PendingPrimitiveSpawns and PendingLightSpawns
+	 */
 	void DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T PrimitiveCount, const SIZE_T LightCount);
 
 	std::vector<PrimitiveSpawnRequest>	PendingPrimitiveSpawns;

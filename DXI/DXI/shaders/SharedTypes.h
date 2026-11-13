@@ -37,24 +37,24 @@
 	#define float4x4	DirectX::XMFLOAT4X4
 	#define uint		uint32_t
 
-	// alignas is a C++ spelling. An HLSL cbuffer gets its 256 byte placement from the API
-	// and a plain struct needs no annotation at all.
-	#define SHARED_ALIGN(N)		alignas(N)
-
 	// A constant buffer is a plain struct on this side. Reg is deliberately unused: the
 	// register token only means something to HLSL, and a macro parameter that never
 	// appears in the replacement is not expanded, so CB_PER_* being undefined here is fine.
-	#define CBUFFER_BEGIN(Name, Reg, Align)		struct SHARED_ALIGN(Align) Name {
-	#define CBUFFER_END							};
+	//
+	// No alignas. The 256 these used to carry is a property of the view, not of the type:
+	// D3D12 wants a constant buffer view to start on a 256 byte boundary, which is the
+	// caller's business when it offsets into a buffer, not something a struct can promise.
+	// What the struct does owe is a size divisible by 16, so every member lands on the row
+	// HLSL expects. AlignConstantBufferSize in DXIHelpers.h does the 256 rounding.
+	#define CBUFFER_BEGIN(Name, Reg)	struct Name {
+	#define CBUFFER_END					};
 
 #else
 
-	#define SHARED_ALIGN(N)
-
-	// In HLSL the fields become globals bound to a register. Align has no meaning here,
-	// the API guarantees the placement.
-	#define CBUFFER_BEGIN(Name, Reg, Align)		cbuffer Name : register(Reg) {
-	#define CBUFFER_END							};
+	// In HLSL the fields become globals bound to a register, and the API guarantees the
+	// placement, so there is nothing to annotate on this side either.
+	#define CBUFFER_BEGIN(Name, Reg)	cbuffer Name : register(Reg) {
+	#define CBUFFER_END					};
 
 #endif // __cplusplus
 
@@ -89,7 +89,7 @@
 // and float pairings below are deliberate: each fills exactly one row, which is why this
 // needs no padding members. A float3 after a float would not, it would be pushed to the
 // next row and silently disagree with the C++ side.
-struct SHARED_ALIGN(16) Light
+struct Light
 {
 	float3	Position;		// World space position | Point, Area
 	float	Intensity;		// Brightness multiplier
@@ -201,13 +201,16 @@ struct GBufferOutput
 //           float3  B;
 //
 //  A matrix always starts a row, so three matrices back to back are safe on their own.
-//  Rounding the whole struct up with SHARED_ALIGN does not help here: it only sets the
-//  start address and the total size, never the offsets in between.
+//  An alignment on the struct does not help here either: it only sets the start address
+//  and the total size, never the offsets in between. That is why these carry none.
+//
+//  The size of the whole struct does have to divide by 16, so the member after it in an
+//  array lands on a row too. Pad explicitly when the members do not add up.
 // ---------------------------------------------------------------------------------------
 
 // b0 | Per object. Rebound per draw, by both the base pass and every shadow view.
 #if defined(__cplusplus) || defined(BASE_PASS) || defined(SHADOW_PASS)
-CBUFFER_BEGIN(PrimitiveConstantBuffer, CB_PER_OBJECT, 256)
+CBUFFER_BEGIN(PrimitiveConstantBuffer, CB_PER_OBJECT)
 	float4x4 LocalToWorld;				// Only with translation
 	float4x4 WorldToClip;				// Translation * View * Proj (Clip)
 	float4x4 LocalToWorldUniformScale;	// Inverse transpose, keeps a normal perpendicular under a non uniform scale
@@ -217,7 +220,7 @@ CBUFFER_END
 
 // b1 | Per view, light pass flavour. What the shading needs to know about the camera.
 #if defined(__cplusplus) || defined(LIGHT_PASS)
-CBUFFER_BEGIN(CameraConstantBuffer, CB_PER_VIEW, 256)
+CBUFFER_BEGIN(CameraConstantBuffer, CB_PER_VIEW)
 	float4   EyePosition;			// World space position of the camera
 	float4x4 InvViewProj;			// Clip space back to world
 CBUFFER_END
@@ -226,7 +229,7 @@ CBUFFER_END
 // b1 | Per view, shadow pass flavour. Root constants rather than a CBV, so 16 rather than
 // 256: there can be eight views in a frame and rebinding a buffer for each would be waste.
 #if defined(__cplusplus) || defined(SHADOW_PASS)
-CBUFFER_BEGIN(ShadowViewConstants, CB_PER_VIEW, 16)
+CBUFFER_BEGIN(ShadowViewConstants, CB_PER_VIEW)
 	float4x4 WorldToLightClip;		// World straight into this light's clip space
 	float3   LightPosition;			// World space, a cube face measures distance from it
 	float    LightRange;			// Distance is stored divided by this, so it fits 0 to 1
@@ -234,8 +237,12 @@ CBUFFER_END
 #endif
 
 // b1 | Per view, base pass flavour. A single value, so it rides in the root signature.
+//
+// Root constants, so the divisible by 16 rule does not apply and padding it would be wrong:
+// the size has to match the Num32BitValues the root signature declares, which is 1 here and
+// ShadowViewConstantCount above. Only a buffer the API places a view into needs the 16.
 #if defined(__cplusplus) || defined(BASE_PASS)
-CBUFFER_BEGIN(BasePassDebugConstants, CB_PER_VIEW, 4)
+CBUFFER_BEGIN(BasePassDebugConstants, CB_PER_VIEW)
 	uint DebugMode;					// One of BASE_PASS_DEBUG_*
 CBUFFER_END
 #endif
@@ -244,10 +251,13 @@ CBUFFER_END
 // area lights render a single depth view, so only those need a matrix here. A point light
 // is looked up by direction, which is why its six face matrices never leave the shadow pass.
 #if defined(__cplusplus) || defined(LIGHT_PASS)
-CBUFFER_BEGIN(LightsConstantBuffer, CB_PER_LIGHTS, 256)
+CBUFFER_BEGIN(LightsConstantBuffer, CB_PER_LIGHTS)
 	Light    Lights[MAX_LIGHTS];				// All lights of the scene
 	float4x4 ShadowViewProj[MAX_LIGHTS];		// World to that light's clip space | Directional, Area
 	uint     NumLights;							// How many entries of Lights are filled
+	uint     PadLights0;						// To 592, the next multiple of 16 after 580
+	uint     PadLights1;						// Three scalars, not uint[3]: HLSL gives every
+	uint     PadLights2;						// array element a row of its own, so that would be 48
 CBUFFER_END
 #endif
 

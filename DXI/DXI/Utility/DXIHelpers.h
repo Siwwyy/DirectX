@@ -17,6 +17,23 @@
 // Safe Release of ComPtr<T>
 #define SAFE_RELEASE(p) if (p) (p)->Release()
 
+/**
+ * Rounds a constant buffer size up to what D3D12 can place a view at.
+ *
+ * A constant buffer view has to start on a 256 byte boundary and span a multiple of 256,
+ * so a struct's own size is not something the GPU can be offset by. The structs in
+ * SharedTypes.h are sized to a multiple of 16, which is what HLSL needs for its rows; this
+ * is the separate rounding the view needs, and belongs to whoever creates or offsets into
+ * the buffer.
+ *
+ * @return  SizeInBytes rounded up to the next multiple of 256
+ */
+constexpr UINT64 AlignConstantBufferSize(const UINT64 SizeInBytes) noexcept
+{
+	constexpr UINT64 Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;	// 256
+	return (SizeInBytes + (Alignment - 1)) & ~(Alignment - 1);
+}
+
 
 // Naming helper for ComPtr<T>.
 // Assigns the name of the variable as the name of the object.

@@ -21,10 +21,14 @@ public:
 	
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList* CommandList) noexcept override; 
 
-	// Render | LightPass is fullscreen, there is no per primitive work, use RenderFullscreen instead
+	/**
+	 * Render | LightPass is fullscreen, there is no per primitive work, use RenderFullscreen instead
+	 */
 	void RenderPrimitive(DXGraphicsCommandList * const CommandList, const Primitive& Primitive) noexcept override;
 
-	// Draws the fullscreen triangle that shades the whole G-buffer
+	/**
+	 * Draws the fullscreen triangle that shades the whole G-buffer
+	 */
 	void RenderFullScreen(DXGraphicsCommandList * const CommandList) noexcept override;
 
 	// Radiance and irradiance, the two sky cubes the reflections were gathered from. Zero

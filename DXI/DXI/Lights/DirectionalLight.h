@@ -28,7 +28,9 @@ public:
 	// Setters
 	void SetDirection(const XMFLOAT3 Direction) noexcept;
 
-	// Shadow camera | The box the shadow map covers, centred on Target
+	/**
+	 * Shadow camera | The box the shadow map covers, centred on Target
+	 */
 	void SetShadowBounds(const XMFLOAT3 Target, const float Extent, const float Distance) noexcept;
 
 	// Getters
@@ -37,8 +39,10 @@ public:
 		return Direction;
 	}
 
-	// View projection the shadow pass renders with. A directional light has no position,
-	// so the shadow camera is placed Distance away along the direction, aimed at Target.
+	/**
+	 * View projection the shadow pass renders with. A directional light has no position,
+	 * so the shadow camera is placed Distance away along the direction, aimed at Target.
+	 */
 	_NODISCARD XMMATRIX GetShadowViewProj() const noexcept;
 
 private:

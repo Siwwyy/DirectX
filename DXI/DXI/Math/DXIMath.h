@@ -125,10 +125,19 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 // PrimitiveConstantBuffer and CameraConstantBuffer are defined in shaders/SharedTypes.h.
 // Only the size aliases below live here. Mind the field alignment note in that header
 // before adding to or reordering either of them.
+// Two numbers per buffer, and they are not interchangeable. The Size is how many bytes to
+// copy. The Stride is how far apart two views may sit, which D3D12 requires to be a
+// multiple of 256, so it is what every per frame and per object offset must be built from.
 constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
-constexpr auto PrimitiveConstantBufferAlignment = alignof(PrimitiveConstantBuffer);
+constexpr auto PrimitiveCbvStride				= AlignConstantBufferSize(PrimitiveConstantBufferSize);
 
-constexpr auto CameraConstantBufferSize = sizeof(CameraConstantBuffer);
+constexpr auto CameraConstantBufferSize			= sizeof(CameraConstantBuffer);
+constexpr auto CameraCbvStride					= AlignConstantBufferSize(CameraConstantBufferSize);
+
+// HLSL lays every field on a 16 byte row, so a struct whose size does not divide by 16 puts
+// the one after it in an array on the wrong offset. Pad in SharedTypes.h when this fires.
+static_assert((PrimitiveConstantBufferSize % 16) == 0, "PrimitiveConstantBuffer needs a size divisible by 16");
+static_assert((CameraConstantBufferSize % 16) == 0,    "CameraConstantBuffer needs a size divisible by 16");
 
 // Camera matrices
 struct alignas(256) CameraMatrices

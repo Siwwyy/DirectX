@@ -36,7 +36,9 @@ public:
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
 
-	// Rotation | Takes how many pixels the cursor travelled since the last message
+	/**
+	 * Rotation | Takes how many pixels the cursor travelled since the last message
+	 */
 	void OnMouseMove(const int DeltaX, const int DeltaY) noexcept;
 
 	// Setters
