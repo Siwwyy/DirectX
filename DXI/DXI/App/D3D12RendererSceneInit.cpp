@@ -265,9 +265,7 @@ void D3D12Renderer::InitializeSceneLights()
 		// point, tune it in the panel.
 		Ceiling->SetIntensity(60.0f);
 		Ceiling->SetRange(14.0f);
-		Lights.emplace_back(std::move(Ceiling));
-
-		DXASSERT(Lights.size() <= MAX_LIGHTS, "More lights placed in the scene than the constant buffer can hold");
+		AddLight(std::move(Ceiling));
 		return;
 	}
 
@@ -301,7 +299,7 @@ void D3D12Renderer::InitializeSceneLights()
 			Sun->SetShadowBounds({ 0.0f, 0.0f, 1.0f }, 20.f, 20.f);
 		}
 
-		Lights.emplace_back(std::move(Sun));
+		AddLight(std::move(Sun));
 
 		// Bulb sitting in front of the cubes
 		auto Bulb = std::make_unique<PointLight>(TEXT("PointLight1"));
@@ -313,7 +311,7 @@ void D3D12Renderer::InitializeSceneLights()
 		Bulb->SetIntensity(6.0f);
 		Bulb->SetRange(8.0f);
 		Bulb->SetSourceRadius(0.2f);
-		Lights.emplace_back(std::move(Bulb));
+		AddLight(std::move(Bulb));
 
 		// Softbox hanging over the cubes, facing straight down
 		auto Softbox = std::make_unique<AreaLight>(TEXT("AreaLight1"));
@@ -325,9 +323,7 @@ void D3D12Renderer::InitializeSceneLights()
 		// Same inverse square scale, and it sits further from the cubes than the bulb
 		Softbox->SetIntensity(12.0f);
 		Softbox->SetRange(12.0f);
-		Lights.emplace_back(std::move(Softbox));
-
-		DXASSERT(Lights.size() <= MAX_LIGHTS, "More lights placed in the scene than the constant buffer can hold");
+		AddLight(std::move(Softbox));
 	}
 }
 

@@ -85,6 +85,10 @@ struct PSInput
 // needs considerably more amplification than the derivative views do
 #define DEBUG_VELOCITY_SCALE                20.0
 
+// Interpolation shortens a normal by a fraction of a percent on all but the sharpest
+// creases, so the length view needs lifting too
+#define DEBUG_NORMAL_LENGTH_SCALE           10.0
+
 // Derivatives are signed, the albedo target is UNORM and clamps anything negative to
 // black. Remapping around this puts zero at mid grey so the sign stays visible.
 #define DEBUG_SIGNED_BIAS                   0.5

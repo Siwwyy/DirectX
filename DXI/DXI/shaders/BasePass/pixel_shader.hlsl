@@ -21,11 +21,12 @@ SamplerState MaterialSampler : register(s0);
  * The debug views, selected by the DebugMode root constant. Most are derivatives, which work
  * because pixels are shaded in 2x2 quads and ddx/ddy subtract across the quad.
  *
+ * @param RawNormal The interpolated vertex normal, before it is normalized
  * @param Velocity Passed in, so the view shows what the velocity target holds
  * @param DebugColor The colour to show, written only when the return value is true
  * @return True when a view took the pixel, which makes the caller flag it SURFACE_UNLIT
  */
-bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, float2 Velocity, out float3 DebugColor)
+bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, float3 RawNormal, float2 Velocity, out float3 DebugColor)
 {
     DebugColor = float3(0.0, 0.0, 0.0);
 
@@ -92,13 +93,13 @@ bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, flo
         return true;
     }
 
-    case BASE_PASS_DEBUG_NORMAL_DERIVATIVES:
+    case BASE_PASS_DEBUG_NORMAL_LENGTH:
     {
-        // The normal interpolates, but every mesh here still carries a per face normal,
-        // so it is constant inside a triangle and this stays black except on the quads
-        // straddling two triangles, which is exactly where faceting shows up. A mesh
-        // supplying real per vertex normals would show a gradient across the face.
-        DebugColor = saturate(fwidth(Normal));
+        // How far the interpolated normal has drifted off unit length, amplified since the
+        // drift is small. Interpolating two unit vectors across a triangle shortens the
+        // result, most at the midpoint and most of all where the two differ by a wide
+        // angle, so this is black on flat faces and brightest across a curved surface.
+        DebugColor = abs(length(RawNormal) - 1.0) * DEBUG_NORMAL_LENGTH_SCALE;
         return true;
     }
 
@@ -203,7 +204,7 @@ GBufferOutput main(PSInput Input, bool bIsFrontFace : SV_IsFrontFace)
     // A debug view replaces the surface colour and asks LightPass to leave it alone,
     // otherwise the lighting would modulate the very numbers being inspected
     float3 DebugColor;
-    if (GetDerivativeDebugColor(Input.UV, Input.WorldPosition.xyz, Normal, Output.Velocity, DebugColor))
+    if (GetDerivativeDebugColor(Input.UV, Input.WorldPosition.xyz, Normal, Input.Normal, Output.Velocity, DebugColor))
     {
         Output.Albedo = float4(DebugColor, SURFACE_UNLIT);
     }

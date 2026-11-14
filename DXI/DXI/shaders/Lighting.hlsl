@@ -57,12 +57,12 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     {
         // Parallel rays from infinitely far away, nothing to spread out
         Attenuation = 1.0;
-        return -InLight.Direction;
+        return -InLight.Direction.xyz;
     }
 
     // TODO | An area light should integrate over its rectangle, for now its centre is treated
     // as a point light, so Size only widens the falloff instead of softening the shape
-    float3 ToLight      = InLight.Position - PixelWorldPosition;
+    float3 ToLight      = InLight.Position.xyz - PixelWorldPosition;
     float  DistanceSqr  = dot(ToLight, ToLight);
     float  Distance     = sqrt(max(DistanceSqr, 1e-8));
 
@@ -71,7 +71,15 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     if (InLight.Type == LIGHT_TYPE_AREA)
     {
         // Only the front side of the rectangle emits
-        Attenuation *= saturate(dot(InLight.Direction, -ToLight / Distance));
+        Attenuation *= saturate(dot(InLight.Direction.xyz, -ToLight / Distance));
+    }
+    else if (InLight.Type == LIGHT_TYPE_SPOT)
+    {
+        // How far off the cone axis this pixel sits. Full brightness inside the inner
+        // angle, nothing past the outer, and smoothed between the two so the edge of the
+        // cone is not a hard circle. Cosines grow as the angle shrinks, hence the order.
+        float CosAngle  = dot(InLight.Direction.xyz, -ToLight / Distance);
+        Attenuation    *= smoothstep(InLight.SpotCosOuter, InLight.SpotCosInner, CosAngle);
     }
 
     return ToLight / Distance;
@@ -95,7 +103,7 @@ float GetShadowBias(float3 Normal, float3 LightDir, float Scale)
     return max(0.0005, Scale * (1.0 - NdotL));
 }
 
-// Directional and area lights | One depth slice each, so the pixel is projected into the
+// Every type but point | One depth slice each, so the pixel is projected into the
 // light's clip space and compared against what was closest from there.
 // Samples a 3x3 neighbourhood so the edge is not a hard staircase.
 float GetShadowFactor2D(Texture2DArray ShadowDepth,
@@ -122,7 +130,7 @@ float GetShadowFactor2D(Texture2DArray ShadowDepth,
         return 1.0;
     }
 
-    float Bias = GetShadowBias(Normal, -Lights[LightIdx].Direction, 0.0025);
+    float Bias = GetShadowBias(Normal, -Lights[LightIdx].Direction.xyz, 0.0025);
 
     uint Width, Height, Slices;
     ShadowDepth.GetDimensions(Width, Height, Slices);
@@ -157,7 +165,7 @@ float GetShadowFactorCube(TextureCubeArray ShadowDistance,
         return 1.0;
     }
 
-    float3 ToPixel      = WorldPosition - Lights[LightIdx].Position;
+    float3 ToPixel      = WorldPosition - Lights[LightIdx].Position.xyz;
     float  Distance     = length(ToPixel);
     float  Range        = max(Lights[LightIdx].Range, 1e-4);
 

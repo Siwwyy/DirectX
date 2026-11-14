@@ -55,28 +55,38 @@
 #define LIGHT_TYPE_DIRECTIONAL	0
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_AREA			2
+#define LIGHT_TYPE_SPOT			3
+
+// Where the sun sits. D3D12Renderer::AddLight puts the directional light first, so a shader
+// reaches it without searching. A scene can have none, so check Type before using it
+#define SUN_LIGHT_INDEX			0
 
 // A single light of the scene. Per type properties sit alongside the shared ones, tagged with
 // which types read them, because one loop walks a single Lights[] and no #ifdef can know which
 // type a given element is. The float3 and float pairings below each fill one 16 byte row
 // exactly, which is why this needs no padding.
+// w follows the homogeneous rule, so either vector can go through a matrix unchanged: a
+// position carries w 1 and picks up translation, a direction carries w 0 and does not.
+// A directional light has no position, so its Position.w is 0 as well.
 struct Light
 {
-	float3	Position;		// World space position | Point, Area
-	float	Intensity;		// Brightness multiplier
-
-	float3	Direction;		// Direction the light points at | Directional, Area normal
-	float	Range;			// Distance the light reaches | Point
+	float4	Position;		// World space position, w 1 | Point, Area. Directional has none, w 0
+	float4	Direction;		// Direction the light points at, w 0 | Directional, Area normal
 
 	float3	Color;			// Linear colour
 	uint	Type;			// One of LIGHT_TYPE_*
 
-	float2	Size;			// Width and height of the emitting surface | Area
-	int		ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
+	float	Intensity;		// Brightness multiplier
+	float	Range;			// Distance the light reaches | Point
 	float	SourceRadius;	// How big the emitter is | Point, keeps the falloff finite at the centre
+	int		ShadowSlot;		// Slice this light owns in the shadow atlas, NO_SHADOW_CASTER when it does not cast
+
+	float2	Size;			// Width and height of the emitting surface | Area
+	float	SpecularScale;	// Highlight strength of this light, 1 is neutral | all types
+	float	SpotCosInner;	// Cosine of the inner cone half angle, full brightness inside it | Spot
 
 	float3	TypeParams;		// Unused | reserved for whichever type needs it next
-	float	SpecularScale;	// Highlight strength of this light, 1 is neutral | all types
+	float	SpotCosOuter;	// Cosine of the outer cone half angle, nothing past it | Spot
 };
 
 
@@ -135,7 +145,7 @@ struct GBufferOutput
 #define BASE_PASS_DEBUG_UV_DDY				3
 #define BASE_PASS_DEBUG_MIP_LEVEL			4
 #define BASE_PASS_DEBUG_WORLD_DERIVATIVES	5
-#define BASE_PASS_DEBUG_NORMAL_DERIVATIVES	6
+#define BASE_PASS_DEBUG_NORMAL_LENGTH		6
 #define BASE_PASS_DEBUG_VELOCITY			7
 #define BASE_PASS_DEBUG_COUNT				8
 

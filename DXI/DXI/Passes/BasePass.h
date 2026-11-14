@@ -20,7 +20,7 @@ enum class BasePassDebugMode : UINT
 	UVDerivativeDdy		= BASE_PASS_DEBUG_UV_DDY,				// Raw signed ddy(uv), u in red and v in green
 	MipLevel			= BASE_PASS_DEBUG_MIP_LEVEL,			// Texel density, the mip the hardware would pick from it
 	WorldDerivatives	= BASE_PASS_DEBUG_WORLD_DERIVATIVES,	// How fast the world position moves per pixel
-	NormalDerivatives	= BASE_PASS_DEBUG_NORMAL_DERIVATIVES,	// Where the shading normal jumps between quads
+	NormalLength		= BASE_PASS_DEBUG_NORMAL_LENGTH,		// How far the interpolated normal drifts off unit length
 	Velocity			= BASE_PASS_DEBUG_VELOCITY,				// The velocity target, amplified enough to be visible
 
 	Count				= BASE_PASS_DEBUG_COUNT

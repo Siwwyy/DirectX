@@ -9,6 +9,7 @@ const wchar_t* ToString(const LightType Type)
 	case LightType::Directional:	return L"Directional";
 	case LightType::Point:			return L"Point";
 	case LightType::Area:			return L"Area";
+	case LightType::Spot:			return L"Spot";
 	default:						return L"Unknown";
 	}
 }
@@ -21,16 +22,19 @@ LightBase::LightBase(std::wstring Name)
 Light LightBase::MakeBaseConstants() const noexcept
 {
 	Light Constants	= {};
-	Constants.Position			= XMFLOAT3(0.f, 0.f, 0.f);
-	Constants.Intensity			= Intensity;
-	Constants.Direction			= XMFLOAT3(0.f, -1.f, 0.f);
-	Constants.Range				= 0.f;
+
+	// w 0 on both, which is already right for a directional light: it has no position, and
+	// a direction never takes translation. The types that do have one overwrite it with w 1
+	Constants.Position			= XMFLOAT4(0.f, 0.f, 0.f, 0.f);
+	Constants.Direction			= XMFLOAT4(0.f, -1.f, 0.f, 0.f);
 	Constants.Color				= Color;
 	Constants.Type				= static_cast<UINT>(GetLightType());
-	Constants.Size				= XMFLOAT2(0.f, 0.f);
-	Constants.ShadowSlot		= NO_SHADOW_CASTER;		// the renderer fills this once it hands out atlas slices
+	Constants.Intensity			= Intensity;
+	Constants.Range				= 0.f;
 	Constants.SourceRadius		= 0.f;					// only a point light has a size that matters here
-	Constants.TypeParams		= XMFLOAT3(0.f, 0.f, 0.f);
+	Constants.ShadowSlot		= NO_SHADOW_CASTER;		// the renderer fills this once it hands out atlas slices
+	Constants.Size				= XMFLOAT2(0.f, 0.f);
 	Constants.SpecularScale		= SpecularScale;
+	Constants.TypeParams		= XMFLOAT3(0.f, 0.f, 0.f);
 	return Constants;
 }

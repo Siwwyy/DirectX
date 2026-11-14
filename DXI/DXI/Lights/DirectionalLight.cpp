@@ -53,6 +53,6 @@ XMMATRIX DirectionalLight::GetShadowViewProj() const noexcept
 Light DirectionalLight::GetLightConstants() const noexcept
 {
 	Light Constants	= MakeBaseConstants();
-	Constants.Direction			= Direction;
+	Constants.Direction			= XMFLOAT4(Direction.x, Direction.y, Direction.z, 0.f);
 	return Constants;
 }

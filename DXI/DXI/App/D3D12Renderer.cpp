@@ -167,6 +167,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 
 		const auto Ordinal		= std::to_wstring(Lights.size());
 		const auto& ViewPosition	= Camera.GetPosition();
+		const auto& ViewForward		= Camera.GetDirection();
 
 		switch (Request.Type)
 		{
@@ -175,7 +176,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 			auto Spawned = std::make_unique<DirectionalLight>(L"Directional " + Ordinal);
 			Spawned->SetDirection({ -0.5f, -1.0f, 0.5f });
 			Spawned->SetIntensity(0.6f);
-			Lights.emplace_back(std::move(Spawned));
+			AddLight(std::move(Spawned));
 			break;
 		}
 
@@ -185,7 +186,19 @@ void D3D12Renderer::ProcessPendingSpawns()
 			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
 			Spawned->SetDirection({ 0.0f, -1.0f, 0.0f });
 			Spawned->SetIntensity(12.0f);
-			Lights.emplace_back(std::move(Spawned));
+			AddLight(std::move(Spawned));
+			break;
+		}
+
+		case LightType::Spot:
+		{
+			auto Spawned = std::make_unique<SpotLight>(L"Spot " + Ordinal);
+			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
+
+			// Pointed where the camera is looking, so a spawned spot lights what is on screen
+			Spawned->SetDirection({ ViewForward.x, ViewForward.y, ViewForward.z });
+			Spawned->SetIntensity(12.0f);
+			AddLight(std::move(Spawned));
 			break;
 		}
 
@@ -195,7 +208,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
 			Spawned->SetIntensity(6.0f);
 			Spawned->SetSourceRadius(0.2f);
-			Lights.emplace_back(std::move(Spawned));
+			AddLight(std::move(Spawned));
 			break;
 		}
 		}
@@ -308,6 +321,9 @@ XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UIN
 
 	case LightType::Area:
 		return static_cast<const AreaLight&>(Light).GetShadowViewProj();
+
+	case LightType::Spot:
+		return static_cast<const SpotLight&>(Light).GetShadowViewProj();
 
 	default:
 		return XMMatrixIdentity();
@@ -662,6 +678,29 @@ void D3D12Renderer::UploadCameraConstants()
 	XMStoreFloat4x4(&CameraCbv.InvViewProjTranslated,	XMMatrixTranspose(InvViewProjTranslated));
 
 	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CameraCbvStride), &CameraCbv, sizeof(CameraCbv));
+}
+
+void D3D12Renderer::AddLight(std::unique_ptr<LightBase> Light)
+{
+	DXASSERT(Light, "A null light can not be placed in the scene");
+
+	// Only the first directional light becomes the sun. A second one appends like anything
+	// else rather than displacing the slot the shaders already read
+	if (Light->GetLightType() == LightType::Directional && !HasSunLight())
+	{
+		Lights.insert(Lights.begin(), std::move(Light));
+	}
+	else
+	{
+		Lights.emplace_back(std::move(Light));
+	}
+
+	DXASSERT(Lights.size() <= MAX_LIGHTS, "More lights placed in the scene than the constant buffer can hold");
+}
+
+bool D3D12Renderer::HasSunLight() const noexcept
+{
+	return !Lights.empty() && Lights.front()->GetLightType() == LightType::Directional;
 }
 
 void D3D12Renderer::UploadLightConstants()

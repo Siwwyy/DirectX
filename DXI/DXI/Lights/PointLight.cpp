@@ -63,7 +63,7 @@ XMMATRIX PointLight::GetShadowViewProj(const UINT FaceIdx) const noexcept
 Light PointLight::GetLightConstants() const noexcept
 {
 	Light Constants	= MakeBaseConstants();
-	Constants.Position			= Position;
+	Constants.Position			= XMFLOAT4(Position.x, Position.y, Position.z, 1.f);
 	Constants.Range				= Range;
 	Constants.SourceRadius		= SourceRadius;
 	return Constants;

@@ -3,6 +3,7 @@
 
 #include "../Common.hlsl"
 #include "../Lighting.hlsl"
+#include "../Shading.hlsl"
 
 // G-buffer written by BasePass, registers follow the GBUFFER_* order of SharedTypes.h,
 // then depth, the shadow map, and the two sky cubes after them.
@@ -79,9 +80,9 @@ float4 main(FullScreenPSInput Input) : SV_TARGET
     // slice of the shadow atlas
     float3 Direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, Albedo, Normal, WorldPos.xyz, ViewPosition.xyz, Roughness);
 #else
-    // Shading off, so no light reaches the surface. Everything above still runs, which keeps
-    // the G-buffer reads, the background and the debug views exactly as they are
-    float3 Direct       = float3(0.0, 0.0, 0.0);
+    // The replacement in Shading.hlsl, which gets the whole surface rather than the subset
+    // the original reads
+    float3 Direct       = ShadeSurfaceDXI(Albedo, Normal, WorldPos.xyz, ViewPosition.xyz);
 #endif
 
     // No image based lighting while the sky is out. ShadeReflections in Lighting.hlsl is

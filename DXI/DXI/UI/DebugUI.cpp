@@ -5,6 +5,7 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "AreaLight.h"
+#include "SpotLight.h"
 
 #include <string>
 
@@ -293,6 +294,55 @@ void DebugUI::DrawLightProperties(LightBase& Light)
 		break;
 	}
 
+	case LightType::Spot:
+	{
+		auto& Spot = static_cast<SpotLight&>(Light);
+
+		auto Position = Spot.GetPosition();
+		float PositionXyz[3] = { Position.x, Position.y, Position.z };
+		if (ImGui::DragFloat3("Position", PositionXyz, 0.05f))
+		{
+			Spot.SetPosition({ PositionXyz[0], PositionXyz[1], PositionXyz[2] });
+		}
+
+		// Axis the cone points down
+		auto Direction = Spot.GetDirection();
+		float DirectionXyz[3] = { Direction.x, Direction.y, Direction.z };
+		if (ImGui::DragFloat3("Direction", DirectionXyz, 0.01f, -1.f, 1.f))
+		{
+			Spot.SetDirection({ DirectionXyz[0], DirectionXyz[1], DirectionXyz[2] });
+		}
+
+		// Half angles from the axis. Inner is clamped to outer on set, so dragging either
+		// past the other closes the gap instead of inverting the falloff.
+		float Inner = Spot.GetInnerAngle();
+		float Outer = Spot.GetOuterAngle();
+		if (ImGui::DragFloat("Inner angle", &Inner, 0.5f, 0.f, 89.f))
+		{
+			Spot.SetConeAngles(Inner, Outer);
+		}
+		if (ImGui::DragFloat("Outer angle", &Outer, 0.5f, 0.5f, 89.f))
+		{
+			Spot.SetConeAngles(Inner, Outer);
+		}
+
+		// Also the far plane of the shadow view, so moving it changes what is captured
+		float Range = Spot.GetRange();
+		if (ImGui::DragFloat("Range", &Range, 0.1f, 0.01f, 500.f))
+		{
+			Spot.SetRange(Range);
+		}
+
+		float SourceRadius = Spot.GetSourceRadius();
+		if (ImGui::DragFloat("Source radius", &SourceRadius, 0.01f, 0.01f, 10.f))
+		{
+			Spot.SetSourceRadius(SourceRadius);
+		}
+
+		ImGui::TextWrapped("Inverse square falloff like a point light, then faded again between the inner and outer angle, which is what softens the edge of the cone.");
+		break;
+	}
+
 	default:
 		break;
 	}
@@ -423,7 +473,7 @@ void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T Primitive
 
 	ImGui::SeparatorText("Light");
 
-	static const char* LightTypeNames[] = { "Point", "Directional", "Area" };
+	static const char* LightTypeNames[] = { "Point", "Directional", "Area", "Spot" };
 
 	ImGui::Combo("Type", &SpawnLightTypeIdx, LightTypeNames, IM_ARRAYSIZE(LightTypeNames));
 
@@ -437,6 +487,7 @@ void DebugUI::DrawSpawnPanel(const AssetCatalog& Catalog, const SIZE_T Primitive
 		{
 		case 1:		Request.Type = LightType::Directional;	break;
 		case 2:		Request.Type = LightType::Area;			break;
+		case 3:		Request.Type = LightType::Spot;			break;
 		default:	Request.Type = LightType::Point;		break;
 		}
 
@@ -509,7 +560,7 @@ void DebugUI::Draw(Camera& Camera,
 			"ddy(uv) raw, signed",
 			"Mip level (texel density)",
 			"World derivatives (fwidth of position)",
-			"Normal derivatives (fwidth of normal)",
+			"Normal length error (|length - 1|)",
 			"Velocity (uv motion since last frame)"
 		};
 		static_assert(IM_ARRAYSIZE(ModeNames) == static_cast<int>(BasePassDebugMode::Count),
@@ -537,8 +588,8 @@ void DebugUI::Draw(Camera& Camera,
 		case BasePassDebugMode::WorldDerivatives:
 			ImGui::TextWrapped("World units covered by one pixel. Surfaces seen edge on change fastest and light up.");
 			break;
-		case BasePassDebugMode::NormalDerivatives:
-			ImGui::TextWrapped("Every mesh here still carries one normal per face, so this is black inside a triangle and only shows up where two of them meet. A mesh with real per vertex normals would show a gradient.");
+		case BasePassDebugMode::NormalLength:
+			ImGui::TextWrapped("How far the interpolated vertex normal falls short of unit length, before the pixel shader renormalizes it. Interpolating two unit vectors shortens the result, worst midway between them and worst of all across a wide angle, so flat faces are black and curved surfaces light up. Amplified 10x.");
 			break;
 		case BasePassDebugMode::Velocity:
 			ImGui::TextWrapped("Where each pixel was last frame, red for horizontal motion and green for vertical, biased around mid grey so the sign shows. A still camera over a still scene is flat grey, so any colour at all means something moved. Amplified 20x, a uv step is small.");

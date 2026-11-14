@@ -14,9 +14,11 @@
  // Indicates if debug mode is set
 #define DEBUG_MODE _DEBUG || DEBUG
 
-// Set to 0 to switch the lighting off. The pass still runs and its shaders still compile,
-// the light contribution is simply zero, the same way shadows off feeds NO_SHADOW_CASTER
-// and lets the shader resolve it. Reaches the shader as a define of the same name
+// Which lighting the light pass runs. The pass itself is unaffected either way, only the
+// one call inside LightPass/pixel_shader.hlsl changes
+//   1 | ShadeSurface, the original in Lighting.hlsl
+//   0 | ShadeSurfaceDXI, the replacement being written in Shading.hlsl
+// Reaches the shader as a define of the same name
 #define DXI_LIGHT_PASS_SHADING_ENABLED 0
 
 // Safe Release of ComPtr<T>

@@ -28,6 +28,7 @@
 #include "DirectionalLight.h"
 #include "PointLight.h"
 #include "AreaLight.h"
+#include "SpotLight.h"
 
 // Passes
 #include "ShadowPass.h"
@@ -179,6 +180,23 @@ private:
 	 * the command list is open for the vertex and texture uploads a spawn performs.
 	 */
 	void ProcessPendingSpawns();
+
+	/**
+	 * Takes ownership of a light, keeping the sun at index 0.
+	 *
+	 * The position in Lights is the shadow atlas slice and the Lights[] slot the shaders
+	 * read, so the order here is the order everything downstream sees. A directional light
+	 * goes to the front, so a shader reaches the sun as Lights[SUN_LIGHT_INDEX] rather than
+	 * searching for it. Only the first one does, a second appends like any other light.
+	 *
+	 * @param Light Light to place in the scene
+	 */
+	void AddLight(std::unique_ptr<LightBase> Light);
+
+	/**
+	 * @return Whether index 0 holds a directional light, which is what makes it the sun
+	 */
+	_NODISCARD bool HasSunLight() const noexcept;
 
 	// Frame
 	void BeginFrame();

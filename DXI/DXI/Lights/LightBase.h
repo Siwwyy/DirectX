@@ -17,6 +17,7 @@ enum class LightType : UINT
 	Directional	= LIGHT_TYPE_DIRECTIONAL,
 	Point		= LIGHT_TYPE_POINT,
 	Area		= LIGHT_TYPE_AREA,
+	Spot		= LIGHT_TYPE_SPOT,
 
 	Count
 };
