@@ -20,29 +20,6 @@ StructuredBuffer<uint3>         SRV4 : register(t4); // indices per triangle
 // output UAV
 RWStructuredBuffer<float4>      UAV0 : register(u0);
 
-//// thread group size (adjust to your dispatch)
-//// 8, VERTICES_COUNT, 1
-//[numthreads(8, VERTICES_COUNT, 1)]
-//void CSMain(uint3 GroupThreadID : SV_GroupThreadID,
-//            uint3 DispatchThreadID : SV_DispatchThreadID)
-//{
-//    // Indexes
-//    uint2 xy                = DispatchThreadID.xy;
-//    uint flatten_idx        = xy.y * (uint)ScreenSize.x + xy.x;
-//    uint vertex_buffer_idx  = GroupThreadID.y;
-//
-//	// Projection to Clip position
-//    const float4 VertexProjPos  = mul(SRV2[vertex_buffer_idx], ViewProjMatrix);
-//    const float4 Color          = SRV3[vertex_buffer_idx];
-//
-//	// to NDC (Normalized Device Coordinates)
-//	const float4 VertexNDCPos   = VertexProjPos / VertexProjPos.w; // Normalize to NDC
-//
-//    // Output the first SRV to the UAV (for testing)
-//    //UAV0[flatten_idx] = float4(255,0,0,255);
-//    UAV0[flatten_idx] = SRV0[flatten_idx] + uint4(Color.xyzw * 255.0f);
-//}
-
 // helpers
 // edge function: cross(b - a, c - a)
 static float edgeFunction(float2 a, float2 b, float2 c)

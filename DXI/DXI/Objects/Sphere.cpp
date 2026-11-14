@@ -4,18 +4,10 @@ using namespace DirectX;
 
 using TypeOfVertex = VertexPositionUVNormalTangentBitangent;
 
-// The sphere at MIN_DENSITY, written out so the cheapest case costs nothing at runtime,
-// the same way Cube and Plane carry their geometry. Three latitude bands and six longitude
-// segments, which is 24 triangles.
-//
-// Un-welded, one set of three vertices per triangle rather than an indexed grid. The frame
-// solver below writes a face's normal and tangent into each of its vertices by index, so a
-// vertex shared between faces would end up with whichever face came last. Cube and Plane
-// get away with an indexed list because every face there owns its four corners.
-//
-// Generated from the same grid maths Init uses further down, so raising the density past
-// this hands over to that generator and the shape does not change character. Do not hand
-// edit: regenerate if MIN_DENSITY or the radius ever move.
+// The sphere at MIN_DENSITY, written out so the cheapest case costs nothing at runtime. Three
+// latitude bands by six longitude segments, un-welded because the frame solver writes by index
+// and a shared vertex would keep whichever face came last. Generated from the same grid maths
+// Init uses, so do not hand edit: regenerate if MIN_DENSITY or the radius move.
 static VertexPositionUV MinDensityVertexList[] =
 {
     // latitude band 0

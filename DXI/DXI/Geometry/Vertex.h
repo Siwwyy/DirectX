@@ -9,45 +9,22 @@
 // usings
 using TypeOfIndice = DWORD;
 
-/// <summary>
-/// Enumeration of supported vertex attribute types.
-/// Defines the composition of vertex data for different rendering scenarios.
-/// </summary>
+/** Supported vertex layouts, one for each of the Vertex structs below. */
 enum class VertexType : UINT
 {
-	/// Position only vertex (XMFLOAT4)
-	Position,
+	Position,							// XMFLOAT4
+	PositionNormal,						// XMFLOAT4 + XMFLOAT4
+	PositionColor,						// XMFLOAT4 + XMFLOAT4
+	PositionColorNormal,				// XMFLOAT4 + XMFLOAT4 + XMFLOAT4
+	PositionUV,							// XMFLOAT4 + XMFLOAT2
+	PositionUVNormal,					// XMFLOAT4 + XMFLOAT2 + XMFLOAT4
+	PositionUVNormalTangent,			// XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4
+	PositionUVNormalTangentBitangent,	// XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4 + XMFLOAT4
 
-	/// Position with normal vector (XMFLOAT4 + XMFLOAT4)
-	PositionNormal,
-
-	/// Position with color (XMFLOAT4 + XMFLOAT4)
-	PositionColor,
-
-	/// Position with color and normal (XMFLOAT4 + XMFLOAT4 + XMFLOAT4)
-	PositionColorNormal,
-
-	/// Position with texture coordinates (XMFLOAT4 + XMFLOAT2)
-	PositionUV,
-
-	/// Position with texture coordinates and normal (XMFLOAT4 + XMFLOAT2 + XMFLOAT4)
-	PositionUVNormal,
-
-	/// Position with texture coordinates, normal and tangent (XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4)
-	PositionUVNormalTangent,
-
-	/// Position with texture coordinates, normal, tangent and bitangent (XMFLOAT4 + XMFLOAT2 + XMFLOAT4 + XMFLOAT4 + XMFLOAT4)
-	PositionUVNormalTangentBitangent,
-
-	/// Total number of vertex type options
-	VertexTypeCount
+	VertexTypeCount						// Number of layouts, the arrays below are indexed by this
 };
 
-/// <summary>
-/// Vertex layout structure containing only position data.
-/// Matches VertexType::Position.
-/// Total size: 16 bytes (4x FLOAT).
-/// </summary>
+/** Position only, 16 bytes. Matches VertexType::Position. */
 struct VertexPosition
 {
 	constexpr static VertexType VertexTypeValue = VertexType::Position;
@@ -57,31 +34,30 @@ struct VertexPosition
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 } 
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
 
-	/// ctor: position (x,y,z[,pw])
+	/** Position (x,y,z[,pw]). */
 	VertexPosition(float x = 0.0f, float y = 0.0f, float z = 0.0f, float pw = 1.0f) noexcept
 		: Position(x, y, z, pw)
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies the position element from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(DirectX::XMFLOAT4) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPosition) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(DirectX::XMFLOAT4) <= Data.size(), L"Insufficient buffer size for VertexPosition deserialization");
 		std::memcpy(&Position,	&Data[0],	sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPosition));
@@ -90,11 +66,7 @@ struct VertexPosition
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position and normal data.
-/// Matches VertexType::PositionNormal.
-/// Total size: 32 bytes (4x FLOAT + 4x FLOAT).
-/// </summary>
+/** Position and normal, 32 bytes. Matches VertexType::PositionNormal. */
 struct VertexPositionNormal
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionNormal;
@@ -105,13 +77,10 @@ struct VertexPositionNormal
 		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT4 Normal;	// Surface normal, W unused
 
-	/// Surface normal vector (W component unused)
-	DirectX::XMFLOAT4 Normal;
-
-	/// ctor: position (x,y,z[,pw]) and normal (nx,ny,nz[,nw])
+	/** Position (x,y,z[,pw]) and normal (nx,ny,nz[,nw]). */
 	VertexPositionNormal(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 						float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
 						float pw = 1.0f, float nw = 0.0f) noexcept
@@ -120,11 +89,11 @@ struct VertexPositionNormal
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position and normal elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionNormal) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionNormal) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionNormal deserialization");
@@ -132,11 +101,11 @@ struct VertexPositionNormal
 		std::memcpy(&Normal,	&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position and normal data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionNormal));
@@ -146,11 +115,7 @@ struct VertexPositionNormal
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position and color data.
-/// Matches VertexType::PositionColor.
-/// Total size: 32 bytes (4x FLOAT + 4x FLOAT).
-/// </summary>
+/** Position and colour, 32 bytes. Matches VertexType::PositionColor. */
 struct VertexPositionColor
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionColor;
@@ -161,13 +126,10 @@ struct VertexPositionColor
 		{ "COLOR",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT4 Color;	// RGBA colour
 
-	/// RGBA color information
-	DirectX::XMFLOAT4 Color;
-
-	/// ctor: position (x,y,z[,pw]) and color (r,g,b,a)
+	/** Position (x,y,z[,pw]) and colour (r,g,b,a). */
 	VertexPositionColor(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 						float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f,
 						float pw = 1.0f) noexcept
@@ -176,11 +138,11 @@ struct VertexPositionColor
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position and color elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionColor) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionColor) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionColor) <= Data.size(), L"Insufficient buffer size for VertexPositionColor deserialization");
@@ -188,11 +150,11 @@ struct VertexPositionColor
 		std::memcpy(&Color,		&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position and color data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionColor));
@@ -202,11 +164,7 @@ struct VertexPositionColor
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position, color, and normal data.
-/// Matches VertexType::PositionColorNormal.
-/// Total size: 48 bytes (4x FLOAT + 4x FLOAT + 4x FLOAT).
-/// </summary>
+/** Position, colour and normal, 48 bytes. Matches VertexType::PositionColorNormal. */
 struct VertexPositionColorNormal
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionColorNormal;
@@ -218,16 +176,11 @@ struct VertexPositionColorNormal
 		{ "NORMAL",		0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT4 Color;	// RGBA colour
+	DirectX::XMFLOAT4 Normal;	// Surface normal, W unused
 
-	/// RGBA color information
-	DirectX::XMFLOAT4 Color;
-
-	/// Surface normal vector (W component unused)
-	DirectX::XMFLOAT4 Normal;
-
-	/// ctor: position (x,y,z[,pw]), color (r,g,b,a), normal (nx,ny,nz[,nw])
+	/** Position (x,y,z[,pw]), colour (r,g,b,a) and normal (nx,ny,nz[,nw]). */
 	VertexPositionColorNormal(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 								float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f,
 								float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
@@ -238,11 +191,11 @@ struct VertexPositionColorNormal
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position, color and normal elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionColorNormal) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionColorNormal) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionColorNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionColorNormal deserialization");
@@ -251,11 +204,11 @@ struct VertexPositionColorNormal
 		std::memcpy(&Normal,	&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position, color, and normal data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionColorNormal));
@@ -266,11 +219,7 @@ struct VertexPositionColorNormal
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position and texture coordinate data.
-/// Matches VertexType::PositionUV.
-/// Total size: 24 bytes (4x FLOAT + 2x FLOAT).
-/// </summary>
+/** Position and UV, 24 bytes. Matches VertexType::PositionUV. */
 struct VertexPositionUV
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionUV;
@@ -281,13 +230,10 @@ struct VertexPositionUV
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,			0, 16,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT2 UV;		// Texture coordinates
 
-	/// UV texture coordinates
-	DirectX::XMFLOAT2 UV;
-
-	/// ctor: position (x,y,z[,pw]) and UV (u,v)
+	/** Position (x,y,z[,pw]) and UV (u,v). */
 	VertexPositionUV(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 							float u = 0.0f, float v = 0.0f,
 							float pw = 1.0f) noexcept
@@ -296,11 +242,11 @@ struct VertexPositionUV
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position and UV elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionUV) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionUV) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionUV) <= Data.size(), L"Insufficient buffer size for VertexPositionUV deserialization");
@@ -308,11 +254,11 @@ struct VertexPositionUV
 		std::memcpy(&UV,	&Data[sizeof(DirectX::XMFLOAT4)],	sizeof(DirectX::XMFLOAT2));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position and texture coordinate data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionUV));
@@ -322,11 +268,7 @@ struct VertexPositionUV
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position, texture coordinate, and normal data.
-/// Matches VertexType::PositionUVNormal.
-/// Total size: 40 bytes (4x FLOAT + 2x FLOAT + 4x FLOAT).
-/// </summary>
+/** Position, UV and normal, 40 bytes. Matches VertexType::PositionUVNormal. */
 struct VertexPositionUVNormal
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionUVNormal;
@@ -338,16 +280,11 @@ struct VertexPositionUVNormal
 		{ "NORMAL",		0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT2 UV;		// Texture coordinates
+	DirectX::XMFLOAT4 Normal;	// Surface normal, W unused
 
-	/// UV texture coordinates
-	DirectX::XMFLOAT2 UV;
-
-	/// Surface normal vector (W component unused)
-	DirectX::XMFLOAT4 Normal;
-
-	/// ctor: position (x,y,z[,pw]), UV (u,v), normal (nx,ny,nz[,nw])
+	/** Position (x,y,z[,pw]), UV (u,v) and normal (nx,ny,nz[,nw]). */
 	VertexPositionUVNormal(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 								float u = 0.0f, float v = 0.0f,
 								float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
@@ -358,11 +295,11 @@ struct VertexPositionUVNormal
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position, UV and normal elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionUVNormal) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionUVNormal) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionUVNormal) <= Data.size(), L"Insufficient buffer size for VertexPositionUVNormal deserialization");
@@ -371,11 +308,11 @@ struct VertexPositionUVNormal
 		std::memcpy(&Normal,	&Data[sizeof(DirectX::XMFLOAT4) + sizeof(DirectX::XMFLOAT2)],	sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position, texture coordinate, and normal data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionUVNormal));
@@ -386,16 +323,12 @@ struct VertexPositionUVNormal
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position, texture coordinate, normal and tangent data.
-/// Matches VertexType::PositionUVNormalTangent.
-/// Total size: 56 bytes (4x FLOAT + 2x FLOAT + 4x FLOAT + 4x FLOAT).
-///
-/// The tangent is what a tangent space normal map needs: the map stores directions
-/// relative to the surface, and only a basis built on the surface can put them back into
-/// world space. Meshes that are never normal mapped want VertexPositionUVNormal
-/// instead, which is 16 bytes per vertex lighter.
-/// </summary>
+/**
+ * Position, UV, normal and tangent, 56 bytes. Matches VertexType::PositionUVNormalTangent.
+ * The tangent is what a tangent space normal map needs, since the map stores directions
+ * relative to the surface. Meshes that are never normal mapped want VertexPositionUVNormal
+ * instead, which is 16 bytes a vertex lighter.
+ */
 struct VertexPositionUVNormalTangent
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionUVNormalTangent;
@@ -408,21 +341,15 @@ struct VertexPositionUVNormalTangent
 		{ "TANGENT",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;	// 3D position, W is typically 1
+	DirectX::XMFLOAT2 UV;		// Texture coordinates
+	DirectX::XMFLOAT4 Normal;	// Surface normal, W unused
+	DirectX::XMFLOAT4 Tangent;	// Along growing U, W is the sign the bitangent is flipped by
 
-	/// UV texture coordinates
-	DirectX::XMFLOAT2 UV;
-
-	/// Surface normal vector (W component unused)
-	DirectX::XMFLOAT4 Normal;
-
-	/// Surface tangent, pointing along growing U. W carries the handedness, which is the
-	/// sign the bitangent has to be flipped by.
-	DirectX::XMFLOAT4 Tangent;
-
-	/// ctor: position (x,y,z[,pw]), UV (u,v), normal (nx,ny,nz[,nw]).
-	/// The tangent defaults to the x axis, ComputeFaceNormalTangent fills in the real one.
+	/**
+	 * Position (x,y,z[,pw]), UV (u,v) and normal (nx,ny,nz[,nw]). The tangent defaults to
+	 * the x axis, ComputeFaceNormalTangent fills in the real one.
+	 */
 	VertexPositionUVNormalTangent(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 										float u = 0.0f, float v = 0.0f,
 										float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
@@ -434,11 +361,11 @@ struct VertexPositionUVNormalTangent
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position, UV, normal and tangent elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionUVNormalTangent) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized vertex data, at least sizeof(VertexPositionUVNormalTangent) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionUVNormalTangent) <= Data.size(), L"Insufficient buffer size for VertexPositionUVNormalTangent deserialization");
@@ -448,11 +375,11 @@ struct VertexPositionUVNormalTangent
 		std::memcpy(&Tangent,	&Data[(sizeof(DirectX::XMFLOAT4) * 2) + sizeof(DirectX::XMFLOAT2)],					sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position, texture coordinate, normal and tangent data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionUVNormalTangent));
@@ -464,17 +391,12 @@ struct VertexPositionUVNormalTangent
 	}
 };
 
-/// <summary>
-/// Vertex layout structure containing position, texture coordinate, normal, tangent and bitangent data.
-/// Matches VertexType::PositionUVNormalTangentBitangent.
-/// Total size: 72 bytes (4x FLOAT + 2x FLOAT + 4x FLOAT + 4x FLOAT + 4x FLOAT).
-///
-/// Carries the bitangent rather than deriving it. VertexPositionUVNormalTangent
-/// stores only the handedness and leaves the pixel shader to recover the third axis with
-/// a cross product, which is the cheaper option and the usual one. Storing it outright
-/// costs 16 bytes a vertex and is what a mesh wants when its bitangent cannot be
-/// reconstructed, such as one whose UV shell is sheared rather than merely mirrored.
-/// </summary>
+/**
+ * Position, UV, normal, tangent and bitangent, 72 bytes. Matches
+ * VertexType::PositionUVNormalTangentBitangent. Carries the bitangent rather than deriving
+ * it, which costs 16 bytes a vertex over VertexPositionUVNormalTangent and is only worth it
+ * when the bitangent cannot be reconstructed, such as a sheared rather than mirrored UV shell.
+ */
 struct VertexPositionUVNormalTangentBitangent
 {
 	constexpr static VertexType VertexTypeValue = VertexType::PositionUVNormalTangentBitangent;
@@ -488,25 +410,16 @@ struct VertexPositionUVNormalTangentBitangent
 		{ "BINORMAL",	0,		DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 56,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	/// 3D position (W component typically set to 1.0f)
-	DirectX::XMFLOAT4 Position;
+	DirectX::XMFLOAT4 Position;		// 3D position, W is typically 1
+	DirectX::XMFLOAT2 UV;			// Texture coordinates
+	DirectX::XMFLOAT4 Normal;		// Surface normal, W unused
+	DirectX::XMFLOAT4 Tangent;		// Along growing U, W is the handedness as in the layout above
+	DirectX::XMFLOAT4 Bitangent;	// Along growing V, W unused
 
-	/// UV texture coordinates
-	DirectX::XMFLOAT2 UV;
-
-	/// Surface normal vector (W component unused)
-	DirectX::XMFLOAT4 Normal;
-
-	/// Surface tangent, pointing along growing U. W still carries the handedness, so the
-	/// two stay interchangeable with the tangent only layout.
-	DirectX::XMFLOAT4 Tangent;
-
-	/// Surface bitangent, pointing along growing V (W component unused)
-	DirectX::XMFLOAT4 Bitangent;
-
-	/// ctor: position (x,y,z[,pw]), UV (u,v), normal (nx,ny,nz[,nw]).
-	/// Tangent and bitangent default to the x and y axes, ComputeFaceNormalTangent fills
-	/// in the real ones.
+	/**
+	 * Position (x,y,z[,pw]), UV (u,v) and normal (nx,ny,nz[,nw]). Tangent and bitangent
+	 * default to the x and y axes, ComputeFaceNormalTangent fills in the real ones.
+	 */
 	VertexPositionUVNormalTangentBitangent(float x = 0.0f, float y = 0.0f, float z = 0.0f,
 												float u = 0.0f, float v = 0.0f,
 												float nx = 0.0f, float ny = 0.0f, float nz = 1.0f,
@@ -519,11 +432,11 @@ struct VertexPositionUVNormalTangentBitangent
 	{
 	}
 
-	/// <summary>
-	/// Populate this structure from a byte buffer.
-	/// Copies position, UV, normal, tangent and bitangent elements from the provided contiguous byte array into this instance.
-	/// </summary>
-	/// <param name="Data">Vector containing serialized vertex data. Must contain at least sizeof(VertexPositionUVNormalTangentBitangent) bytes.</param>
+	/**
+	 * Populates this structure from a byte buffer.
+	 *
+	 * @param Data Serialized data, at least sizeof(VertexPositionUVNormalTangentBitangent) bytes
+	 */
 	void DeserializeFromBytes(const std::vector<BYTE>& Data)
 	{
 		DXASSERT(sizeof(VertexPositionUVNormalTangentBitangent) <= Data.size(), L"Insufficient buffer size for VertexPositionUVNormalTangentBitangent deserialization");
@@ -534,11 +447,11 @@ struct VertexPositionUVNormalTangentBitangent
 		std::memcpy(&Bitangent,	&Data[(sizeof(DirectX::XMFLOAT4) * 3) + sizeof(DirectX::XMFLOAT2)],					sizeof(DirectX::XMFLOAT4));
 	}
 
-	/// <summary>
-	/// Serializes vertex data to a byte buffer.
-	/// Converts position, texture coordinate, normal, tangent and bitangent data into a byte array for storage or transmission.
-	/// </summary>
-	/// <returns>Vector containing serialized vertex data.</returns>
+	/**
+	 * Serializes this vertex into a byte buffer.
+	 *
+	 * @return Vector holding the serialized vertex data
+	 */
 	std::vector<BYTE> SerializeToBytes() const
 	{
 		std::vector<BYTE> Data(sizeof(VertexPositionUVNormalTangentBitangent));
@@ -557,50 +470,43 @@ static_assert(sizeof(VertexPositionUVNormalTangentBitangent) == 72, "Layout has 
 static_assert(offsetof(VertexPositionUVNormalTangentBitangent, Tangent) == 40, "TANGENT is declared at offset 40");
 static_assert(offsetof(VertexPositionUVNormalTangentBitangent, Bitangent) == 56, "BINORMAL is declared at offset 56");
 
-/// <summary>
-/// Array mapping VertexType enumeration values to their corresponding vertex structure sizes.
-/// Used for memory allocation and validation during vertex buffer operations.
-/// </summary>
+/** Size of each vertex layout, indexed by VertexType. Drives allocation and validation. */
 const uint64_t VertexTypeSizes[] = {
-	sizeof(VertexPosition),									/// VertexType::Position
-	sizeof(VertexPositionNormal),							/// VertexType::PositionNormal
-	sizeof(VertexPositionColor),							/// VertexType::PositionColor
-	sizeof(VertexPositionColorNormal),						/// VertexType::PositionColorNormal
-	sizeof(VertexPositionUV),								/// VertexType::PositionUV
-	sizeof(VertexPositionUVNormal),							/// VertexType::PositionUVNormal
-	sizeof(VertexPositionUVNormalTangent),					/// VertexType::PositionUVNormalTangent
-	sizeof(VertexPositionUVNormalTangentBitangent)			/// VertexType::PositionUVNormalTangentBitangent
+	sizeof(VertexPosition),									// VertexType::Position
+	sizeof(VertexPositionNormal),							// VertexType::PositionNormal
+	sizeof(VertexPositionColor),							// VertexType::PositionColor
+	sizeof(VertexPositionColorNormal),						// VertexType::PositionColorNormal
+	sizeof(VertexPositionUV),								// VertexType::PositionUV
+	sizeof(VertexPositionUVNormal),							// VertexType::PositionUVNormal
+	sizeof(VertexPositionUVNormalTangent),					// VertexType::PositionUVNormalTangent
+	sizeof(VertexPositionUVNormalTangentBitangent)			// VertexType::PositionUVNormalTangentBitangent
 };
 static_assert(_countof(VertexTypeSizes) == static_cast<size_t>(VertexType::VertexTypeCount),
 				"Every VertexType needs its size listed here, the array is indexed by the enum");
 
-/// Whether a vertex layout stores a bitangent of its own, rather than leaving the pixel
-/// shader to recover it from the normal, the tangent and the handedness
+/** Whether a layout stores its own bitangent, rather than leaving the shader to derive it. */
 template<typename T, typename = void>
 struct HasBitangent : std::false_type {};
 
 template<typename T>
 struct HasBitangent<T, std::void_t<decltype(T::Bitangent)>> : std::true_type {};
 
-/// The basis one triangle gives its vertices.
+/** The basis one triangle gives its vertices. */
 struct TriangleFrame
 {
-	DirectX::XMFLOAT4 Normal;		/// Plane of the triangle, w unused
-	DirectX::XMFLOAT4 Tangent;		/// Along growing U, w is the handedness
-	DirectX::XMFLOAT4 Bitangent;	/// Along growing V, w unused
+	DirectX::XMFLOAT4 Normal;		// Plane of the triangle, W unused
+	DirectX::XMFLOAT4 Tangent;		// Along growing U, W is the handedness
+	DirectX::XMFLOAT4 Bitangent;	// Along growing V, W unused
 };
 
-/// <summary>
-/// Solves one triangle for its normal, tangent and bitangent.
-///
-/// The normal is the triangle plane. The tangent is the direction U grows in, found by
-/// solving the two edges against their UV deltas. The bitangent is the same for V, with
-/// only its normal component removed so a sheared UV keeps the angle between the two.
-///
-/// Pulled out of ComputeFaceNormalTangent so the mesh loader, which has no compile time
-/// vertex count to template on, solves triangles exactly the same way the built in
-/// primitives do.
-/// </summary>
+/**
+ * Solves one triangle for its normal, tangent and bitangent. The tangent is the direction U
+ * grows in, found by solving the two edges against their UV deltas, the bitangent the same
+ * for V with its normal component removed so a sheared UV keeps the angle between the two.
+ * Shared with the mesh loader, which has no compile time vertex count to template on.
+ *
+ * @return The basis, with the handedness in Tangent.w
+ */
 _NODISCARD TriangleFrame ComputeTriangleFrame(const DirectX::XMFLOAT3& Position0,
 											const DirectX::XMFLOAT3& Position1,
 											const DirectX::XMFLOAT3& Position2,
@@ -608,22 +514,16 @@ _NODISCARD TriangleFrame ComputeTriangleFrame(const DirectX::XMFLOAT3& Position0
 											const DirectX::XMFLOAT2& UV1,
 											const DirectX::XMFLOAT2& UV2);
 
-/// <summary>
-/// Per face normal, tangent and bitangent for every vertex of a mesh.
-///
-/// The normal is the triangle plane, as ComputeFaceNormal does it. The tangent is the
-/// direction U grows in across that triangle, found by solving the two triangle edges
-/// against their UV deltas. Together with the bitangent they form the basis a tangent
-/// space normal map is expressed in, which is what lets the map be read in world space.
-///
-/// The bitangent is only written for layouts that have somewhere to put it, see
-/// HasBitangent above. The rest carry the handedness in Tangent.w and leave the pixel
-/// shader to finish the basis with a cross product.
-///
-/// Flat faces on purpose. The shaders interpolate the frame, but all three corners of a
-/// triangle are given the same one here, so it comes out constant across the face anyway.
-/// A mesh that wants smooth shading has to supply its own per vertex normals instead.
-/// </summary>
+/**
+ * Per face normal, tangent and bitangent for every vertex of a mesh, the basis a tangent
+ * space normal map is expressed in. The bitangent is only written for layouts with somewhere
+ * to put it, see HasBitangent above. Flat faces on purpose: all three corners of a triangle
+ * are given the same frame, so a mesh wanting smooth shading must supply its own normals.
+ *
+ * @param VertexArray Source vertices, read for position and UV
+ * @param IndicesList Triangle list, three indices per face
+ * @return The vertices with their frames filled in
+ */
 template<typename In, typename Out, size_t N, size_t M>
 std::array<Out, N> ComputeFaceNormalTangent(const In (&VertexArray)[N], const TypeOfIndice (&IndicesList)[M])
 {
@@ -753,35 +653,20 @@ std::array<Out, N> ComputeFaceNormal(const In (&VertexArray)[N], const TypeOfInd
 	return out;
 }
 
-/// A mesh read off disk, in the layout the base pass expects. Shared by every loader, so
-/// the file format a mesh came out of stops mattering past the point it was parsed.
+/**
+ * A mesh read off disk, in the layout the base pass expects. Shared by every loader, so the
+ * format a mesh came out of stops mattering past the point it was parsed.
+ */
 struct LoadedMesh
 {
 	std::vector<VertexPositionUVNormalTangentBitangent>	Vertices;
 	std::vector<TypeOfIndice>									Indices;
 };
 
-/// <summary>
-/// VertexInitData
-/// 
-/// Encapsulates data required to initialize a `Vertex` instance.
-/// This small value-type aggregates:
-/// - `Type` : the `VertexType` identifying the layout/format of the data in `VertexData`.
-/// - `VertexBufferSize` : the number of bytes contained in `VertexData`. When using the convenience
-///   constructor this is automatically synchronized with `VertexData.size()`.
-/// - `VertexData` : an owned contiguous byte buffer containing raw vertex bytes ready to be uploaded
-///   to the GPU.
-/// 
-/// Design notes:
-/// - Copy semantics are intentionally disabled via `DISABLE_COPY`; use move semantics to transfer
-///   ownership of `VertexData` into `Vertex::Init(...)` without copying large buffers.
-/// - The struct is default-constructible so callers can populate members explicitly; when possible,
-///   prefer constructing with a ready buffer and moving it into `VertexInitData`.
-/// 
-/// Example:
-/// `auto init = Vertex::VertexInitData{ VertexType::Position, std::move(myByteBuffer) };`
-/// `vertex.Init(device, cmdList, std::move(init));`
-/// </summary>
+/**
+ * Everything VertexFactory::Init needs: the layout, its input elements, and the vertex and
+ * index buffers. Move only, so a large mesh is handed over rather than copied.
+ */
 template<typename TypeOfVertex = VertexPosition>
 struct VertexInitData
 {
@@ -864,40 +749,30 @@ struct VertexInitData
 	~VertexInitData() = default;
 };
 
-/// <summary>
-/// Vertex descriptor class for managing vertex type information.
-/// Tracks the type of vertex attributes used in rendering operations.
-/// </summary>
+/** Owns the vertex and index buffers of one mesh, along with the layout they were built for. */
 class VertexFactory
 {
 	DISABLE_COPY(VertexFactory)
 
 public:
 
-	/// <summary>
-	/// Default constructor deleted - Vertex type must be specified.
-	/// </summary>
-	VertexFactory() = delete;
+	VertexFactory() = delete;		// The layout has to be given
 
-	/// <summary>
-	/// Constructor that initializes a Vertex with a specific type.
-	/// </summary>
-	/// <param name="Type">The VertexType that defines the vertex attribute composition.</param>
+	/**
+	 * @param Type The layout the vertex data will be in
+	 */
 	VertexFactory(const VertexType Type);
 
-	/// <summary>
-	/// Default destructor.
-	/// </summary>
 	~VertexFactory() = default;
 
-	/// <summary>
-	/// Initializes the vertex with device and command list resources.
-	/// Sets up necessary GPU resources for vertex buffer operations.
-	/// </summary>
-	/// <param name="Device">Pointer to the Direct3D device.</param>
-	/// <param name="CommandList">Pointer to the graphics command list.</param>
-	/// <param name="VertexInitData">Vertex Initial Data, struct to fill and std::move().</param>
-	/// <returns>HRESULT indicating success or failure of initialization.</returns>
+	/**
+	 * Creates the vertex and index buffers and records their upload.
+	 *
+	 * @param Device Device the resources are created on
+	 * @param CommandList List the copies and barriers are recorded into
+	 * @param InitData Buffers to upload, moved in
+	 * @return S_OK, failures throw out of the helpers
+	 */
 	template<typename VertexStructType>
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList, VertexInitData<VertexStructType> InitData)
 	{
@@ -914,36 +789,10 @@ public:
 		return hr;
 	}
 
-	/// <summary>
-	/// GPU-side upload resource (upload heap) that temporarily holds the vertex bytes on the CPU.
-	/// This resource is used as the source for copy/update operations (e.g. UpdateSubresources)
-	/// to transfer vertex data into the GPU-resident default-heap resource. Keep this alive
-	/// until the GPU has finished executing the command list that performed the copy.
-	/// </summary>
-	ComPtr<DXResource>			VertexBufferUpload;
-
-	/// <summary>
-	/// GPU-resident vertex buffer resource (default heap). After uploading data from
-	/// `VertexBufferUpload` this resource is the buffer actually bound for rendering.
-	/// Typically created with D3D12_HEAP_TYPE_DEFAULT and used for GPU reads only.
-	/// </summary>
-	ComPtr<DXResource>			VertexBuffer;
-
-	/// <summary>
-	/// Describes the vertex buffer for the input assembler:
-	/// - BufferLocation: GPU virtual address of the vertex buffer start.
-	/// - SizeInBytes: Total size of the buffer (in bytes).
-	/// - StrideInBytes: Size of a single vertex element (in bytes).
-	/// Populate this view after creating/filling `VertexBuffer` and pass it to
-	/// `IASetVertexBuffers` prior to draw calls.
-	/// </summary>
-	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;
-
-	///// <summary>
-	///// The type of vertex attributes this vertex descriptor represents.
-	///// Determines the layout and composition of vertex data.
-	///// </summary>
-	VertexType Type;
+	ComPtr<DXResource>			VertexBufferUpload;	// Source of the copy, must outlive it
+	ComPtr<DXResource>			VertexBuffer;		// Default heap, the one actually bound
+	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;	// Passed to IASetVertexBuffers
+	VertexType					Type;				// Layout the buffers were built for
 
 	// Index Buffer
 	ComPtr<DXResource>			IndexBufferUpload;

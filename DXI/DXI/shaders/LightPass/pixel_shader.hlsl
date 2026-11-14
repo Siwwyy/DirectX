@@ -26,7 +26,13 @@ SamplerState GBufferSampler     : register(s0);     // point, for the buffers ab
 // as somewhere rather than as a hole in the image.
 static const float3 BACKGROUND_COLOR = float3(0.08, 0.10, 0.14);
 
-// EyePosition and InvViewProj come from CameraConstantBuffer in SharedTypes.h
+// LightPass.cpp passes this in from DXI_LIGHT_PASS_SHADING_ENABLED. Defaulted so the file
+// still compiles on its own, which is how the shaders are checked outside the app
+#ifndef DXI_LIGHT_PASS_SHADING_ENABLED
+    #define DXI_LIGHT_PASS_SHADING_ENABLED 1
+#endif
+
+// ViewPosition and InvViewProj come from CameraConstantBuffer in SharedTypes.h
 
 // Direction this pixel looks at, found by pushing it out to the far plane and back
 // through the view projection
@@ -35,7 +41,7 @@ float3 GetViewRay(float2 UV)
     float2 NDC      = UV * float2(2.0, -2.0) + float2(-1.0, 1.0);
     float4 World    = mul(float4(NDC, 1.0, 1.0), InvViewProj);
 
-    return normalize((World.xyz / World.w) - EyePosition.xyz);
+    return normalize((World.xyz / World.w) - ViewPosition.xyz);
 }
 
 float4 main(FullScreenPSInput Input) : SV_TARGET
@@ -68,9 +74,15 @@ float4 main(FullScreenPSInput Input) : SV_TARGET
     float Roughness     = max(Params.g, 0.04);
     float Occlusion     = Params.b;
 
+#if DXI_LIGHT_PASS_SHADING_ENABLED
     // Direct lighting from the lights placed in the scene, each one occluded by its own
     // slice of the shadow atlas
-    float3 Direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, Albedo, Normal, WorldPos.xyz, EyePosition.xyz, Roughness);
+    float3 Direct       = ShadeSurface(ShadowDepth, ShadowDistance, GBufferSampler, Albedo, Normal, WorldPos.xyz, ViewPosition.xyz, Roughness);
+#else
+    // Shading off, so no light reaches the surface. Everything above still runs, which keeps
+    // the G-buffer reads, the background and the debug views exactly as they are
+    float3 Direct       = float3(0.0, 0.0, 0.0);
+#endif
 
     // No image based lighting while the sky is out. ShadeReflections in Lighting.hlsl is
     // still there and takes its cubes as parameters, so restoring this is a call away.

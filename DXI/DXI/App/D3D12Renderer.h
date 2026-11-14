@@ -166,16 +166,9 @@ private:
 	 */
 	_NODISCARD Material* FindMaterial(const std::wstring& Name) const;
 
-	// Appends an entire glTF file to the scene: one Material per material it declares and
-	// one Model per primitive, placed by the transform given.
-	//
-	// Nothing like the other loaders, which produce one thing each. A glTF file is a scene
-	// rather than an asset, so it arrives already split into pieces and already positioned
-	// relative to itself, and the only transform worth applying is one that moves the whole
-	// thing at once. Every piece therefore gets the same transform.
-	//
-	// Skipped with a log rather than fatal when the file is absent, like Spot: the assets
-	// are downloaded rather than committed.
+	// Appends a whole glTF file: one Material per material, one Model per primitive, every
+	// piece taking the same transform since the file already positions them relative to
+	// each other. Logged and skipped when absent, the assets are downloaded not committed.
 	void LoadGltfScene(const std::wstring& Path,
 						const XMFLOAT3 Translation	= DX_IDENTITY_TRANSLATE3,
 						const XMFLOAT3 Rotation		= DX_IDENTITY_ROTATE3,
@@ -290,7 +283,7 @@ private:
 	// Constant buffers | One region per frame in flight, all of them permanently mapped
 	ComPtr<DXResource>		PrimitiveCBV;					// one PrimitiveConstantBuffer per primitive, per frame
 	UINT8*					PrimitiveCbvAddress	= nullptr;
-	ComPtr<DXResource>		CameraCBV;						// eye position, per frame
+	ComPtr<DXResource>		CameraCBV;						// view position, per frame
 	UINT8*					CameraCbvAddress	= nullptr;
 	ComPtr<DXResource>		LightsCBV;						// every light of the scene, per frame
 	UINT8*					LightsCbvAddress	= nullptr;

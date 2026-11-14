@@ -12,7 +12,7 @@ SamplerState s1 : register(s0);
 
 cbuffer ConstantBufferPerCamera : register(b1)
 {
-    float4 EyePosition;     // World space position of the camera, Camera::GetPosition()
+    float4 ViewPosition;     // World space position of the camera, Camera::GetPosition()
 };
 
 float4 main(PSInput input) : SV_TARGET

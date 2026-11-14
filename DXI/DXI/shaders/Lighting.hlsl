@@ -14,17 +14,11 @@
 
 /**
  * Phong exponent for a given roughness, the usual Blinn-Phong equivalence of 2/alpha^2 - 2
- * with alpha the squared roughness.
+ * with alpha the squared roughness. The neutral roughness of 128 lands near 30, close to the
+ * fixed SHININESS of 32 this replaced.
  *
- * Replaces a fixed SHININESS of 32. The neutral roughness SetDefaults writes, 128 of 255,
- * lands on an exponent of about 30, so an untextured surface shades almost exactly as it
- * did before. How strongly each light shows in the highlight is separate, see
- * Light::SpecularScale.
- *
- * @param Roughness   0 to 1 out of the material's roughness map
- * @return            Clamped to 1 .. 2048. A roughness of 0 runs the exponent to infinity,
- *                    and 1 takes it to zero, where pow() returns 1 and the whole surface
- *                    becomes a highlight
+ * @param Roughness 0 to 1 out of the material's roughness map
+ * @return Clamped to 1 .. 2048, since 0 runs the exponent to infinity and 1 to zero
  */
 float GetSpecularExponent(float Roughness)
 {
@@ -38,16 +32,8 @@ float GetSpecularExponent(float Roughness)
 //  Light maths, part 1 of 3: direction and falloff, per light type.
 // ---------------------------------------------------------------------------------------
 
-// How much of a positional light reaches a point this far away.
-//
-// Light spreads over a sphere, and that sphere's area grows with the square of the
-// distance, so the same energy is spread thinner by exactly 1/d squared. That is the
-// physical falloff, but on its own it has two problems: it runs to infinity at the centre
-// and it never quite reaches zero, so a light could never be bounded by its range.
-//
-// SourceRadius fixes the first. A real emitter has size, and once inside it the intensity
-// stops climbing. The windowing term fixes the second by easing the curve down to exactly
-// nothing at the range, which keeps the cut off invisible while still making it finite.
+// Inverse square falloff, with SourceRadius keeping it finite at the centre and the window
+// easing it to exactly zero at Range so the light can be bounded without a visible cut off.
 float GetDistanceAttenuation(Light InLight, float DistanceSqr)
 {
     // Clamped inverse square
@@ -235,14 +221,14 @@ float3 ShadeReflections(TextureCube Radiance,
                         float3 Albedo,
                         float3 Normal,
                         float3 WorldPosition,
-                        float3 EyePosition,
+                        float3 ViewPosition,
                         float Metalness,
                         float Roughness,
                         float AmbientOcclusion)
 {
     float3 SurfaceNormal    = normalize(Normal);
-    float3 EyeDirection     = normalize(EyePosition - WorldPosition);
-    float  NdotV            = saturate(dot(SurfaceNormal, EyeDirection));
+    float3 ViewDirection     = normalize(ViewPosition - WorldPosition);
+    float  NdotV            = saturate(dot(SurfaceNormal, ViewDirection));
 
     float3 F0               = lerp(float3(DIELECTRIC_F0, DIELECTRIC_F0, DIELECTRIC_F0), Albedo, Metalness);
     float3 Fresnel          = FresnelSchlickRoughness(F0, NdotV, Roughness);
@@ -253,7 +239,7 @@ float3 ShadeReflections(TextureCube Radiance,
     float3 DiffuseIBL       = IrradianceColor * Albedo * DiffuseWeight;
 
     // Specular reflection
-    float3 ReflectDir       = reflect(-EyeDirection, SurfaceNormal);
+    float3 ReflectDir       = reflect(-ViewDirection, SurfaceNormal);
     float  MipLevel         = Roughness * max(RadianceMipCount - 1.0, 0.0);
     float3 RadianceColor    = Radiance.SampleLevel(CubeSampler, ReflectDir, MipLevel).rgb;
     float3 SpecularIBL      = RadianceColor * Fresnel;
@@ -281,11 +267,11 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
                     float3 Albedo,
                     float3 Normal,
                     float3 WorldPosition,
-                    float3 EyePosition,
+                    float3 ViewPosition,
                     float Roughness)
 {
     float3 SurfaceNormal    = normalize(Normal);
-    float3 EyeDirection     = normalize(EyePosition - WorldPosition);
+    float3 ViewDirection     = normalize(ViewPosition - WorldPosition);
 
     // One exponent for the whole surface sample, the lights only scale what it produces
     float SpecularExponent  = GetSpecularExponent(Roughness);
@@ -313,9 +299,9 @@ float3 ShadeSurface(Texture2DArray ShadowDepth,
         float Diff          = max(dot(SurfaceNormal, LightDir), 0.0);
         Diffuse            += Diff * Radiance;
 
-        // Specular | Phong, mirror the light around the normal and compare it against the eye direction
+        // Specular | Phong, mirror the light around the normal and compare it against the view direction
         float3 ReflectDir   = reflect(-LightDir, SurfaceNormal);
-        float Spec          = pow(max(dot(EyeDirection, ReflectDir), 0.0), SpecularExponent);
+        float Spec          = pow(max(dot(ViewDirection, ReflectDir), 0.0), SpecularExponent);
         Specular           += CurrentLight.SpecularScale * Spec * Radiance;
     }
 

@@ -6,26 +6,8 @@
 #include "pch.h"
 #include "DXIHelpers.h"
 
-// PIX markers, so a capture reads as the structure of the frame rather than a flat run of
-// draws. Written as an explicit pair with the work braced in between, which makes the
-// extent of the event obvious at a glance:
-//
-//     DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::BASE_PASS, L"Base Pass | %zu primitives", Count);
-//     {
-//         ...
-//     }
-//     DXI_PIX_END(CommandList);
-//
-// PIX nests by call order, so a Begin inside another Begin is what produces the tree in a
-// capture. Every Begin needs its End on the same path out.
-//
-// The format string is handed to PIX untouched, so the printf style conversions it supports
-// all work. Prefer putting identifying detail in the name: a capture full of events called
-// "Draw" is barely better than no events at all.
-//
-// Compiles to nothing when PIX is unavailable. CMake defines USE_PIX only when it found
-// both the header and the import library, which is also why pix3.h is included here rather
-// than in each pass.
+// PIX markers, written as a Begin/End pair with the work braced in between. They nest by call
+// order, so every Begin needs its End on the same path out. Compiles to nothing without PIX.
 
 #ifdef USE_PIX
 	#include <pix3.h>

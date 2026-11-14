@@ -121,18 +121,9 @@ SimpleSmartPointer<PtrType> make_simple_smart_pointer(const unsigned int size)
 int LoadImageDataFromFile(SimpleSmartPointer<BYTE>& ImageData, D3D12_RESOURCE_DESC& ResourceDescription, LPCWSTR Filename, int& BytesPerRow);
 
 /**
- * Box filters an image down to a full mip chain, entry 0 being the original and each one
- * after it half the size, stopping at 1x1.
- *
- * The texel size comes from the format, it is not always four. A grayscale png decodes to
- * DXGI_FORMAT_R8_UNORM and carries a single byte per texel, which is what the roughness,
- * metalness and occlusion maps are.
- *
- * Averaging works on bytes, so only formats with 8 bit channels can be filtered this way.
- * Anything else comes back as a single mip rather than as garbage.
- *
- * Without these a texture is sampled at full resolution no matter how few pixels it
- * covers, which is what makes a surface shimmer as it moves into the distance.
+ * Box filters an image down to a full mip chain, entry 0 the original, stopping at 1x1.
+ * Texel size comes from the format, not always four: a grayscale png is R8_UNORM. Only
+ * 8 bit channels can be averaged, anything else comes back as a single mip.
  */
 _NODISCARD std::vector<std::vector<BYTE>> GenerateMipChain(const BYTE * Source, const UINT Width, const UINT Height, const UINT RowPitch, const DXGI_FORMAT Format);
 

@@ -111,31 +111,15 @@ std::array<TexNormalVertex, N> CreateFaceNormal123(const TexVertex (&TexVertexAr
 	return out;
 }
 
-// Make sure Constant buffer is aligned to 256 bytes boundary
-// https://www.asawicki.info/news_1726_secrets_of_direct3d_12_resource_alignment
-//struct alignas(256) ConstantBufferPerObject 
-//{
-//	DirectX::XMFLOAT4X4 LocalToWorld;	// Only with translation
-//	DirectX::XMFLOAT4X4 WorldToClip;	// Translation * View * Proj (Clip)
-//};
-//static_assert((sizeof(ConstantBufferPerObject) % 256) == 0, "Constant Buffer size must be aligned to 256-bytes boudary");
-//constexpr auto ConstantBufferPerObjectSize		= sizeof(ConstantBufferPerObject);
-//constexpr auto ConstantBufferPerObjectAlignment = alignof(ConstantBufferPerObject);
-
-// PrimitiveConstantBuffer and CameraConstantBuffer are defined in shaders/SharedTypes.h.
-// Only the size aliases below live here. Mind the field alignment note in that header
-// before adding to or reordering either of them.
-// Two numbers per buffer, and they are not interchangeable. The Size is how many bytes to
-// copy. The Stride is how far apart two views may sit, which D3D12 requires to be a
-// multiple of 256, so it is what every per frame and per object offset must be built from.
+// Structs live in shaders/SharedTypes.h, only the sizes are here. Size is how much to copy,
+// Stride is how far apart two views may sit. Not interchangeable
 constexpr auto PrimitiveConstantBufferSize		= sizeof(PrimitiveConstantBuffer);
 constexpr auto PrimitiveCbvStride				= AlignConstantBufferSize(PrimitiveConstantBufferSize);
 
 constexpr auto CameraConstantBufferSize			= sizeof(CameraConstantBuffer);
 constexpr auto CameraCbvStride					= AlignConstantBufferSize(CameraConstantBufferSize);
 
-// HLSL lays every field on a 16 byte row, so a struct whose size does not divide by 16 puts
-// the one after it in an array on the wrong offset. Pad in SharedTypes.h when this fires.
+// Pad in SharedTypes.h when one of these fires, with scalars rather than an array
 static_assert((PrimitiveConstantBufferSize % 16) == 0, "PrimitiveConstantBuffer needs a size divisible by 16");
 static_assert((CameraConstantBufferSize % 16) == 0,    "CameraConstantBuffer needs a size divisible by 16");
 

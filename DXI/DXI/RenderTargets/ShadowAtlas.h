@@ -7,16 +7,9 @@
 #include "DXIHelpers.h"
 #include "LightBase.h"
 
-// Shadow storage for every light of the scene, kept as texture arrays rather than tiles
-// of one big surface. Slices cost nothing to address and cannot bleed into each other,
-// which a tiled atlas has to guard against at every edge.
-//
-// Two of them, because the two kinds of light ask different questions:
-//   Depth2D   | Directional and area lights render one view, so a depth slice each and
-//               the lookup is a projection plus a depth compare
-//   DistanceCube | A point light shines everywhere, so it renders six faces into a cube
-//               and stores the distance to the light rather than a depth. The lookup is
-//               then a single sample by direction, with no face maths in the shader.
+// Shadow storage, texture arrays rather than tiles so slices cannot bleed into each other.
+// Two of them: a depth slice per directional or area light, and a distance cube per point
+// light, which is sampled by direction and needs no face maths in the shader.
 class ShadowAtlas
 {
 	DISABLE_COPY_MOVE(ShadowAtlas)

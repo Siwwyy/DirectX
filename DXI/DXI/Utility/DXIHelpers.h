@@ -14,17 +14,17 @@
  // Indicates if debug mode is set
 #define DEBUG_MODE _DEBUG || DEBUG
 
+// Set to 0 to switch the lighting off. The pass still runs and its shaders still compile,
+// the light contribution is simply zero, the same way shadows off feeds NO_SHADOW_CASTER
+// and lets the shader resolve it. Reaches the shader as a define of the same name
+#define DXI_LIGHT_PASS_SHADING_ENABLED 0
+
 // Safe Release of ComPtr<T>
 #define SAFE_RELEASE(p) if (p) (p)->Release()
 
 /**
- * Rounds a constant buffer size up to what D3D12 can place a view at.
- *
- * A constant buffer view has to start on a 256 byte boundary and span a multiple of 256,
- * so a struct's own size is not something the GPU can be offset by. The structs in
- * SharedTypes.h are sized to a multiple of 16, which is what HLSL needs for its rows; this
- * is the separate rounding the view needs, and belongs to whoever creates or offsets into
- * the buffer.
+ * Rounds a constant buffer size up to what D3D12 can place a view at. The structs
+ * themselves are sized to a multiple of 16, which is a separate rule for HLSL's rows.
  *
  * @return  SizeInBytes rounded up to the next multiple of 256
  */
@@ -600,7 +600,7 @@ namespace Helpers
     }
 
     // Converts Degrees to Radians
-    // Radians = Degrees × (π/180)
+    // Radians = Degrees � (p/180)
     _NODISCARD constexpr inline float ToRadians(const float Degrees) noexcept
     {
         constexpr float PI = 3.14159265358979323846;
@@ -608,7 +608,7 @@ namespace Helpers
     }
 
     // Converts Radians to Degress
-    // Degrees = Radians × (180/π)
+    // Degrees = Radians � (180/p)
     _NODISCARD constexpr inline float ToDegrees(const float Radians) noexcept
     {
         constexpr float PI = 3.14159265358979323846;

@@ -34,14 +34,14 @@ XMMATRIX DirectionalLight::GetShadowViewProj() const noexcept
 	const auto Target	= XMLoadFloat3(&ShadowTarget);
 
 	// Walk back against the direction to find where the light "sits"
-	const auto Eye		= XMVectorSubtract(Target, XMVectorScale(LightDir, ShadowDistance));
+	const auto ViewPosition		= XMVectorSubtract(Target, XMVectorScale(LightDir, ShadowDistance));
 
 	// Any up vector works as long as it is not parallel to the direction
 	const auto Up		= fabsf(XMVectorGetY(LightDir)) > 0.99f
 							? XMVectorSet(0.f, 0.f, 1.f, 0.f)
 							: XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
-	const auto View		= XMMatrixLookAtLH(Eye, Target, Up);
+	const auto View		= XMMatrixLookAtLH(ViewPosition, Target, Up);
 
 	// Parallel rays, so the shadow camera is orthographic. The far plane has to reach
 	// past the target, otherwise geometry behind it would be clipped out of the map.

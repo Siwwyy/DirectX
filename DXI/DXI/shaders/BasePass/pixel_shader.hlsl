@@ -18,17 +18,12 @@ SamplerState MaterialSampler : register(s0);
 // switching views costs nothing per frame
 
 /**
- * The debug views, selected by the DebugMode root constant.
+ * The debug views, selected by the DebugMode root constant. Most are derivatives, which work
+ * because pixels are shaded in 2x2 quads and ddx/ddy subtract across the quad.
  *
- * Most of them are derivatives. Pixels are always shaded in 2x2 quads, which is what lets
- * ddx and ddy exist: they subtract a value from its neighbour in the quad, giving how fast
- * it changes per pixel on screen, which is what the hardware itself uses to pick a mip.
- *
- * @param Velocity     Already computed by the caller, so the view shows exactly what the
- *                     velocity target holds rather than a second derivation of it
- * @param DebugColor   The colour to show, written only when the return value is true
- * @return             True when a view took over this pixel, in which case the caller
- *                     flags it SURFACE_UNLIT so LightPass leaves the colour alone
+ * @param Velocity Passed in, so the view shows what the velocity target holds
+ * @param DebugColor The colour to show, written only when the return value is true
+ * @return True when a view took the pixel, which makes the caller flag it SURFACE_UNLIT
  */
 bool GetDerivativeDebugColor(float2 UV, float3 WorldPosition, float3 Normal, float2 Velocity, out float3 DebugColor)
 {
@@ -198,7 +193,7 @@ GBufferOutput main(PSInput Input, bool bIsFrontFace : SV_IsFrontFace)
     float2 CurrentUV        = (Input.CurrentClip.xy / Input.CurrentClip.w) * float2(0.5, -0.5) + 0.5;
     float2 PrevUV           = (Input.PrevClip.xy / Input.PrevClip.w) * float2(0.5, -0.5) + 0.5;
 
-    // A vertex behind the eye on either frame has a w of zero or less and the divide is
+    // A vertex behind the camera on either frame has a w of zero or less and the divide is
     // meaningless. It still rasterizes, because the triangle it belongs to was clipped
     // rather than dropped, so the guard is not optional.
     Output.Velocity         = (Input.CurrentClip.w > 0.0 && Input.PrevClip.w > 0.0)

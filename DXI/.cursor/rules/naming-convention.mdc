@@ -28,6 +28,25 @@ to happen first, or that the GPU must be idle, is about the call rather than an 
 Same block in HLSL. Doxygen is not run over the shaders, but one convention is worth more
 than a tool.
 
+# One line, almost always
+
+A comment earns its length. One line is the default everywhere: members, locals, the note
+above a block. Two is occasionally right. A paragraph explaining a concept, a rationale or
+a piece of background is not wanted, however true it is.
+
+Write the fact, not the lesson around it:
+
+```cpp
+// Camera at the origin. Row 3 holds the translation in a row vector convention
+```
+
+Not the four lines saying what "translated" means, why a sky needs it and how floats lose
+precision far from the origin. If a reader needs that, the name and the code will send them
+looking, and a search engine will answer better than a comment can.
+
+Function `/** */` blocks are the exception, see below, and even there the summary is a
+sentence or two rather than an essay.
+
 # A struct member gets one trailing comment, never a paragraph above it
 
 ```cpp

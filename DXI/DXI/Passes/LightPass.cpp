@@ -8,8 +8,11 @@
 LightPass::LightPass()
 {
 	// Shaders compilation
-	DXShaderDefines<1> ShaderDefines;
+	DXShaderDefines<2> ShaderDefines;
 	ShaderDefines.AddDefine({ L"LIGHT_PASS", L"1" });
+
+	// Carries the C++ switch into the shader under the same name, so the two cannot drift
+	ShaderDefines.AddDefine({ L"DXI_LIGHT_PASS_SHADING_ENABLED", DXI_LIGHT_PASS_SHADING_ENABLED ? L"1" : L"0" });
 
 	const DXIPATHS::FilePath VertexShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"vertex_shader.hlsl";
 	const DXIPATHS::FilePath PixelShaderPath = DXIPATHS::GetShaderDir / L"LightPass" / L"pixel_shader.hlsl";
@@ -52,7 +55,7 @@ HRESULT LightPass::Init(DXDevice * Device, DXGraphicsCommandList * CommandList) 
 		// cubes, so binding everything this pass reads is a single call
 		GBufferTableIdx	= Builder.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, GetSrvCount(), ShaderRegister::TableBase, D3D12_SHADER_VISIBILITY_PIXEL);
 
-		// Constant buffers, the lighting needs the eye position and every light of the scene
+		// Constant buffers, the lighting needs the view position and every light of the scene
 		CameraCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerView, D3D12_SHADER_VISIBILITY_PIXEL);
 		LightsCBVIdx	= Builder.AddConstantBufferView(ShaderRegister::PerLights, D3D12_SHADER_VISIBILITY_PIXEL);
 

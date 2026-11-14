@@ -101,6 +101,19 @@ public:
 		return BasePassDebug;
 	}
 
+	/**
+	 * Whether the shadow pass runs at all. Off skips the pass and reports every light as
+	 * casting nothing, so the scene is lit flat.
+	 */
+	_NODISCARD FORCEINLINE bool AreShadowsEnabled() const noexcept
+	{
+		return bShadowsEnabled;
+	}
+	void SetShadowsEnabled(const bool bEnabled) noexcept
+	{
+		bShadowsEnabled = bEnabled;
+	}
+
 private:
 
 	// A single descriptor, ImGui keeps its font atlas there
@@ -139,6 +152,7 @@ private:
 
 	// Surface debug view, off means normal rendering
 	BasePassDebugMode			BasePassDebug = BasePassDebugMode::Off;
+	bool						bShadowsEnabled = false;	// Off for now, -shadows turns it back on at startup
 };
 
 #endif // D3D12_DEBUGUI_H_INCLUDED

@@ -5,16 +5,9 @@
 
 #include "pch.h"
 
-// Which register holds what, for every pass in the engine.
-//
-// Registers are a per root signature namespace, so two passes can both use b1 without
-// colliding. They are still assigned by meaning rather than packed densely, so a reader
-// of any shader knows what a slot holds without going to look. A pass that has no use for
-// a slot leaves it empty, which is why LightPass starts at b1: it draws a fullscreen
-// triangle and has no per object data to put in b0.
-//
-// shaders/ShaderRegisters.hlsl mirrors these for the HLSL side. The two files have to
-// agree, and Verify() below is the one place that says so.
+// Which register holds what. A per root signature namespace, so two passes may both use b1,
+// but they are assigned by meaning rather than packed: LightPass starts at b1 because it has
+// no per object data. shaders/ShaderRegisters.hlsl mirrors these, Verify() below says so.
 namespace ShaderRegister
 {
 	// b | Constant buffers, numbered by how often the contents change

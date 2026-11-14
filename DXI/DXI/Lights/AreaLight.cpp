@@ -32,7 +32,7 @@ void AreaLight::SetRange(const float Range) noexcept
 
 XMMATRIX AreaLight::GetShadowViewProj() const noexcept
 {
-	const auto Eye		= XMLoadFloat3(&Position);
+	const auto ViewPosition		= XMLoadFloat3(&Position);
 	const auto Forward	= XMVector3Normalize(XMLoadFloat3(&Direction));
 
 	// Any up vector works as long as it is not parallel to the normal
@@ -40,7 +40,7 @@ XMMATRIX AreaLight::GetShadowViewProj() const noexcept
 							? XMVectorSet(0.f, 0.f, 1.f, 0.f)
 							: XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
-	const auto View		= XMMatrixLookToLH(Eye, Forward, Up);
+	const auto View		= XMMatrixLookToLH(ViewPosition, Forward, Up);
 
 	// Wide enough to cover what the rectangle can plausibly light. A narrower cone would
 	// give sharper shadows but clip anything off to the side.

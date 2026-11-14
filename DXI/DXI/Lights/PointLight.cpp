@@ -28,7 +28,7 @@ XMMATRIX PointLight::GetShadowViewProj(const UINT FaceIdx) const noexcept
 {
 	DXASSERT(FaceIdx < 6, "A cube has six faces, the index has to be one of them");
 
-	const auto Eye = XMLoadFloat3(&Position);
+	const auto ViewPosition = XMLoadFloat3(&Position);
 
 	// Where each cube face looks, and which way is up for it. Same order the cube
 	// sampler expects, so a direction lookup lands on the face that rendered it.
@@ -52,7 +52,7 @@ XMMATRIX PointLight::GetShadowViewProj(const UINT FaceIdx) const noexcept
 		{  0.f,  1.f,  0.f, 0.f }
 	};
 
-	const auto View = XMMatrixLookToLH(Eye, FaceDirections[FaceIdx], FaceUps[FaceIdx]);
+	const auto View = XMMatrixLookToLH(ViewPosition, FaceDirections[FaceIdx], FaceUps[FaceIdx]);
 
 	// 90 degrees horizontally and vertically is what makes six faces meet exactly
 	const auto Proj = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, GetShadowNearPlane(), Range);

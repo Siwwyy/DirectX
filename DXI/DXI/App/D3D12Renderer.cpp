@@ -60,6 +60,10 @@ void D3D12Renderer::Initialize()
 	// Debug panel. It uploads a font atlas of its own, so it goes in before the flush.
 	SceneDebugUI.Init(Device, Win32Proc::GetHwnd(), DXISwapChain::GetFormat(), BACK_BUFFER_COUNT);
 
+	// Shadows are off unless asked for. The panel owns the switch so it can be flipped
+	// while running; this only decides what it starts as.
+	SceneDebugUI.SetShadowsEnabled(DXICMD::HasFlag(L"shadows"));
+
 	// Push the vertex, index and texture uploads to the GPU and wait them out
 	FrameContext.Flush(Device, CurrentFrameIdx);
 
@@ -137,11 +141,11 @@ void D3D12Renderer::ProcessPendingSpawns()
 
 		// Dropped in front of the camera rather than at the origin, where it would be
 		// inside the ground plane and easy to miss
-		const auto& EyePosition	= Camera.GetPosition();
+		const auto& ViewPosition	= Camera.GetPosition();
 		const auto& Forward		= Camera.GetDirection();
-		Spawned->SetTransform({ EyePosition.x + (Forward.x * 5.f),
-								EyePosition.y + (Forward.y * 5.f),
-								EyePosition.z + (Forward.z * 5.f) },
+		Spawned->SetTransform({ ViewPosition.x + (Forward.x * 5.f),
+								ViewPosition.y + (Forward.y * 5.f),
+								ViewPosition.z + (Forward.z * 5.f) },
 								DX_IDENTITY_ROTATE3,
 								DX_IDENTITY_SCALE3);
 
@@ -162,7 +166,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 		}
 
 		const auto Ordinal		= std::to_wstring(Lights.size());
-		const auto& EyePosition	= Camera.GetPosition();
+		const auto& ViewPosition	= Camera.GetPosition();
 
 		switch (Request.Type)
 		{
@@ -178,7 +182,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 		case LightType::Area:
 		{
 			auto Spawned = std::make_unique<AreaLight>(L"Area " + Ordinal);
-			Spawned->SetPosition({ EyePosition.x, EyePosition.y, EyePosition.z });
+			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
 			Spawned->SetDirection({ 0.0f, -1.0f, 0.0f });
 			Spawned->SetIntensity(12.0f);
 			Lights.emplace_back(std::move(Spawned));
@@ -188,7 +192,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 		default:
 		{
 			auto Spawned = std::make_unique<PointLight>(L"Point " + Ordinal);
-			Spawned->SetPosition({ EyePosition.x, EyePosition.y, EyePosition.z });
+			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
 			Spawned->SetIntensity(6.0f);
 			Spawned->SetSourceRadius(0.2f);
 			Lights.emplace_back(std::move(Spawned));
@@ -370,7 +374,12 @@ void D3D12Renderer::Render()
 	// which is the quiet kind of wrong: the scene still renders, it just never moves.
 	VelocityPass();
 
-	RenderShadowPass();
+	// Half of it. UploadLightConstants hands out NO_SHADOW_CASTER so nothing reads the atlas
+	if (SceneDebugUI.AreShadowsEnabled())
+	{
+		RenderShadowPass();
+	}
+
 	RenderBasePass();
 	RenderLightPass();
 	RenderDebugUI();
@@ -558,7 +567,14 @@ void D3D12Renderer::RenderLightPass()
 	// to be flipped to a readable state before this pass samples the same memory.
 	SceneGBuffer.TransitionToShaderResource(CommandList);
 	DepthBuffer.TransitionToShaderResource(CommandList);
-	SceneShadowAtlas.TransitionToShaderResource(CommandList);
+
+	// Only when the pass ran. ShadowAtlas names its before state outright instead of
+	// tracking it, so this barrier would claim DEPTH_WRITE on a target that never left
+	// PIXEL_SHADER_RESOURCE
+	if (SceneDebugUI.AreShadowsEnabled())
+	{
+		SceneShadowAtlas.TransitionToShaderResource(CommandList);
+	}
 
 	// No depth here, the G-buffer already resolved which surface is visible
 	const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
@@ -612,12 +628,38 @@ void D3D12Renderer::UploadCameraConstants()
 	DXASSERT(CameraCbvAddress, "Camera constant buffer must be mapped before uploading into it");
 
 	CameraConstantBuffer CameraCbv	= {};
-	CameraCbv.EyePosition			= Camera.GetPosition();
+	CameraCbv.ViewPosition			= Camera.GetPosition();
 
-	// Undoing the view projection is what lets the sky turn a screen pixel back into a
-	// world direction, transposed like every other matrix that goes to the GPU
-	const auto ViewProj = Camera.GetViewMatrix() * Camera.GetProjMatrix();
-	XMStoreFloat4x4(&CameraCbv.InvViewProj, XMMatrixTranspose(XMMatrixInverse(nullptr, ViewProj)));
+	const auto& Pos					= CameraCbv.ViewPosition;
+	CameraCbv.PreViewTranslation	= { -Pos.x, -Pos.y, -Pos.z, 0.f };
+
+	const auto View			= Camera.GetViewMatrix();
+	const auto Proj			= Camera.GetProjMatrix();
+	const auto ViewProj		= View * Proj;
+
+	// Pre translating keeps float precision where it is needed. A world position far from the
+	// origin spends its mantissa on magnitude, and the view transform then subtracts that large
+	// part away again, leaving the precision it cost behind as vertex jitter. Camera relative
+	// positions stay small, so the precision lands near the camera where it shows.
+	//
+	// World -> TranslatedWorld adds PreViewTranslation, which leaves TranslatedWorld -> View as
+	// rotation only. Lifted from the view matrix as FViewMatrices does, rather than multiplied
+	// back out of it: the two translations cancel on paper, but in float they leave a residue
+	// that grows with distance, 16 mm at 1000 km, which is the error the translation exists to
+	// avoid in the first place.
+	XMMATRIX ViewTranslated			= View;
+	ViewTranslated.r[3]				= g_XMIdentityR3;
+	const auto ViewProjTranslated	= ViewTranslated * Proj;
+
+	// Rotation only, so the inverse is the transpose, and composing the two beats inverting
+	// their product. FViewMatrices builds InvTranslatedViewProjectionMatrix the same way
+	const auto InvViewProjTranslated = XMMatrixInverse(nullptr, Proj) * XMMatrixTranspose(ViewTranslated);
+
+	// Transposed on the way out, like every other matrix the GPU reads
+	XMStoreFloat4x4(&CameraCbv.ViewProj,				XMMatrixTranspose(ViewProj));
+	XMStoreFloat4x4(&CameraCbv.InvViewProj,				XMMatrixTranspose(XMMatrixInverse(nullptr, ViewProj)));
+	XMStoreFloat4x4(&CameraCbv.ViewProjTranslated,		XMMatrixTranspose(ViewProjTranslated));
+	XMStoreFloat4x4(&CameraCbv.InvViewProjTranslated,	XMMatrixTranspose(InvViewProjTranslated));
 
 	memcpy(CameraCbvAddress + (SIZE_T(CurrentFrameIdx) * CameraCbvStride), &CameraCbv, sizeof(CameraCbv));
 }
@@ -637,9 +679,11 @@ void D3D12Renderer::UploadLightConstants()
 		// Get light constants i.e., per light pos, etc.
 		LightsCbv.Lights[LightIdx] = SceneLight.GetLightConstants();
 
-		// Every light casts, and the atlas has a slice per light of either kind, so the
-		// light's own index is its slot. No allocator needed.
-		LightsCbv.Lights[LightIdx].ShadowSlot = static_cast<INT>(LightIdx);
+		// One slice per light, so the index is the slot. NO_SHADOW_CASTER already means
+		// fully lit to GetShadowFactor, so shadows off needs no switch in the shaders
+		LightsCbv.Lights[LightIdx].ShadowSlot = SceneDebugUI.AreShadowsEnabled()
+													? static_cast<INT>(LightIdx)
+													: NO_SHADOW_CASTER;
 
 		// Only the single view kinds need a matrix here. A point light is looked up by
 		// direction, so its six face matrices never leave the shadow pass.

@@ -488,6 +488,15 @@ void DebugUI::Draw(Camera& Camera,
 		ImGui::Text("ImGui    %.1f fps  (%.3f ms/frame)", IO.Framerate, IO.Framerate > 0.f ? 1000.f / IO.Framerate : 0.f);
 	}
 
+	// Shadows. Off skips the whole pass and tells every light it casts nothing, so this is
+	// both a visual switch and the cheapest thing in the frame to turn off.
+	if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Shadows", &bShadowsEnabled);
+		ImGui::SameLine();
+		ImGui::TextDisabled(bShadowsEnabled ? "(pass runs)" : "(pass skipped)");
+	}
+
 	// Surface debug views. BasePass writes these into the albedo target instead of the
 	// material colour, and flags them so LightPass passes them through unshaded.
 	if (ImGui::CollapsingHeader("Base Pass Derivatives", ImGuiTreeNodeFlags_DefaultOpen))

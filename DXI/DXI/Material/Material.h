@@ -131,16 +131,8 @@ public:
 	_NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptorTable() const;
 
 	/**
-	 * Drops the staging copies of the textures.
-	 *
-	 * A texture is uploaded by writing it into an upload heap and copying from there into
-	 * the default heap the shader reads, and the upload heap has to outlive the copy, which
-	 * is why it is held at all. Once the command list carrying that copy has been waited
-	 * on, it is dead weight: an exact duplicate of every texture, sitting in system memory
-	 * for as long as the material does.
-	 *
-	 * Six cubes never made that worth noticing. A scene arriving with twenty five materials
-	 * of 1k maps does: the duplicates come to a few hundred megabytes.
+	 * Drops the staging copies of the textures, a duplicate of every texture that is dead
+	 * weight once the copy has been waited on. A few hundred megabytes at Sponza's scale.
 	 *
 	 * Only safe after the GPU has finished the copies, so call it past a flush.
 	 */

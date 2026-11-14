@@ -3,26 +3,17 @@
 #ifndef DXI_SHARED_TYPES_H_INCLUDED
 #define DXI_SHARED_TYPES_H_INCLUDED
 
-// Definitions the CPU and the shaders both need, written once.
+// Definitions the CPU and the shaders both need, written once. Included by Common.hlsl, which
+// sits beside it because DXC resolves includes relative to the including file, and by the C++
+// headers that build the matching data. Written in HLSL spelling, C++ does the adapting.
 //
-// Included by shaders/Common.hlsl, which every pass shader already includes, and by the
-// C++ headers that build the matching data. DXC resolves includes relative to the file
-// doing the including, which is why this sits beside Common.hlsl rather than in Utility.
-//
-// Written in HLSL spelling; the C++ branch below translates the type names. That way the
-// definitions read as what the GPU sees and C++ is the one doing the adapting.
-//
-// WHAT THIS DOES NOT FIX
-// Sharing a definition removes transcription mistakes, not layout mistakes. HLSL packs
-// into 16 byte rows and will not straddle a vector across a row boundary; C++ packs
-// tightly. The same text can therefore still mean two different layouts, so mind the note
-// above the constant buffers below when adding or reordering a field.
+// This removes transcription mistakes, not layout mistakes, so mind the note above the
+// constant buffers below when adding or reordering a field.
 //
 // KEEP OUT OF HERE
 //   bool        | four bytes in HLSL, one in C++, no macro saves this. Use uint.
 //   enum class  | no HLSL equivalent. Numbers go here, the C++ enum derives from them.
-//   matrices    | shareable, but HLSL cbuffers are column major and the upload transposes,
-//                 which this does not change.
+//   matrices    | shareable, but HLSL cbuffers are column major and the upload transposes.
 
 #ifdef __cplusplus
 
@@ -37,22 +28,13 @@
 	#define float4x4	DirectX::XMFLOAT4X4
 	#define uint		uint32_t
 
-	// A constant buffer is a plain struct on this side. Reg is deliberately unused: the
-	// register token only means something to HLSL, and a macro parameter that never
-	// appears in the replacement is not expanded, so CB_PER_* being undefined here is fine.
-	//
-	// No alignas. The 256 these used to carry is a property of the view, not of the type:
-	// D3D12 wants a constant buffer view to start on a 256 byte boundary, which is the
-	// caller's business when it offsets into a buffer, not something a struct can promise.
-	// What the struct does owe is a size divisible by 16, so every member lands on the row
-	// HLSL expects. AlignConstantBufferSize in DXIHelpers.h does the 256 rounding.
+	// A plain struct here. No alignas: 256 belongs to the view, see AlignConstantBufferSize
 	#define CBUFFER_BEGIN(Name, Reg)	struct Name {
 	#define CBUFFER_END					};
 
 #else
 
-	// In HLSL the fields become globals bound to a register, and the API guarantees the
-	// placement, so there is nothing to annotate on this side either.
+	// Fields become globals bound to a register, the API handles the placement
 	#define CBUFFER_BEGIN(Name, Reg)	cbuffer Name : register(Reg) {
 	#define CBUFFER_END					};
 
@@ -74,21 +56,10 @@
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_AREA			2
 
-// A single light of the scene.
-//
-// Per type properties live here alongside the shared ones, tagged in the comment with which
-// types read them. That is the only way a single array can carry them: every light sits in
-// the same Lights[] and one shader loop walks the lot, so there is no compile time point at
-// which "this one is a point light" is known. #ifdef cannot help, it resolves once for the
-// whole shader. The cost of a field no type reads is four bytes per light.
-//
-// If per type data ever outgrows that, the next step is a pass per type, compiled once each
-// with its own light struct and blended additively, which is where a real #ifdef would live.
-//
-// Laid out so no vector straddles a 16 byte row, which is what HLSL requires. The float3
-// and float pairings below are deliberate: each fills exactly one row, which is why this
-// needs no padding members. A float3 after a float would not, it would be pushed to the
-// next row and silently disagree with the C++ side.
+// A single light of the scene. Per type properties sit alongside the shared ones, tagged with
+// which types read them, because one loop walks a single Lights[] and no #ifdef can know which
+// type a given element is. The float3 and float pairings below each fill one 16 byte row
+// exactly, which is why this needs no padding.
 struct Light
 {
 	float3	Position;		// World space position | Point, Area
@@ -173,39 +144,25 @@ struct GBufferOutput
 //  Constant buffers
 //
 //  C++ always gets every struct. HLSL only gets the ones its pass actually binds, which is
-//  not tidiness: b1 carries a different buffer in each pass, so declaring all of them at
-//  once would put two cbuffers on one register. The guards mirror the root signatures.
-//
-//  Field names must also stay unique within a pass, because an HLSL cbuffer puts its
-//  fields in global scope rather than behind the buffer name.
+//  b1 carries a different buffer in each pass, so declaring all of them at once would put two
+//  cbuffers on one register. Field names must be unique within a pass, an HLSL cbuffer puts
+//  its fields in global scope.
 //
 //  ADDING OR EDITING A BUFFER | start every vector on a 16 byte boundary
 //
-//  HLSL lays fields into 16 byte rows and will push a vector to the next row rather than
-//  let it cross a boundary. C++ packs tightly and never does. So the same field order can
-//  silently mean two different layouts, and the CPU then writes where the GPU is not
-//  reading. Scalars are exempt and may sit at any offset.
+//  HLSL lays fields into 16 byte rows and pushes a vector to the next row rather than let it
+//  cross a boundary. C++ packs tightly and never does, so one field order can mean two
+//  layouts and nothing diagnoses it. Scalars are exempt and may sit at any offset.
 //
 //      float2  A;      // HLSL 0    C++ 0
-//      float3  B;      // HLSL 16   C++ 8     <-- eight bytes adrift, no diagnostic
+//      float3  B;      // HLSL 16   C++ 8     <-- eight bytes adrift
 //
-//  Two ways to keep them in step, in order of preference:
-//
-//    1. Pair a float3 with a scalar, or a float2 with two scalars, so each group fills a
-//       row exactly. Light below does this four times over and needs no padding at all.
-//    2. Where the order cannot change, add an explicit padding member so C++ leaves the
-//       same gap HLSL would:
-//
-//           float2  A;
-//           float   _PadA[2];   // HLSL skips these bytes, C++ has to be told to
-//           float3  B;
-//
-//  A matrix always starts a row, so three matrices back to back are safe on their own.
-//  An alignment on the struct does not help here either: it only sets the start address
-//  and the total size, never the offsets in between. That is why these carry none.
-//
-//  The size of the whole struct does have to divide by 16, so the member after it in an
-//  array lands on a row too. Pad explicitly when the members do not add up.
+//  Pair a float3 with a scalar, or a float2 with two scalars, so each group fills a row
+//  exactly; Light above does this four times and needs no padding. Where the order cannot
+//  change, add an explicit padding member so C++ leaves the gap HLSL would. A matrix always
+//  starts a row. alignas does not help, it sets the start address and the total size but
+//  never the offsets in between. The struct size must still divide by 16, so that the next
+//  element of an array lands on a row too.
 // ---------------------------------------------------------------------------------------
 
 // b0 | Per object. Rebound per draw, by both the base pass and every shadow view.
@@ -221,8 +178,12 @@ CBUFFER_END
 // b1 | Per view, light pass flavour. What the shading needs to know about the camera.
 #if defined(__cplusplus) || defined(LIGHT_PASS)
 CBUFFER_BEGIN(CameraConstantBuffer, CB_PER_VIEW)
-	float4   EyePosition;			// World space position of the camera
-	float4x4 InvViewProj;			// Clip space back to world
+	float4   ViewPosition;			// World space position of the camera
+	float4   PreViewTranslation;	// -ViewPosition, add to a world position to translate it
+	float4x4 ViewProj;				// World to clip
+	float4x4 InvViewProj;			// Clip to world
+	float4x4 ViewProjTranslated;	// Translated world to clip, as Unreal's TranslatedViewProjectionMatrix
+	float4x4 InvViewProjTranslated;	// Clip to translated world, which is world plus PreViewTranslation
 CBUFFER_END
 #endif
 
@@ -237,10 +198,7 @@ CBUFFER_END
 #endif
 
 // b1 | Per view, base pass flavour. A single value, so it rides in the root signature.
-//
-// Root constants, so the divisible by 16 rule does not apply and padding it would be wrong:
-// the size has to match the Num32BitValues the root signature declares, which is 1 here and
-// ShadowViewConstantCount above. Only a buffer the API places a view into needs the 16.
+// Root constants, so no 16 byte rule: the size has to match the declared Num32BitValues.
 #if defined(__cplusplus) || defined(BASE_PASS)
 CBUFFER_BEGIN(BasePassDebugConstants, CB_PER_VIEW)
 	uint DebugMode;					// One of BASE_PASS_DEBUG_*

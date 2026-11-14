@@ -1,19 +1,8 @@
 //Copyright, Damian Andrysiak 2026, All Rights Reserved.
 
-// What the scene is made of, split out of D3D12Renderer.cpp.
-//
-// Everything here answers "what is in the world and what does it look like": which scene
-// the command line asked for, the three scenes themselves, the lights they are lit by, and
-// the factories that turn a folder of maps, a glTF file or a flat colour into a Material.
-// D3D12Renderer.cpp keeps the part that answers "what happens each frame".
-//
-// The split is for reading rather than for building. These are still D3D12Renderer members
-// and still touch its state directly, so nothing is encapsulated that was not before; the
-// file simply stopped being long enough to get lost in.
-//
-// ProcessPendingSpawns deliberately stayed behind. It builds primitives much as the scenes
-// below do, but it runs once a frame rather than once at startup, so it reads better next
-// to the frame it belongs to.
+// What the scene is made of: the scenes themselves, their lights, and the material
+// factories. D3D12Renderer.cpp keeps what happens each frame, ProcessPendingSpawns included.
+// Still D3D12Renderer members, split for reading rather than encapsulation.
 
 #include "D3D12Renderer.h"
 
@@ -169,18 +158,8 @@ void D3D12Renderer::InitializeCornellBoxScene()
 {
 	auto * const CommandList = FrameContext.GetCommandList();
 
-	// The Cornell Box, to the measurements published at
-	// https://www.graphics.cornell.edu/online/box/data.html
-	//
-	// A physically measured room, which is the point of it: the geometry and the surface
-	// reflectances are known, so a render can be held against a photograph rather than
-	// against an opinion. Five walls, two blocks, one light in the ceiling.
-	//
-	// Two deliberate departures from the published data. Cornell's units are roughly
-	// millimetres, 552.8 across, which would dwarf everything else this engine draws, so
-	// everything here is divided by 100 and recentred on the origin with the floor at y = 0.
-	// And the room is mirrored on X, because Cornell's figures are right handed and ours
-	// are not; without it the red and green walls come out swapped.
+	// The Cornell Box, measurements from graphics.cornell.edu/online/box/data.html. Divided
+	// by 100, floor at y = 0, mirrored on X or the red and green walls come out swapped.
 	constexpr float HalfWidth	= 2.764f;	// 552.8 / 2
 	constexpr float Height		= 5.488f;	// 548.8
 	constexpr float HalfDepth	= 2.796f;	// 559.2 / 2

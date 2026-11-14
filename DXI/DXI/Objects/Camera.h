@@ -66,7 +66,7 @@ public:
 	}
 	_NODISCARD inline const auto& GetPosition() const
 	{
-		return CameraMatrices.Position;										// World space position (eye)
+		return CameraMatrices.Position;										// World space position (the view position)
 	}
 	_NODISCARD inline auto GetYaw() const noexcept
 	{

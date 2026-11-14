@@ -179,18 +179,10 @@ namespace
 		}
 	}
 
-	// Forces the normal and the tangent to be unit length and perpendicular.
-	//
-	// Runs over every mesh, not only the ones whose tangents were generated. A file is
-	// entitled to supply a tangent that is a degree or two off its normal, and exporters
-	// routinely do, which leaves the basis very slightly sheared. Sampling a normal map
-	// through a sheared basis tilts the result, and the error moves as the surface curves,
-	// which is exactly the kind of fault that shows up as a smear in a reflection and is
-	// almost impossible to place later. Sponza arrives with 219 such vertices.
-	//
-	// Gram-Schmidt: drop whatever part of the tangent points along the normal, and keep
-	// what is left. The direction the tangent was mostly pointing is preserved, which is
-	// what matters, since the uv shell is what chose it.
+	// Gram-Schmidt the normal and tangent to unit length and perpendicular. Runs over every
+	// mesh, not only generated tangents: exporters routinely emit a tangent a degree or two
+	// off its normal, which shears the basis and tilts every normal map read. Sponza arrives
+	// with 219 such vertices.
 	void OrthonormalizeFrames(LoadedMesh& Mesh)
 	{
 		for (TypeOfVertex& Vertex : Mesh.Vertices)
