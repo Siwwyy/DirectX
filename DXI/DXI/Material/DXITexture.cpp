@@ -101,6 +101,25 @@ std::vector<std::vector<BYTE>> GenerateMipChain(const BYTE * Source, const UINT 
 	UINT MipWidth	= Width;
 	UINT MipHeight	= Height;
 
+	// Each mip is half the size of the one above it, made by averaging 2x2 blocks of texels
+	// (a box filter). For destination texel (X, Y) the four source texels are:
+	//
+	//   (2X,     2Y)      top left      Src00
+	//   (2X + 1, 2Y)      top right     Src10
+	//   (2X,     2Y + 1)  bottom left   Src01
+	//   (2X + 1, 2Y + 1)  bottom right  Src11
+	//
+	// Each offset is row * pitch + column * texel size, since the image is one flat byte array.
+	// A dimension already at 1 pixel uses index 0 for both of its texels, so the same texel is
+	// counted twice. That gives the same average as the real pair would, instead of reading
+	// past the end.
+	//
+	// Channels are averaged one at a time. An 8 bit channel is one byte and is summed directly.
+	// A 16 bit channel is two bytes, so each pair is copied into a UINT16 first. Averaging the
+	// bytes separately would mix the high and low halves and produce noise.
+	//
+	// The sum is a UINT because four 16 bit values can reach about 262000, which overflows
+	// UINT16. The division is integer, so the remainder is dropped (5, 5, 6, 6 gives 5).
 	while (MipWidth > 1 || MipHeight > 1)
 	{
 		const UINT SrcWidth		= MipWidth;
