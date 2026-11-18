@@ -64,10 +64,6 @@ public:
 	{
 		return Matrices.WorldMat;
 	}
-	_NODISCARD inline const auto GetWorldMatrixUniformScale() const
-	{
-		return Matrices.WorldMatUniformScale;
-	}
 	_NODISCARD inline const auto GetPrevWorldMatrix() const
 	{
 		return Matrices.PrevWorldMat;

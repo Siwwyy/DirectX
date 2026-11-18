@@ -180,7 +180,7 @@ struct GBufferOutput
 CBUFFER_BEGIN(PrimitiveConstantBuffer, CB_PER_OBJECT)
 	float4x4 LocalToWorld;				// Only with translation
 	float4x4 WorldToClip;				// Translation * View * Proj (Clip)
-	float4x4 LocalToWorldUniformScale;	// Keeps a normal perpendicular under a non uniform scale
+	float4x4 NormalToWorld;				// Inverse transpose of LocalToWorld, so a normal stays perpendicular under a non uniform scale
 	float4x4 PrevWorldToClip;			// Last frame's LocalToWorld * view projection | velocity, equals WorldToClip when still
 CBUFFER_END
 #endif

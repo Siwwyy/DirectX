@@ -743,20 +743,24 @@ void D3D12Renderer::UploadPrimitiveConstants()
 		const auto ProjMat = Camera.GetProjMatrix();
 
 		// World Mat for Primitive
-		const auto PrimitiveWorldMatrix				= Primitives[PrimitiveIdx]->GetWorldMatrix();
-		const auto PrimitiveWorldMatrixUniformScale = Primitives[PrimitiveIdx]->GetWorldMatrixUniformScale();
+		const auto PrimitiveWorldMatrix = Primitives[PrimitiveIdx]->GetWorldMatrix();
 
 		// WorldToClip (Remember to transpose for HLSL/GPU)
-		const XMMATRIX LocalToWorld				= XMLoadFloat4x4(&PrimitiveWorldMatrix);
-		const XMMATRIX LocalToWorldUniformScale = XMLoadFloat4x4(&PrimitiveWorldMatrixUniformScale);
-		const XMMATRIX WorldToClip				= XMLoadFloat4x4(&PrimitiveWorldMatrix) * ViewMat * ProjMat;
+		const XMMATRIX LocalToWorld	= XMLoadFloat4x4(&PrimitiveWorldMatrix);
+		const XMMATRIX WorldToClip	= LocalToWorld * ViewMat * ProjMat;
 
 		PrimitiveConstantBuffer PrimitiveCbv = {};
 
 		// Store Primitive matrices in transposed form for HLSL/GPU
-		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorld,				XMMatrixTranspose(LocalToWorld));
-		XMStoreFloat4x4(&PrimitiveCbv.WorldToClip,				XMMatrixTranspose(WorldToClip));
-		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorldUniformScale)); // Normal matrix, uniform scaling
+		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorld, XMMatrixTranspose(LocalToWorld));
+		XMStoreFloat4x4(&PrimitiveCbv.WorldToClip, XMMatrixTranspose(WorldToClip));
+
+		// Inverse of the full world matrix, and not transposed on the way in. Every other
+		// matrix is transposed so HLSL's column major layout sees it as stored. Skipping
+		// that transpose here leaves the shader with the inverse transpose, which keeps a
+		// normal perpendicular when the scale is uneven. The shader passes the normal with
+		// w of 0, so the translation in this matrix drops out.
+		XMStoreFloat4x4(&PrimitiveCbv.NormalToWorld, XMMatrixInverse(nullptr, LocalToWorld));
 
 
 		// PrevWorldToClip for VelocityPass, transposed for HLSL/GPU

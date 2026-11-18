@@ -155,7 +155,6 @@ struct alignas(256) ObjectMatrices
 	DirectX::XMFLOAT4	PositionVec;						// position vector
 	DirectX::XMFLOAT4X4 ScaleRotMat;						// transformation matrix scale+rot
 	DirectX::XMFLOAT4X4 WorldMat;							// transformation matrix scale+rot+translation
-	DirectX::XMFLOAT4X4 WorldMatUniformScale;				// transformation matrix uniform_scale+rot+translation
 	DirectX::XMFLOAT4X4 PrevWorldMat;						// previous transformation matrix scale+rot+translation
 	
 	// Init Function | Translation and rotation are added to whatever is already there,

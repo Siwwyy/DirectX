@@ -3,7 +3,7 @@
 
 #include "../Common.hlsl"
 
-// LocalToWorld, WorldToClip and LocalToWorldUniformScale come from PrimitiveConstantBuffer in
+// LocalToWorld, WorldToClip and NormalToWorld come from PrimitiveConstantBuffer in
 // SharedTypes.h, the one definition the C++ upload path writes into
 
 PSInput main(VSInput Input)
@@ -21,7 +21,7 @@ PSInput main(VSInput Input)
 
     // The normal gets its own matrix, LocalToWorld would shear it under a non uniform
     // scale. w of 0 keeps the translation out of it, a normal is a direction not a point.
-    Output.Normal               = mul(float4(Input.Normal, 0.f), LocalToWorldUniformScale).xyz;
+    Output.Normal               = mul(float4(Input.Normal, 0.f), NormalToWorld).xyz;
 
     // The tangent lies along the surface, so it transforms like a position direction
     // rather than like a normal. Handedness is carried through untouched.

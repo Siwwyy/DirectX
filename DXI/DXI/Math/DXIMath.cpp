@@ -88,14 +88,6 @@ void ObjectMatrices::SetTransform(const XMFLOAT3 TranslateTransform,
         XMStoreFloat4x4(&this->WorldMat, ScaleRotTranslationMat);
     }
 
-    // Create World Matrix, Uniform Scale * Rotation * Position
-    {
-		const auto UniformScaleVector   = XMVectorSet(1.f, 1.f, 1.f, 1.f);              // w == 1.0f, we care about translation and rotation only, not scale
-		const auto UniformScaleMat      = XMMatrixScalingFromVector(UniformScaleVector);
-        const auto RotTranslationMat    = UniformScaleMat * RotationMatXYZ * TranslationMat;
-        XMStoreFloat4x4(&this->WorldMatUniformScale, RotTranslationMat);
-	}
-
 #if 0
 
 
