@@ -51,16 +51,10 @@ public:
 	}
 
 	// Main Transform of pritmitive | Nudges position and rotation, replaces scale
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
-				   const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
-				   const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
+	void SetTransform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
+				      const XMFLOAT3 RotateTransform	= DX_IDENTITY_ROTATE3,
+				      const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 
-	// Replaces the whole transform, which is what an editor hands over
-	void SetTransform(const XMFLOAT3 Translation, const XMFLOAT3 Rotation, const XMFLOAT3 Scale)
-	{
-		Matrices.SetTransform(Translation, Rotation, Scale);
-	}
-	
 	// Getters
 	_NODISCARD inline const auto GetWorldMatrixNoTranslation() const
 	{
@@ -70,13 +64,13 @@ public:
 	{
 		return Matrices.WorldMat;
 	}
-
-	/**
-	 * Where this object was on the previous frame, for the velocity target.
-	 */
+	_NODISCARD inline const auto GetWorldMatrixUniformScale() const
+	{
+		return Matrices.WorldMatUniformScale;
+	}
 	_NODISCARD inline const auto GetPrevWorldMatrix() const
 	{
-		return PrevWorldMat;
+		return Matrices.PrevWorldMat;
 	}
 
 	/**
@@ -88,7 +82,7 @@ public:
 	 */
 	void AdvanceFrame() noexcept
 	{
-		PrevWorldMat = Matrices.WorldMat;
+		Matrices.PrevWorldMat = Matrices.WorldMat;
 	}
 	_NODISCARD inline const auto GetPosVector() const
 	{
@@ -106,10 +100,10 @@ public:
 	{
 		return NumIndices;
 	}
-	// Falls back to the default, so a freshly created mesh is always drawable
 	_NODISCARD inline auto GetMaterial() const
 	{
-		return PrimitiveMaterial ? PrimitiveMaterial : DefaultMaterial;
+		// Falls back to the default, so a freshly created mesh is always drawable
+		return PrimitiveMaterial ? PrimitiveMaterial : DefaultMaterial; 
 	}
 	_NODISCARD inline bool HasOwnMaterial() const
 	{
@@ -131,8 +125,6 @@ private:
 
 	// Matrices
 	ObjectMatrices				Matrices;
-
-	DirectX::XMFLOAT4X4			PrevWorldMat = {};	// World matrix as of the previous frame | velocity, filled by AdvanceFrame
 
 	// Number of indices
 	UINT						NumIndices;

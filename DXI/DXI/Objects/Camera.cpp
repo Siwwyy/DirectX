@@ -7,9 +7,9 @@ static constexpr bool LHCameraCoordinateSystem = true;
 // what aims the forward vector down +Z, which is why it is not zero: Update() builds the
 // direction as (cos yaw, sin pitch, sin yaw) scaled by cos pitch, and a yaw of zero would
 // aim it down +X instead. Both places take the numbers from here so they cannot drift.
-static constexpr float INITIAL_YAW		= 90.0f;	// degrees
-static constexpr float INITIAL_PITCH	= -20.0f;		// degrees
-static constexpr XMFLOAT4 INITIAL_POSITION(0.0f, 5.0f, -9.0f, 1.0f);
+static constexpr float INITIAL_YAW				= 90.0f;		// degrees
+static constexpr float INITIAL_PITCH			= -20.0f;		// degrees
+static constexpr XMFLOAT4 INITIAL_POSITION		= {0.0f, 5.0f, -9.0f, 1.0f};
 
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	: Yaw(INITIAL_YAW)

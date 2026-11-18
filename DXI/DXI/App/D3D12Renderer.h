@@ -217,7 +217,7 @@ private:
 	// Uploads
 	void UploadCameraConstants();
 	void UploadLightConstants();
-	void UploadPrimitiveConstants(const Primitive& Primitive, const UINT PrimitiveIdx);
+	void UploadPrimitiveConstants();
 
 	/**
 	 * GPU address of a primitive's constants for the frame being recorded

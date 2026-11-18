@@ -119,18 +119,18 @@ void D3D12Renderer::InitializeDefaultScene()
 	Primitives[SphereIdx]->SetTransform({ -5.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, { 1.5f, 1.5f, 1.5f });
 
 	// Cubes in a row, the last primitive is the ground laid out underneath them
-	Primitives[0]->Transform({ -3.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
-	Primitives[1]->Transform({ -1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
-	Primitives[2]->Transform({  1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
-	Primitives[3]->Transform({  0.0f, 0.0f, 3.0f }, { 90.f, 0.0f, 0.0f }, { 20.f, 20.f, 1.f });
-	Primitives[4]->Transform({  10.0f, 0.0f, 10.0f }, { 90.f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
+	Primitives[0]->SetTransform({ -3.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
+	Primitives[1]->SetTransform({ -1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
+	Primitives[2]->SetTransform({  1.0f, 1.0f, 1.0f }, DX_IDENTITY_ROTATE3, DX_IDENTITY_SCALE3);
+	Primitives[3]->SetTransform({  0.0f, 0.0f, 3.0f }, { 90.f, 0.0f, 0.0f }, { 20.f, 20.f, 1.f });
+	Primitives[4]->SetTransform({  10.0f, 0.0f, 10.0f }, { 90.f, 0.0f, 0.0f }, { 1.f, 1.f, 1.f });
 
 	// Spot sits in front of the cubes. The mesh is modelled about a unit tall and lying
 	// along +Z, so it is turned to face the camera and lifted clear of the ground.
 	// Only present when the asset download has been run, hence the bounds check.
 	if (Primitives.size() > 5)
 	{
-		Primitives[5]->Transform({  3.0f, 1.0f, 1.0f }, { 0.0f, -90.0f, 0.0f }, { 1.5f, 1.5f, 1.5f });
+		Primitives[5]->SetTransform({  3.0f, 1.0f, 1.0f }, { 0.0f, -90.0f, 0.0f }, { 1.5f, 1.5f, 1.5f });
 	}
 }
 
@@ -401,7 +401,7 @@ Material* D3D12Renderer::FindMaterial(const std::wstring& Name) const
 		}
 	}
 
-	// Null means "use the default", which is what Primitive::SetMaterial takes it as
+	// Null means "use the default", which is what Primitive::Material takes it as
 	return nullptr;
 }
 

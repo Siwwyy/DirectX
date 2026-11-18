@@ -128,7 +128,6 @@ struct alignas(256) CameraMatrices
 {
 	DirectX::XMFLOAT4X4 ProjMat;			// this will store our projection matrix
 	DirectX::XMFLOAT4X4 ViewMat;			// this will store our view matrix
-
 	DirectX::XMFLOAT4X4 PrevViewProjMat;	// View * Proj as of the previous frame | velocity, per camera
 
 	DirectX::XMFLOAT4	Position;			// Position of the camera.
@@ -150,25 +149,20 @@ struct alignas(256) ObjectMatrices
 				   const DirectX::XMFLOAT3 InitScale);
 	~ObjectMatrices() = default;
 
-	// Membre variables
+	// Member variables
 	DirectX::XMFLOAT4	RotVec;								// this will keep track of our rotation for object
 	DirectX::XMFLOAT4	ScaleVec;							// scale vec
 	DirectX::XMFLOAT4	PositionVec;						// position vector
 	DirectX::XMFLOAT4X4 ScaleRotMat;						// transformation matrix scale+rot
 	DirectX::XMFLOAT4X4 WorldMat;							// transformation matrix scale+rot+translation
+	DirectX::XMFLOAT4X4 WorldMatUniformScale;				// transformation matrix uniform_scale+rot+translation
+	DirectX::XMFLOAT4X4 PrevWorldMat;						// previous transformation matrix scale+rot+translation
 	
 	// Init Function | Translation and rotation are added to whatever is already there,
 	// scale replaces it. Handy for setting a scene up from the identity.
-	void Transform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
+	void SetTransform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 					const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 					const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3) noexcept;
-
-	// Replaces all three outright. An editor needs this, it hands over where the object
-	// should end up rather than how far to nudge it.
-	void SetTransform(const XMFLOAT3 Translation,
-					const XMFLOAT3 Rotation,
-					const XMFLOAT3 Scale) noexcept;
-
 };
 
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");

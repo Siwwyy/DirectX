@@ -8,7 +8,7 @@ ObjectMatrices::ObjectMatrices()
     , ScaleVec(DX_IDENTITY_SCALE4)
     , PositionVec(DX_IDENTITY_TRANSLATE4)
 {
-    Transform();
+    SetTransform();
 }
 
 // ObjectMatrices Matrices
@@ -17,22 +17,10 @@ ObjectMatrices::ObjectMatrices(const DirectX::XMFLOAT3  InitRot,
                             const DirectX::XMFLOAT3     InitScale)
     : ObjectMatrices()
 {
-    Transform(InitRot, InitPosition, InitScale);
+    SetTransform(InitRot, InitPosition, InitScale);
 }
 
-void ObjectMatrices::SetTransform(const XMFLOAT3 Translation,
-    const XMFLOAT3 Rotation,
-    const XMFLOAT3 Scale) noexcept
-{
-    // Zero everything out, then let Transform() add the absolute values onto nothing.
-    // Keeps the matrix rebuilding in one place instead of repeating it here.
-    this->PositionVec   = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-    this->RotVec        = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
-
-    Transform(Translation, Rotation, Scale);
-}
-
-void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
+void ObjectMatrices::SetTransform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
     const XMFLOAT3 ScaleTransform) noexcept
 {
@@ -99,6 +87,14 @@ void ObjectMatrices::Transform(const XMFLOAT3 TranslateTransform,
         const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
         XMStoreFloat4x4(&this->WorldMat, ScaleRotTranslationMat);
     }
+
+    // Create World Matrix, Uniform Scale * Rotation * Position
+    {
+		const auto UniformScaleVector   = XMVectorSet(1.f, 1.f, 1.f, 1.f);              // w == 1.0f, we care about translation and rotation only, not scale
+		const auto UniformScaleMat      = XMMatrixScalingFromVector(UniformScaleVector);
+        const auto RotTranslationMat    = UniformScaleMat * RotationMatXYZ * TranslationMat;
+        XMStoreFloat4x4(&this->WorldMatUniformScale, RotTranslationMat);
+	}
 
 #if 0
 

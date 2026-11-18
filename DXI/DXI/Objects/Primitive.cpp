@@ -41,12 +41,12 @@ HRESULT Primitive::Init(DXDevice* Device, DXGraphicsCommandList* CommandList)
     return hr;
 }
 
-void Primitive::Transform(const XMFLOAT3 TranslateTransform,
+void Primitive::SetTransform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
     const XMFLOAT3 ScaleTransform)
 {
     // Transform
-    Matrices.Transform(TranslateTransform, RotateTransform, ScaleTransform);
+    Matrices.SetTransform(TranslateTransform, RotateTransform, ScaleTransform);
 
 #if 0
     // NOTE! Scale should be first always, then rotate and then translate

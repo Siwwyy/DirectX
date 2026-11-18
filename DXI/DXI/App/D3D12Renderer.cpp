@@ -142,12 +142,10 @@ void D3D12Renderer::ProcessPendingSpawns()
 		// Dropped in front of the camera rather than at the origin, where it would be
 		// inside the ground plane and easy to miss
 		const auto& ViewPosition	= Camera.GetPosition();
-		const auto& Forward		= Camera.GetDirection();
+		const auto& Forward			= Camera.GetDirection();
 		Spawned->SetTransform({ ViewPosition.x + (Forward.x * 5.f),
 								ViewPosition.y + (Forward.y * 5.f),
-								ViewPosition.z + (Forward.z * 5.f) },
-								DX_IDENTITY_ROTATE3,
-								DX_IDENTITY_SCALE3);
+								ViewPosition.z + (Forward.z * 5.f) });
 
 		// Previous frame starts equal to this one, so something that has just appeared
 		// reports no motion. This runs after the transform on purpose: seeding before it
@@ -261,10 +259,7 @@ void D3D12Renderer::InitializeConstantBuffers()
 	// Fill the first frame so nothing reads uninitialized memory before Update() runs
 	UploadCameraConstants();
 	UploadLightConstants();
-	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
-	{
-		UploadPrimitiveConstants(*Primitives[PrimitiveIdx], static_cast<UINT>(PrimitiveIdx));
-	}
+	UploadPrimitiveConstants();
 }
 
 void D3D12Renderer::InitializePasses()
@@ -380,10 +375,7 @@ void D3D12Renderer::Render()
 	// frame's region, its constants can be written
 	UploadCameraConstants();
 	UploadLightConstants();
-	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
-	{
-		UploadPrimitiveConstants(*Primitives[PrimitiveIdx], static_cast<UINT>(PrimitiveIdx));
-	}
+	UploadPrimitiveConstants();
 
 	// Every upload above has read the previous transforms, so they can be replaced now.
 	// Doing it before the uploads would make the velocity target read zero every frame,
@@ -739,45 +731,48 @@ void D3D12Renderer::UploadLightConstants()
 	memcpy(LightsCbvAddress + (SIZE_T(CurrentFrameIdx) * LightsCbvStride), &LightsCbv, sizeof(LightsCbv));
 }
 
-void D3D12Renderer::UploadPrimitiveConstants(const Primitive& Primitive, const UINT PrimitiveIdx)
+void D3D12Renderer::UploadPrimitiveConstants()
 {
 	DXASSERT(PrimitiveCbvAddress, "Primitive constant buffer must be mapped before uploading into it");
 
-	// View and Proj mat per frame (camera can move every frame, so we need to update these every frame)
-	const auto ViewMat = Camera.GetViewMatrix();
-	const auto ProjMat = Camera.GetProjMatrix();
+	for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+	{
 
-	const auto PrimitiveWorldMatrix	= Primitive.GetWorldMatrix();
+		// View and Proj mat per frame (camera can move every frame, so we need to update these every frame)
+		const auto ViewMat = Camera.GetViewMatrix();
+		const auto ProjMat = Camera.GetProjMatrix();
 
-	// WorldToClip (Remember to transpose for HLSL/GPU)
-	const XMMATRIX LocalToWorld		= XMLoadFloat4x4(&PrimitiveWorldMatrix);
-	const XMMATRIX WorldToClip		= XMLoadFloat4x4(&PrimitiveWorldMatrix) * ViewMat * ProjMat;
+		// World Mat for Primitive
+		const auto PrimitiveWorldMatrix				= Primitives[PrimitiveIdx]->GetWorldMatrix();
+		const auto PrimitiveWorldMatrixUniformScale = Primitives[PrimitiveIdx]->GetWorldMatrixUniformScale();
 
-	PrimitiveConstantBuffer PrimitiveCbv = {};
-	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorld,	XMMatrixTranspose(LocalToWorld));
-	XMStoreFloat4x4(&PrimitiveCbv.WorldToClip,	XMMatrixTranspose(WorldToClip));
+		// WorldToClip (Remember to transpose for HLSL/GPU)
+		const XMMATRIX LocalToWorld				= XMLoadFloat4x4(&PrimitiveWorldMatrix);
+		const XMMATRIX LocalToWorldUniformScale = XMLoadFloat4x4(&PrimitiveWorldMatrixUniformScale);
+		const XMMATRIX WorldToClip				= XMLoadFloat4x4(&PrimitiveWorldMatrix) * ViewMat * ProjMat;
 
-	// Normal matrix. It is the inverse transpose of the world matrix, and everything here
-	// goes to the GPU transposed, so the two transposes cancel and the plain inverse is
-	// what gets stored. It looks like a missing transpose but it is not.
-	XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorld));
+		PrimitiveConstantBuffer PrimitiveCbv = {};
 
-	// The same product as WorldToClip, built from last frame's halves. Both have to be last
-	// frame's: a camera that moved and an object that moved both show up as motion, and
-	// pairing this frame's object matrix with last frame's camera would report the camera's
-	// movement as though the object had done it.
-	const auto PrevPrimitiveWorldMatrix	= Primitive.GetPrevWorldMatrix();
-	const XMMATRIX PrevWorldToClip		= XMLoadFloat4x4(&PrevPrimitiveWorldMatrix) * Camera.GetPrevViewProjMatrix();
-	XMStoreFloat4x4(&PrimitiveCbv.PrevWorldToClip, XMMatrixTranspose(PrevWorldToClip));
+		// Store Primitive matrices in transposed form for HLSL/GPU
+		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorld,				XMMatrixTranspose(LocalToWorld));
+		XMStoreFloat4x4(&PrimitiveCbv.WorldToClip,				XMMatrixTranspose(WorldToClip));
+		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorldUniformScale, XMMatrixInverse(nullptr, LocalToWorldUniformScale)); // Normal matrix, uniform scaling
 
-	// No light matrix here any more. ShadowPass renders the same object from several
-	// lights per frame, so it takes the light half as root constants instead.
 
-	// The stride between frame regions is the capacity, not the current count. Using the
-	// count would move every region the moment the panel adds a primitive, leaving the
-	// frames still in flight reading from the wrong offsets.
-	const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveCbvStride;
-	memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveCbvStride), &PrimitiveCbv, PrimitiveConstantBufferSize);
+		// PrevWorldToClip for VelocityPass, transposed for HLSL/GPU
+		const auto PrevPrimitiveWorldMatrix = Primitives[PrimitiveIdx]->GetPrevWorldMatrix();
+		const XMMATRIX PrevWorldToClip = XMLoadFloat4x4(&PrevPrimitiveWorldMatrix) * Camera.GetPrevViewProjMatrix();
+		XMStoreFloat4x4(&PrimitiveCbv.PrevWorldToClip, XMMatrixTranspose(PrevWorldToClip));
+
+		// No light matrix here any more. ShadowPass renders the same object from several
+		// lights per frame, so it takes the light half as root constants instead.
+
+		// The stride between frame regions is the capacity, not the current count. Using the
+		// count would move every region the moment the panel adds a primitive, leaving the
+		// frames still in flight reading from the wrong offsets.
+		const SIZE_T FrameOffset = SIZE_T(CurrentFrameIdx) * MAX_PRIMITIVES * PrimitiveCbvStride;
+		memcpy(PrimitiveCbvAddress + FrameOffset + (SIZE_T(PrimitiveIdx) * PrimitiveCbvStride), &PrimitiveCbv, PrimitiveConstantBufferSize);
+	}
 }
 
 void D3D12Renderer::VelocityPass()

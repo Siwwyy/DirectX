@@ -125,8 +125,8 @@ void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 	{
 		// Absolute, not a nudge, because the widgets hand over where it should end up
 		Primitive.SetTransform({ PositionXyz[0], PositionXyz[1], PositionXyz[2] },
-								{ RotationXyz[0], RotationXyz[1], RotationXyz[2] },
-								{ ScaleXyz[0],    ScaleXyz[1],    ScaleXyz[2] });
+							   { RotationXyz[0], RotationXyz[1], RotationXyz[2] },
+							   { ScaleXyz[0],    ScaleXyz[1],    ScaleXyz[2] });
 	}
 
 	// Material, picked out of the ones already loaded. Entry 0 is the default every
