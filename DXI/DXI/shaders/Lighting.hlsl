@@ -85,7 +85,6 @@ float3 GetLightDirection(Light InLight, float3 PixelWorldPosition, out float Att
     return ToLight / Distance;
 }
 
-
 // ---------------------------------------------------------------------------------------
 //  Light maths, part 2 of 3: reading occlusion back out of the shadow atlas.
 //
