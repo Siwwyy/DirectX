@@ -60,6 +60,10 @@ public:
 	}
 
 	// Getters
+	_NODISCARD FORCEINLINE DXResource* GetBackBuffer(const UINT BackBufferIdx) const
+	{
+		return BackBuffers[BackBufferIdx].Get();
+	}
 	_NODISCARD FORCEINLINE IDXGISwapChain3* Get() const noexcept
 	{
 		return SwapChain.Get();

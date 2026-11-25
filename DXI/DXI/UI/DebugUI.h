@@ -10,6 +10,10 @@
 #include "Primitive.h"
 #include "Sphere.h"
 #include "BasePass.h"
+#include "TangentFramePass.h"
+#include "AxisGizmoPass.h"
+#include "SelectionPass.h"
+#include "TransformGizmo.h"
 #include "Material.h"
 #include "LightBase.h"
 #include "AssetCatalog.h"
@@ -89,16 +93,45 @@ public:
 		return FontHeap != nullptr;
 	}
 
-	// Index of the primitive picked in the list, so the caller can act on the selection
+	// Index of the selected primitive, or -1 when nothing is. The list and a click in the view
+	// both set it, so the caller can act on the selection whichever way it was made.
 	_NODISCARD FORCEINLINE int GetSelectedPrimitiveIdx() const noexcept
 	{
 		return SelectedPrimitiveIdx;
+	}
+	void SetSelectedPrimitiveIdx(const int PrimitiveIdx) noexcept
+	{
+		SelectedPrimitiveIdx = PrimitiveIdx;
+	}
+
+	// How the selected object is marked, picked in the panel
+	_NODISCARD FORCEINLINE const SelectionSettings& GetSelectionSettings() const noexcept
+	{
+		return Selection;
+	}
+
+	// The move and rotate handles. Not const: the renderer's hotkeys switch the mode too.
+	_NODISCARD FORCEINLINE TransformGizmoSettings& GetTransformGizmoSettings() noexcept
+	{
+		return TransformGizmoConfig;
 	}
 
 	// Which surface debug view BasePass should write, picked in the panel
 	_NODISCARD FORCEINLINE BasePassDebugMode GetBasePassDebugMode() const noexcept
 	{
 		return BasePassDebug;
+	}
+
+	// What the tangent frame overlay should draw, picked in the panel
+	_NODISCARD FORCEINLINE const TangentFrameSettings& GetTangentFrameSettings() const noexcept
+	{
+		return TangentFrame;
+	}
+
+	// What the origin axes overlay should draw, picked in the panel
+	_NODISCARD FORCEINLINE const AxisGizmoSettings& GetAxisGizmoSettings() const noexcept
+	{
+		return AxisGizmo;
 	}
 
 	/**
@@ -113,6 +146,22 @@ public:
 	{
 		bShadowsEnabled = bEnabled;
 	}
+
+	/**
+	 * Whether the Frame Dump button was pressed since the last call, and the request is cleared
+	 * by asking, so one press dumps one frame.
+	 */
+	_NODISCARD bool ConsumeDumpRequest() noexcept
+	{
+		const bool bRequested = bDumpRequested;
+		bDumpRequested = false;
+		return bRequested;
+	}
+
+	/**
+	 * What the panel shows under the button once a dump has finished, or failed.
+	 */
+	void SetDumpStatus(const std::wstring& Message, const bool bSuccess);
 
 private:
 
@@ -147,11 +196,27 @@ private:
 	UINT						SpawnSphereDensity	= Sphere::DEFAULT_DENSITY;
 
 	// Which entry of the object list is open
-	int							SelectedPrimitiveIdx = 0;
+	int							SelectedPrimitiveIdx = -1;	// -1 is nothing selected, which is how the scene starts
 	int							SelectedLightIdx = 0;
+
+	// How the selection is marked, and the handles that move or turn it
+	SelectionSettings			Selection;
+	TransformGizmoSettings		TransformGizmoConfig;
 
 	// Surface debug view, off means normal rendering
 	BasePassDebugMode			BasePassDebug = BasePassDebugMode::Off;
+
+	// Tangent, bitangent and normal drawn as lines over the shaded frame
+	TangentFrameSettings		TangentFrame;
+
+	// Three arrows at the origin of each flagged object
+	AxisGizmoSettings			AxisGizmo;
+
+	// Frame dump to EXR, the renderer does the work and reports back through SetDumpStatus
+	bool						bDumpRequested	= false;
+	bool						bDumpSucceeded	= true;
+	std::string					DumpStatus;				// UTF-8, what ImGui can print
+
 	bool						bShadowsEnabled = false;	// Off for now, -shadows turns it back on at startup
 };
 

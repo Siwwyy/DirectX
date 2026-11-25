@@ -20,6 +20,13 @@ public:
 	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
+	// Four vertices, but stated rather than left to the count: the shapes that are always shown
+	// are a decision about the shape, not an effect of how many vertices it happens to have
+	_NODISCARD bool AlwaysShowsAllFrameVertices() const noexcept override
+	{
+		return true;
+	}
+
 private:
 };
 

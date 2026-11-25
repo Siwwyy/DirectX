@@ -29,6 +29,10 @@ private:
     // cursor over the window does not spin the camera around
     static POINT    LastMousePos;
     static bool     bIsRotating;
+
+    // Selecting and dragging the gizmo | Set by a left press in the view, which is the only
+    // kind that starts a drag, and kept until the button comes up wherever the cursor is then
+    static bool     bIsLeftDown;
 };
 
 #endif // WIN32_PROC_H_INCLUDED

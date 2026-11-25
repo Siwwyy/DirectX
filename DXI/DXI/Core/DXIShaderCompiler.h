@@ -79,6 +79,26 @@ public:
 
 private:
 
+	/**
+	 * Reports a shader that failed to compile and never returns.
+	 *
+	 * A message box with the file, the entry point, the target and everything the compiler said,
+	 * so the cause is in front of you instead of in a debugger output window nobody has open. The
+	 * whole text also goes to the debugger output, which a message box has to shorten.
+	 *
+	 * Then it throws. A pass cannot build a pipeline out of a shader that does not exist, and a
+	 * null blob handed on would only fail later, in an assert in PSO creation that names neither
+	 * the file nor the error.
+	 *
+	 * @param CompilerOutput The compiler's own error text, utf8. Empty when it failed without saying why.
+	 */
+	[[noreturn]] static void ReportCompileFailure(
+		LPCWSTR ShaderAbsolutePath,
+		LPCWSTR EntryPoint,
+		LPCWSTR TargetProfile,
+		HRESULT HrResult,
+		const std::string& CompilerOutput);
+
 	// IDxc variables
 	ComPtr<IDxcLibrary>							Library;
 	ComPtr<IDxcCompiler3>						Compiler;	//Use IDxcCompiler3 instead of IDxcCompiler (because of Deprecatness Compile() function)
@@ -136,15 +156,21 @@ FORCEINLINE ComPtr<ID3DBlob> DXIShaderCompiler::CompileShader(
 
 	if (FAILED(HrResult))
 	{
-		ComPtr<IDxcBlobUtf8> errorsBlob;
-		HrResult = result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorsBlob), nullptr);
-		if (errorsBlob && errorsBlob->GetStringLength())
+		// What the compiler said. The HRESULT of the failure is kept as it is, getting the output
+		// is a call of its own and its result must not replace the reason we are here.
+		// The result can be missing altogether when Compile itself failed rather than the shader.
+		std::string CompilerOutput;
+		if (result)
 		{
-			const auto errorsBlobMessage = static_cast<const char*>(errorsBlob->GetBufferPointer());
-			DXLOG("HRESULT of %08d | %s \n", static_cast<HRESULT>(HrResult), errorsBlobMessage);
+			ComPtr<IDxcBlobUtf8> errorsBlob;
+			result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorsBlob), nullptr);
+			if (errorsBlob && errorsBlob->GetStringLength())
+			{
+				CompilerOutput.assign(errorsBlob->GetStringPointer(), errorsBlob->GetStringLength());
+			}
 		}
-		//TODO Handle compilation error somehow instead of nullptr... 
-		return nullptr;
+
+		ReportCompileFailure(ShaderAbsolutePath, EntryPoint, TargetProfile, HrResult, CompilerOutput);
 	}
 
 	ComPtr<ID3DBlob> code;

@@ -20,6 +20,13 @@ public:
 	 */
 	HRESULT Init(DXDevice* Device, DXGraphicsCommandList * CommandList);
 
+	// 24 vertices, over the limit a mesh shows all of on its own, and the normals of a cube are
+	// the whole point of looking at one
+	_NODISCARD bool AlwaysShowsAllFrameVertices() const noexcept override
+	{
+		return true;
+	}
+
 private:
 
 };

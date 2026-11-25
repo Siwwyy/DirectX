@@ -7,6 +7,7 @@
 #include "AreaLight.h"
 #include "SpotLight.h"
 
+#include <algorithm>
 #include <string>
 
 #include "imgui.h"
@@ -96,6 +97,20 @@ void DebugUI::BeginFrame()
 	ImGui::NewFrame();
 }
 
+void DebugUI::SetDumpStatus(const std::wstring& Message, const bool bSuccess)
+{
+	bDumpSucceeded = bSuccess;
+
+	// ImGui prints UTF-8, and a path can hold anything
+	DumpStatus.clear();
+	if (!Message.empty())
+	{
+		const int Size = WideCharToMultiByte(CP_UTF8, 0, Message.data(), static_cast<int>(Message.size()), nullptr, 0, nullptr, nullptr);
+		DumpStatus.resize(static_cast<size_t>(Size));
+		WideCharToMultiByte(CP_UTF8, 0, Message.data(), static_cast<int>(Message.size()), DumpStatus.data(), Size, nullptr, nullptr);
+	}
+}
+
 void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 									const std::vector<std::unique_ptr<Material>>& Materials,
 									Material * const DefaultMaterial)
@@ -123,10 +138,11 @@ void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 
 	if (bTransformChanged)
 	{
-		// Absolute, not a nudge, because the widgets hand over where it should end up
-		Primitive.SetTransform({ PositionXyz[0], PositionXyz[1], PositionXyz[2] },
-							   { RotationXyz[0], RotationXyz[1], RotationXyz[2] },
-							   { ScaleXyz[0],    ScaleXyz[1],    ScaleXyz[2] });
+		// Absolute, not a nudge, because the widgets hand over where it should end up.
+		// SetTransform adds to what is there, which here would double the value on every drag.
+		Primitive.SetAbsoluteTransform({ PositionXyz[0], PositionXyz[1], PositionXyz[2] },
+									   { RotationXyz[0], RotationXyz[1], RotationXyz[2] },
+									   { ScaleXyz[0],    ScaleXyz[1],    ScaleXyz[2] });
 	}
 
 	// Material, picked out of the ones already loaded. Entry 0 is the default every
@@ -177,6 +193,12 @@ void DebugUI::DrawPrimitiveProperties(Primitive& Primitive,
 	}
 
 	ImGui::Text("Two sided  %s", Primitive.GetMaterial() && Primitive.GetMaterial()->IsTwoSided() ? "yes" : "no");
+
+	// Same flags as the ticks in the list. Each only does something while its overlay is
+	// switched on, in the Tangent Frame and Origin Axes sections.
+	ImGui::SeparatorText("Debug");
+	ImGui::Checkbox("Show tangent frame", &Primitive.bShowTangentFrame);
+	ImGui::Checkbox("Show origin axes", &Primitive.bShowOriginAxes);
 
 	ImGui::PopID();
 }
@@ -548,6 +570,27 @@ void DebugUI::Draw(Camera& Camera,
 		ImGui::TextDisabled(bShadowsEnabled ? "(pass runs)" : "(pass skipped)");
 	}
 
+	// Every buffer of the pipeline to disk, taken from the next frame drawn
+	if (ImGui::CollapsingHeader("Frame Dump (EXR)", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (ImGui::Button("Dump all buffers"))
+		{
+			bDumpRequested = true;
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("Color, depth, velocity (in pixels), roughness, material params, albedo, normal and world position, one .exr each, next to the executable in Dumps/<time>/");
+		}
+
+		if (!DumpStatus.empty())
+		{
+			const ImVec4 StatusColor = bDumpSucceeded ? ImVec4(0.55f, 0.9f, 0.55f, 1.f) : ImVec4(1.f, 0.45f, 0.4f, 1.f);
+			ImGui::PushStyleColor(ImGuiCol_Text, StatusColor);
+			ImGui::TextWrapped("%s", DumpStatus.c_str());
+			ImGui::PopStyleColor();
+		}
+	}
+
 	// Surface debug views. BasePass writes these into the albedo target instead of the
 	// material colour, and flags them so LightPass passes them through unshaded.
 	if (ImGui::CollapsingHeader("Base Pass Derivatives", ImGuiTreeNodeFlags_DefaultOpen))
@@ -598,6 +641,204 @@ void DebugUI::Draw(Camera& Camera,
 			ImGui::TextDisabled("Materials rendered normally");
 			break;
 		}
+	}
+
+	// The surface basis of every vertex as lines. Unlike the views above this does not touch
+	// the G-buffer, it is drawn on top of the finished frame.
+	if (ImGui::CollapsingHeader("Tangent Frame", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Show vectors", &TangentFrame.bEnabled);
+
+		if (TangentFrame.bEnabled)
+		{
+			// One checkbox per vector, tinted the colour it is drawn in
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.35f, 0.35f, 1.0f));
+			ImGui::Checkbox("Tangent (U)", &TangentFrame.bShowTangent);
+			ImGui::PopStyleColor();
+
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 1.00f, 0.35f, 1.0f));
+			ImGui::Checkbox("Bitangent (V)", &TangentFrame.bShowBitangent);
+			ImGui::PopStyleColor();
+
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.45f, 0.60f, 1.00f, 1.0f));
+			ImGui::Checkbox("Normal", &TangentFrame.bShowNormal);
+			ImGui::PopStyleColor();
+
+			ImGui::Checkbox("Depth test", &TangentFrame.bDepthTest);
+
+			// Which objects draw their vectors is a flag on each one, ticked in the object
+			// list below or in its properties. These two set every flag at once.
+			int FlaggedCount = 0;
+			for (const auto& Object : Primitives)
+			{
+				FlaggedCount += Object->bShowTangentFrame ? 1 : 0;
+			}
+
+			if (ImGui::Button("All objects"))
+			{
+				for (auto& Object : Primitives)
+				{
+					Object->bShowTangentFrame = true;
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("No objects"))
+			{
+				for (auto& Object : Primitives)
+				{
+					Object->bShowTangentFrame = false;
+				}
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("%d of %zu objects", FlaggedCount, Primitives.size());
+
+			// Every vector is a unit vector. This is only the length it is drawn at.
+			ImGui::SliderFloat("Vector length", &TangentFrame.VectorLength,
+								TangentFrameSettings::MIN_VECTOR_LENGTH,
+								TangentFrameSettings::MAX_VECTOR_LENGTH,
+								"%.2f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("Line thickness", &TangentFrame.LineThickness,
+								TangentFrameSettings::MIN_LINE_THICKNESS,
+								TangentFrameSettings::MAX_LINE_THICKNESS,
+								"%.1f px");
+			ImGui::SliderFloat("Vertices shown", &TangentFrame.VertexPercent,
+								TangentFrameSettings::MIN_VERTEX_PERCENT,
+								TangentFrameSettings::MAX_VERTEX_PERCENT,
+								"%.1f%%", ImGuiSliderFlags_Logarithmic);
+
+			// Ctrl click types a value in, and that skips the slider's own limits
+			TangentFrame.VectorLength	= std::clamp(TangentFrame.VectorLength, TangentFrameSettings::MIN_VECTOR_LENGTH, TangentFrameSettings::MAX_VECTOR_LENGTH);
+			TangentFrame.LineThickness	= std::clamp(TangentFrame.LineThickness, TangentFrameSettings::MIN_LINE_THICKNESS, TangentFrameSettings::MAX_LINE_THICKNESS);
+			TangentFrame.VertexPercent	= std::clamp(TangentFrame.VertexPercent, TangentFrameSettings::MIN_VERTEX_PERCENT, TangentFrameSettings::MAX_VERTEX_PERCENT);
+
+			ImGui::TextDisabled("Cube, plane and meshes of %d vertices or fewer always show every vertex.", TANGENT_FRAME_SHOW_ALL_VERTEX_LIMIT);
+			ImGui::TextWrapped("Unit vectors in world space, drawn at the length above. Red is the tangent, green the bitangent, blue the normal. Each line is brightest at its tip and fades towards the vertex.");
+		}
+	}
+
+	// Three arrows at the origin of each flagged object, along its own X, Y and Z. Drawn on top
+	// of the finished frame like the tangent frame, and flagged per object the same way.
+	if (ImGui::CollapsingHeader("Origin Axes", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Show axes", &AxisGizmo.bEnabled);
+
+		if (AxisGizmo.bEnabled)
+		{
+			ImGui::Checkbox("Depth test##AxisGizmo", &AxisGizmo.bDepthTest);
+			ImGui::SameLine();
+			ImGui::TextDisabled(AxisGizmo.bDepthTest ? "(hidden by geometry)" : "(drawn over everything)");
+
+			// Which objects draw their axes is a flag on each one, ticked in the object list
+			// below or in its properties. These two set every flag at once.
+			int FlaggedCount = 0;
+			for (const auto& Object : Primitives)
+			{
+				FlaggedCount += Object->bShowOriginAxes ? 1 : 0;
+			}
+
+			if (ImGui::Button("All objects##Axes"))
+			{
+				for (auto& Object : Primitives)
+				{
+					Object->bShowOriginAxes = true;
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("No objects##Axes"))
+			{
+				for (auto& Object : Primitives)
+				{
+					Object->bShowOriginAxes = false;
+				}
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("%d of %zu objects", FlaggedCount, Primitives.size());
+
+			ImGui::SliderFloat("Axis length", &AxisGizmo.AxisLength,
+								AxisGizmoSettings::MIN_AXIS_LENGTH,
+								AxisGizmoSettings::MAX_AXIS_LENGTH,
+								"%.2f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("Axis thickness", &AxisGizmo.LineThickness,
+								AxisGizmoSettings::MIN_LINE_THICKNESS,
+								AxisGizmoSettings::MAX_LINE_THICKNESS,
+								"%.1f px");
+			ImGui::SliderFloat("Arrow head size", &AxisGizmo.HeadSize,
+								AxisGizmoSettings::MIN_HEAD_SIZE,
+								AxisGizmoSettings::MAX_HEAD_SIZE,
+								"%.0f px");
+
+			// Ctrl click types a value in, and that skips the slider's own limits
+			AxisGizmo.AxisLength		= std::clamp(AxisGizmo.AxisLength, AxisGizmoSettings::MIN_AXIS_LENGTH, AxisGizmoSettings::MAX_AXIS_LENGTH);
+			AxisGizmo.LineThickness		= std::clamp(AxisGizmo.LineThickness, AxisGizmoSettings::MIN_LINE_THICKNESS, AxisGizmoSettings::MAX_LINE_THICKNESS);
+			AxisGizmo.HeadSize			= std::clamp(AxisGizmo.HeadSize, AxisGizmoSettings::MIN_HEAD_SIZE, AxisGizmoSettings::MAX_HEAD_SIZE);
+
+			ImGui::TextWrapped("The object's own X (red), Y (green) and Z (blue), turned with it. The arrows are the same length whatever the object's scale.");
+		}
+	}
+
+	// Click an object in the view to select it, then move or turn it with the handles. The
+	// selection is the same one the object list below shows.
+	if (ImGui::CollapsingHeader("Selection & Gizmo", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Enable gizmo", &TransformGizmoConfig.bEnabled);
+
+		// Radio buttons rather than a combo, both are always one glance and one click away
+		int ModeIdx = (TransformGizmoConfig.Mode == TransformMode::Move) ? 0 : 1;
+		ImGui::RadioButton("Move (1)", &ModeIdx, 0);
+		ImGui::SameLine();
+		ImGui::RadioButton("Rotate (2)", &ModeIdx, 1);
+		TransformGizmoConfig.Mode = (ModeIdx == 0) ? TransformMode::Move : TransformMode::Rotate;
+
+		int SpaceIdx = (TransformGizmoConfig.Space == TransformSpace::World) ? 0 : 1;
+		ImGui::RadioButton("World axes", &SpaceIdx, 0);
+		ImGui::SameLine();
+		ImGui::RadioButton("Local axes", &SpaceIdx, 1);
+		TransformGizmoConfig.Space = (SpaceIdx == 0) ? TransformSpace::World : TransformSpace::Local;
+
+		ImGui::SliderFloat("Handle size", &TransformGizmoConfig.Size,
+							TransformGizmoSettings::MIN_SIZE, TransformGizmoSettings::MAX_SIZE,
+							"%.2f of screen");
+		ImGui::SliderFloat("Handle thickness", &TransformGizmoConfig.LineThickness,
+							TransformGizmoSettings::MIN_LINE_THICKNESS, TransformGizmoSettings::MAX_LINE_THICKNESS,
+							"%.1f px");
+		ImGui::SliderFloat("Handle head size", &TransformGizmoConfig.HeadSize,
+							TransformGizmoSettings::MIN_HEAD_SIZE, TransformGizmoSettings::MAX_HEAD_SIZE,
+							"%.0f px");
+		ImGui::SliderFloat("Move snap", &TransformGizmoConfig.MoveSnap, 0.01f, 5.f, "%.2f units", ImGuiSliderFlags_Logarithmic);
+		ImGui::SliderFloat("Rotate snap", &TransformGizmoConfig.RotateSnap, 1.f, 90.f, "%.0f deg");
+
+		// Ctrl click types a value in, and that skips the slider's own limits
+		TransformGizmoConfig.Size			= std::clamp(TransformGizmoConfig.Size, TransformGizmoSettings::MIN_SIZE, TransformGizmoSettings::MAX_SIZE);
+		TransformGizmoConfig.LineThickness	= std::clamp(TransformGizmoConfig.LineThickness, TransformGizmoSettings::MIN_LINE_THICKNESS, TransformGizmoSettings::MAX_LINE_THICKNESS);
+		TransformGizmoConfig.HeadSize		= std::clamp(TransformGizmoConfig.HeadSize, TransformGizmoSettings::MIN_HEAD_SIZE, TransformGizmoSettings::MAX_HEAD_SIZE);
+		TransformGizmoConfig.MoveSnap		= std::max(TransformGizmoConfig.MoveSnap, 0.001f);
+		TransformGizmoConfig.RotateSnap		= std::max(TransformGizmoConfig.RotateSnap, 0.1f);
+
+		ImGui::SeparatorText("Highlight");
+		ImGui::Checkbox("Highlight selection", &Selection.bEnabled);
+		if (Selection.bEnabled)
+		{
+			ImGui::Checkbox("Tint surface", &Selection.bShowTint);
+			if (Selection.bShowTint)
+			{
+				ImGui::SliderFloat("Tint strength", &Selection.TintStrength,
+									SelectionSettings::MIN_TINT_STRENGTH, SelectionSettings::MAX_TINT_STRENGTH, "%.2f");
+			}
+
+			ImGui::Checkbox("Bounding box", &Selection.bShowBox);
+			if (Selection.bShowBox)
+			{
+				ImGui::SliderFloat("Box thickness", &Selection.BoxThickness,
+									SelectionSettings::MIN_BOX_THICKNESS, SelectionSettings::MAX_BOX_THICKNESS, "%.1f px");
+			}
+
+			ImGui::ColorEdit3("Highlight colour", &Selection.Color.x, ImGuiColorEditFlags_NoInputs);
+
+			Selection.TintStrength	= std::clamp(Selection.TintStrength, SelectionSettings::MIN_TINT_STRENGTH, SelectionSettings::MAX_TINT_STRENGTH);
+			Selection.BoxThickness	= std::clamp(Selection.BoxThickness, SelectionSettings::MIN_BOX_THICKNESS, SelectionSettings::MAX_BOX_THICKNESS);
+		}
+
+		ImGui::TextWrapped("Left click an object to select it, left click empty space to deselect. Drag an arrow to move along that axis, drag a ring to turn about it. 1 selects move, 2 selects rotate, Esc deselects, hold Ctrl while dragging to snap.");
 	}
 
 	// 2 | Camera
@@ -660,8 +901,10 @@ void DebugUI::Draw(Camera& Camera,
 		}
 		else
 		{
-			// Keep the selection inside the list, the scene can change between frames
-			SelectedPrimitiveIdx = SelectedPrimitiveIdx < 0 ? 0 : SelectedPrimitiveIdx;
+			// Keep the selection inside the list, the scene can change between frames. Below zero
+			// is nothing selected, which is allowed: the scene starts that way and a click on
+			// empty space puts it back there.
+			SelectedPrimitiveIdx = SelectedPrimitiveIdx < -1 ? -1 : SelectedPrimitiveIdx;
 			SelectedPrimitiveIdx = SelectedPrimitiveIdx >= static_cast<int>(Primitives.size())
 									? static_cast<int>(Primitives.size()) - 1
 									: SelectedPrimitiveIdx;
@@ -673,6 +916,32 @@ void DebugUI::Draw(Camera& Camera,
 					char Name[128] = {};
 					ToUtf8(Primitives[PrimitiveIdx]->Name, Name, sizeof(Name));
 
+					// Two objects can share a name, the row index keeps their widgets apart
+					ImGui::PushID(PrimitiveIdx);
+
+					// A tick per row while the overlay is on, so a whole scene can be gone
+					// through without selecting each object first
+					if (TangentFrame.bEnabled)
+					{
+						ImGui::Checkbox("##TangentFrame", &Primitives[PrimitiveIdx]->bShowTangentFrame);
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::SetTooltip("Tangent frame");
+						}
+						ImGui::SameLine();
+					}
+
+					// Same for the origin axes, a second tick when both overlays are on
+					if (AxisGizmo.bEnabled)
+					{
+						ImGui::Checkbox("##OriginAxes", &Primitives[PrimitiveIdx]->bShowOriginAxes);
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::SetTooltip("Origin axes");
+						}
+						ImGui::SameLine();
+					}
+
 					const bool bSelected = (PrimitiveIdx == SelectedPrimitiveIdx);
 					if (ImGui::Selectable(Name, bSelected))
 					{
@@ -682,11 +951,29 @@ void DebugUI::Draw(Camera& Camera,
 					{
 						ImGui::SetItemDefaultFocus();
 					}
+
+					ImGui::PopID();
 				}
 				ImGui::EndListBox();
 			}
 
-			auto& Selected = *Primitives[SelectedPrimitiveIdx];
+			if (SelectedPrimitiveIdx < 0)
+			{
+				ImGui::TextDisabled("Nothing selected. Click an object in the view, or pick one above.");
+			}
+			else
+			{
+				if (ImGui::Button("Deselect"))
+				{
+					SelectedPrimitiveIdx = -1;
+				}
+			}
+		}
+
+		// Everything below is about the selected object, and there may be none
+		if (!Primitives.empty() && SelectedPrimitiveIdx >= 0)
+		{
+			auto& Selected = *Primitives[static_cast<size_t>(SelectedPrimitiveIdx)];
 
 			ImGui::SeparatorText("Properties");
 			DrawPrimitiveProperties(Selected, Materials, DefaultMaterial);

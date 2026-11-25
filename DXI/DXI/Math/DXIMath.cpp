@@ -3,6 +3,8 @@
 
 #include "DXIMath.h"
 
+#include <algorithm>
+
 ObjectMatrices::ObjectMatrices()
     : RotVec(DX_IDENTITY_ROTATE4)
     , ScaleVec(DX_IDENTITY_SCALE4)
@@ -24,8 +26,6 @@ void ObjectMatrices::SetTransform(const XMFLOAT3 TranslateTransform,
     const XMFLOAT3 RotateTransform,
     const XMFLOAT3 ScaleTransform) noexcept
 {
-    // NOTE! Scale should be first always, then rotate and then translate
-
     // NOTE! TODO! If rotatio if e.g., 720 degrees, there is no need
     // to rotate object twice. Based on assumption, if we set rotation
     // bigger than 360 degrees, do:
@@ -46,83 +46,81 @@ void ObjectMatrices::SetTransform(const XMFLOAT3 TranslateTransform,
         return NewRotation;
     };
 
-    // set starting scale, rotation and position
-    const auto ScaleVec             = DirectX::XMVectorSet(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z, 1.f);
-    const auto RotationVec          = DirectX::XMVectorSet(SubtractRotation(RotateTransform.x), SubtractRotation(RotateTransform.y), SubtractRotation(RotateTransform.z), 1.f);
-    const auto PositionOffsetVec    = DirectX::XMVectorSet(TranslateTransform.x, TranslateTransform.y, TranslateTransform.z, 1.f);
+    // What is there now plus the step. Scale is not added, it replaces.
+    const XMFLOAT3 PositionNew( this->PositionVec.x + TranslateTransform.x,
+                                this->PositionVec.y + TranslateTransform.y,
+                                this->PositionVec.z + TranslateTransform.z);
+    const XMFLOAT3 RotationNew( this->RotVec.x + SubtractRotation(RotateTransform.x),
+                                this->RotVec.y + SubtractRotation(RotateTransform.y),
+                                this->RotVec.z + SubtractRotation(RotateTransform.z));
 
-    // create rotation for x,y,z
-    const auto RotationXYZOld       = XMLoadFloat4(&this->RotVec);
-    const auto RotationXYZNew       = RotationXYZOld + RotationVec;
+    SetAbsoluteTransform(PositionNew, RotationNew, ScaleTransform);
+}
 
-    // Offset of translation
-    const auto PositionOld          = XMLoadFloat4(&this->PositionVec);
-    const auto PositionNew          = PositionOld + PositionOffsetVec;
-
+void ObjectMatrices::SetAbsoluteTransform(const XMFLOAT3 Position,
+    const XMFLOAT3 RotationDegrees,
+    const XMFLOAT3 Scale) noexcept
+{
     // Store
-    XMStoreFloat4(&this->ScaleVec,      ScaleVec);
-    XMStoreFloat4(&this->RotVec,        RotationXYZNew);
-    XMStoreFloat4(&this->PositionVec,   PositionNew);
+    this->ScaleVec      = XMFLOAT4(Scale.x, Scale.y, Scale.z, 1.f);
+    this->RotVec        = XMFLOAT4(RotationDegrees.x, RotationDegrees.y, RotationDegrees.z, 1.f);
+    this->PositionVec   = XMFLOAT4(Position.x, Position.y, Position.z, 1.f);
 
-    // create xmmatrix for scale
-    const auto ScaleMat = XMMatrixScaling(ScaleTransform.x, ScaleTransform.y, ScaleTransform.z);
-
-    // Create offset of rotation
-    const auto RotationMatX     = XMMatrixRotationX(Helpers::ToRadians(this->RotVec.x));
-    const auto RotationMatY     = XMMatrixRotationY(Helpers::ToRadians(this->RotVec.y));
-    const auto RotationMatZ     = XMMatrixRotationZ(Helpers::ToRadians(this->RotVec.z));
-    const auto RotationMatXYZ   = RotationMatX * RotationMatY * RotationMatZ;
-
-    // create translation matrix                                                                           
-    const auto TranslationMat = XMMatrixTranslation(this->PositionVec.x, this->PositionVec.y, this->PositionVec.z);
+    // NOTE! Scale should be first always, then rotate and then translate
+    const auto ScaleMat         = XMMatrixScaling(Scale.x, Scale.y, Scale.z);
+    const auto RotationMatXYZ   = RotationFromEulerDegrees(RotationDegrees);
+    const auto TranslationMat   = XMMatrixTranslation(Position.x, Position.y, Position.z);
 
     // Create Local Matrix, Scale * Rotation
-    {
-        const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
-        XMStoreFloat4x4(&this->ScaleRotMat, ScaleRotMat);
-    }
+    XMStoreFloat4x4(&this->ScaleRotMat, ScaleMat * RotationMatXYZ);
 
     // Create World Matrix, Scale * Rotation * Position
+    XMStoreFloat4x4(&this->WorldMat, ScaleMat * RotationMatXYZ * TranslationMat);
+}
+
+XMMATRIX RotationFromEulerDegrees(const XMFLOAT3& Degrees)
+{
+    const auto RotationMatX = XMMatrixRotationX(Helpers::ToRadians(Degrees.x));
+    const auto RotationMatY = XMMatrixRotationY(Helpers::ToRadians(Degrees.y));
+    const auto RotationMatZ = XMMatrixRotationZ(Helpers::ToRadians(Degrees.z));
+    return RotationMatX * RotationMatY * RotationMatZ;
+}
+
+XMFLOAT3 EulerDegreesFromRotation(FXMMATRIX Rotation)
+{
+    // The product Rx(a) * Ry(b) * Rz(c) written out, row vector convention, c and s for cosine and sine:
+    //
+    //      row 0 | cb*cc                 cb*sc                 -sb
+    //      row 1 | sa*sb*cc - ca*sc      sa*sb*sc + ca*cc      sa*cb
+    //      row 2 | ca*sb*cc + sa*sc      ca*sb*sc - sa*cc      ca*cb
+    //
+    // so -sb is read straight off [0][2], and a and c off the entries that carry cb alone.
+    XMFLOAT4X4 M;
+    XMStoreFloat4x4(&M, Rotation);
+
+    // cb is the length of the first two entries of row 0, so b comes from an atan2 of the two. Not
+    // from asin of -sb: asin is steep near +-1 and throws away half the digits there, which is
+    // exactly where the rotation is hardest to read.
+    const float CosB = sqrtf((M._11 * M._11) + (M._12 * M._12));
+    const float B    = atan2f(-M._13, CosB);
+
+    float A = 0.f;
+    float C = 0.f;
+
+    if (CosB > 1e-4f)
     {
-        const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
-        XMStoreFloat4x4(&this->WorldMat, ScaleRotTranslationMat);
+        A = atan2f(M._23, M._33);
+        C = atan2f(M._12, M._11);
+    }
+    else
+    {
+        // Looking along the Y axis: cb is zero, X and Z spin the same axis and only a plus or
+        // minus c is left to read. Put it all on X, which with c at zero leaves
+        // row 1 as [sa*sb, ca, ...] to read it from, and sb is plus or minus one.
+        const float SinB = M._13 < 0.f ? 1.f : -1.f;
+        A = atan2f(SinB * M._21, M._22);
+        C = 0.f;
     }
 
-#if 0
-
-
-    // set starting scale, rotation and position
-    const auto ScaleVec = DirectX::XMVectorSet(InitScale.x, InitScale.y, InitScale.z, 1.f);
-    const auto RotationVec = DirectX::XMVectorSet(InitRot.x, InitRot.y, InitRot.z, 1.f);
-    const auto PositionVec = DirectX::XMVectorSet(InitPosition.x, InitPosition.y, InitPosition.z, 1.f);
-
-    // Store
-    XMStoreFloat4(&this->ScaleVec, ScaleVec);
-    XMStoreFloat4(&this->RotVec, RotationVec);
-    XMStoreFloat4(&this->PositionVec, PositionVec);
-
-    // create xmvector for object world matrix
-    const auto ScaleMat = XMMatrixScaling(InitScale.x, InitScale.y, InitScale.z);
-    const auto RotationMatX = XMMatrixRotationX(Helpers::ToRadians(InitRot.x));
-    const auto RotationMatY = XMMatrixRotationY(Helpers::ToRadians(InitRot.y));
-    const auto RotationMatZ = XMMatrixRotationZ(Helpers::ToRadians(InitRot.z));
-    const auto RotationMatXYZ = RotationMatX * RotationMatY * RotationMatZ;
-
-    //const auto WorldMatrix      = (ScaleMat * RotationMatXYZ) * PositionMat; // TODO | Rethink if it should not go in reverse order like f(g(z(x))) <==> Pos(Rot(Scale(x)))
-
-    // create translation matrix                                                                           
-    const auto TranslationMat = XMMatrixTranslation(InitPosition.x, InitPosition.y, InitPosition.z);
-
-    // Create World Matrix, Rotation * Position
-    {
-        const auto ScaleRotMat = ScaleMat * RotationMatXYZ;
-        XMStoreFloat4x4(&this->ScaleRotMat, ScaleRotMat);
-    }
-
-    // Create World Matrix, Scale * Rotation * Position
-    {
-        const auto ScaleRotTranslationMat = ScaleMat * RotationMatXYZ * TranslationMat;
-        XMStoreFloat4x4(&this->WorldMat, ScaleRotTranslationMat);
-    }
-#endif
+    return XMFLOAT3(XMConvertToDegrees(A), XMConvertToDegrees(B), XMConvertToDegrees(C));
 }

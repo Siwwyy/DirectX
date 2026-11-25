@@ -80,6 +80,18 @@ public:
 	 */
 	void Clear(DXGraphicsCommandList * CommandList) const;
 
+	/**
+	 * The texture of a target and the state it is in right now, for whoever has to copy it out
+	 */
+	_NODISCARD DXResource * GetResource(const GBufferTarget Target) const
+	{
+		return Targets[static_cast<UINT>(Target)].Get();
+	}
+	_NODISCARD D3D12_RESOURCE_STATES GetCurrentState() const noexcept
+	{
+		return CurrentState;
+	}
+
 private:
 
 	/**

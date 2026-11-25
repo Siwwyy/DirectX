@@ -55,6 +55,16 @@ public:
 				      const XMFLOAT3 RotateTransform	= DX_IDENTITY_ROTATE3,
 				      const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3);
 
+	// Where it should end up, nothing is added to what is there. Rotation in degrees.
+	// For a widget or a gizmo that holds the value itself, where SetTransform would stack
+	// its answer on top of the old one.
+	void SetAbsoluteTransform(const XMFLOAT3 Position,
+							  const XMFLOAT3 RotationDegrees,
+							  const XMFLOAT3 Scale)
+	{
+		Matrices.SetAbsoluteTransform(Position, RotationDegrees, Scale);
+	}
+
 	// Getters
 	_NODISCARD inline const auto GetWorldMatrixNoTranslation() const
 	{
@@ -106,6 +116,18 @@ public:
 		return PrimitiveMaterial != nullptr;
 	}
 
+	/**
+	 * Whether the tangent frame overlay draws the vectors of every vertex, whatever share the
+	 * panel asks for. For the built in shapes, which are few vertices that are worth seeing
+	 * all of: a cube has 24, four to a face, since each face needs its own normals. A mesh with
+	 * more than that is a sample by default, a mesh of up to TANGENT_FRAME_SHOW_ALL_VERTEX_LIMIT
+	 * vertices shows all of them on its own.
+	 */
+	_NODISCARD virtual bool AlwaysShowsAllFrameVertices() const noexcept
+	{
+		return false;
+	}
+
 	// D3D12 Vertex data
 	VertexFactory				VertexFactory;
 
@@ -116,6 +138,14 @@ public:
 
 	// Name of primitive (for debug purposes)
 	std::wstring				Name = L"Primitive";
+
+	// Whether the tangent frame overlay draws this object's vectors. Per object so any set of
+	// them can be inspected at once, the overlay's own settings only say how they look.
+	bool						bShowTangentFrame = false;
+
+	// Same idea for the three arrows at the object's origin, a flag per object and the
+	// overlay's own settings for how they look
+	bool						bShowOriginAxes = false;
 
 private:
 

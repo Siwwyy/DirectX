@@ -82,6 +82,18 @@ public:
 	void TransitionToDepthWrite(DXGraphicsCommandList * CommandList);
 	void TransitionToShaderResource(DXGraphicsCommandList * CommandList);
 
+	/**
+	 * The texture and the state it is in right now, for whoever has to copy it out
+	 */
+	_NODISCARD DXResource * GetResource() const noexcept
+	{
+		return DepthStencil.Get();
+	}
+	_NODISCARD D3D12_RESOURCE_STATES GetCurrentState() const noexcept
+	{
+		return CurrentState;
+	}
+
 private:
 
 	// Value Clear() writes, 1 is the far plane of a standard depth range

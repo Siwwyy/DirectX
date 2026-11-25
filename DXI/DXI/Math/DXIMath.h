@@ -162,7 +162,30 @@ struct alignas(256) ObjectMatrices
 	void SetTransform(const XMFLOAT3 TranslateTransform	= DX_IDENTITY_TRANSLATE3,
 					const XMFLOAT3 RotateTransform		= DX_IDENTITY_ROTATE3,
 					const XMFLOAT3 ScaleTransform		= DX_IDENTITY_SCALE3) noexcept;
+
+	// Where it should end up, nothing is added. Rotation in degrees. For whoever knows the
+	// answer rather than the step: a widget that holds the value, a gizmo that dragged it there.
+	void SetAbsoluteTransform(const XMFLOAT3 Position,
+							const XMFLOAT3 RotationDegrees,
+							const XMFLOAT3 Scale) noexcept;
 };
+
+/**
+ * Rotation matrix of Euler angles in degrees, the product the object's own matrices are built
+ * from: X, then Y, then Z, about the world axes. Row vector convention like the rest of the
+ * engine, so a vector is turned by multiplying it from the left.
+ */
+_NODISCARD DirectX::XMMATRIX RotationFromEulerDegrees(const DirectX::XMFLOAT3& Degrees);
+
+/**
+ * The Euler angles RotationFromEulerDegrees turns into this rotation. The way back, for when
+ * a rotation was composed as a matrix and has to be stored as the three numbers.
+ *
+ * Several angle triples describe one rotation, this returns the one with Y in -90 to 90. At
+ * exactly +-90 degrees X and Z turn the same axis and only their sum matters, so all of it is
+ * put on X and Z is zero.
+ */
+_NODISCARD DirectX::XMFLOAT3 EulerDegreesFromRotation(DirectX::FXMMATRIX Rotation);
 
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");
 constexpr auto ObjectMatricesSize		= sizeof(ObjectMatrices);

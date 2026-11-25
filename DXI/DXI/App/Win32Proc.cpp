@@ -9,6 +9,7 @@
 HWND Win32Proc::hwnd			= nullptr;
 POINT Win32Proc::LastMousePos	= {};
 bool Win32Proc::bIsRotating		= false;
+bool Win32Proc::bIsLeftDown		= false;
 
 int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * DX12App)
 {
@@ -79,7 +80,30 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 
 	// The debug UI gets first look at every message. When it takes one, the camera must
 	// not act on it too, otherwise dragging a slider would also spin the view.
-	if (DebugUI::HandleWindowMessage(hWnd, message, wParam, lParam))
+	const bool bUIHandled = DebugUI::HandleWindowMessage(hWnd, message, wParam, lParam);
+
+	// A drag that began in the view stays the view's until the button is released. The UI has
+	// seen the message either way, but it must not keep the end of the drag from the gizmo: a
+	// release over the panel would otherwise leave the object stuck to the cursor.
+	if (bIsLeftDown && DX12App)
+	{
+		if (message == WM_MOUSEMOVE)
+		{
+			LastMousePos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+			DX12App->OnCursorMove(LastMousePos.x, LastMousePos.y);
+			return 0;
+		}
+
+		if (message == WM_LBUTTONUP)
+		{
+			bIsLeftDown = false;
+			ReleaseCapture();
+			DX12App->OnLeftButtonUp(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			return 0;
+		}
+	}
+
+	if (bUIHandled)
 	{
 		return 0;
 	}
@@ -117,6 +141,20 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	return 0;
 
 	// Mouse look | Hold the right button and drag to rotate the camera
+	// Selecting | A click picks the object under the cursor, or grabs a handle of the selected one
+	case WM_LBUTTONDOWN:
+	{
+		// Not while the cursor is over a panel, that click belongs to the UI, and not while the
+		// camera is being turned either, that drag owns the capture
+		if (DX12App && !bIsRotating && !DebugUI::WantsMouse())
+		{
+			SetCapture(hWnd);
+			bIsLeftDown = true;
+			DX12App->OnLeftButtonDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		}
+	}
+	return 0;
+
 	case WM_RBUTTONDOWN:
 	{
 		// Not while the cursor is over a panel, that click belongs to the UI
@@ -146,6 +184,13 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 		if (bIsRotating && DX12App)
 		{
 			DX12App->OnMouseMove(MousePos.x - LastMousePos.x, MousePos.y - LastMousePos.y);
+		}
+
+		// The gizmo lights the handle under the cursor, which needs to know where it is even
+		// while no button is down. The renderer ignores it over a panel itself.
+		if (DX12App)
+		{
+			DX12App->OnCursorMove(MousePos.x, MousePos.y);
 		}
 
 		// Tracked even while idle, otherwise the first move of a drag would jump

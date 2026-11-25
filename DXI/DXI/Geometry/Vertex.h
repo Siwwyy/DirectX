@@ -6,6 +6,9 @@
 #include "pch.h"
 #include "DXIHelpers.h"
 
+#include <algorithm>
+#include <cfloat>
+
 // usings
 using TypeOfIndice = DWORD;
 
@@ -780,6 +783,8 @@ public:
 		HRESULT hr = S_OK;
 		// Store vertex type
 		Type = InitData.Type;
+		// Keep what picking needs before the buffers are handed over. The GPU copy can not be read back.
+		CacheCpuGeometry(InitData.VertexData, InitData.IndexData);
 		// Create and upload vertex buffer
 		CreateAndUploadVertexBuffer(Device, CommandList,	std::move(InitData.VertexData));
 		// Create and upload index buffer
@@ -794,12 +799,61 @@ public:
 	D3D12_VERTEX_BUFFER_VIEW	VertexBufferView;	// Passed to IASetVertexBuffers
 	VertexType					Type;				// Layout the buffers were built for
 
+	/**
+	 * @return How many vertices the vertex buffer holds. Only meaningful once Init has run.
+	 */
+	_NODISCARD UINT GetNumVertices() const noexcept
+	{
+		return VertexBufferView.StrideInBytes > 0
+				? VertexBufferView.SizeInBytes / VertexBufferView.StrideInBytes
+				: 0;
+	}
+
 	// Index Buffer
 	ComPtr<DXResource>			IndexBufferUpload;
 	ComPtr<DXResource>			IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW		IndexBufferView;
 
+	// What a mouse click is tested against. The buffers above live on the GPU, so a ray can not
+	// be cast against them, and what is kept is the positions and the triangle list only: 16
+	// bytes a vertex of the layout come down to 12, and the rest is not needed to hit a surface.
+	std::vector<DirectX::XMFLOAT3>	CpuPositions;
+	std::vector<TypeOfIndice>		CpuIndices;
+
+	// Box around the positions, in the mesh's own space. A cheap miss before the triangles are tried,
+	// and the box the selection draws.
+	DirectX::XMFLOAT3				LocalBoundsMin	= { 0.f, 0.f, 0.f };
+	DirectX::XMFLOAT3				LocalBoundsMax	= { 0.f, 0.f, 0.f };
+
 private:
+
+	// Copies out the positions and indices and measures the box around them
+	template<typename VertexStruct>
+	void CacheCpuGeometry(const std::vector<VertexStruct>& VertexData, const std::vector<TypeOfIndice>& IndexData)
+	{
+		CpuPositions.clear();
+		CpuPositions.reserve(VertexData.size());
+
+		DirectX::XMFLOAT3 Min(FLT_MAX, FLT_MAX, FLT_MAX);
+		DirectX::XMFLOAT3 Max(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+		for (const auto& Vertex : VertexData)
+		{
+			const DirectX::XMFLOAT3 Position(Vertex.Position.x, Vertex.Position.y, Vertex.Position.z);
+			CpuPositions.push_back(Position);
+
+			Min = { std::min(Min.x, Position.x), std::min(Min.y, Position.y), std::min(Min.z, Position.z) };
+			Max = { std::max(Max.x, Position.x), std::max(Max.y, Position.y), std::max(Max.z, Position.z) };
+		}
+
+		if (!CpuPositions.empty())
+		{
+			LocalBoundsMin	= Min;
+			LocalBoundsMax	= Max;
+		}
+
+		CpuIndices = IndexData;
+	}
 
 	// Create + upload helpers (templated to accept std::vector with the Vertex/Index type)
 	template<typename VertexStruct>

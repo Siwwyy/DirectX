@@ -118,3 +118,99 @@ struct ShadowDistancePSInput
 };
 
 #endif // SHADOW_PASS
+
+
+#ifdef TANGENT_FRAME_PASS
+
+// PrimitiveConstantBuffer at b0 and TangentFrameConstants at b1 come from SharedTypes.h.
+// The overlay reads LocalToWorld, WorldToClip and NormalToWorld of the first, and all of
+// the second.
+
+// One instance per vertex of the mesh. The mesh's own vertex buffer is bound as per instance
+// data, so every instance sees one whole vertex, and the vertex ids 0 to 17 inside it pick
+// which corner of which line's quad this invocation is. Nothing is copied or rebuilt on the CPU.
+struct TangentFrameVSInput
+{
+    float4 Position                     : POSITION;
+    float3 Normal                       : NORMAL;
+    float4 Tangent                      : TANGENT;      // w is the bitangent handedness, unused here
+    float4 Bitangent                    : BINORMAL;
+    uint   VertexId                     : SV_VertexID;  // 0 to 17, six quad corners for each of the three lines
+    uint   InstanceId                   : SV_InstanceID;// Which vertex of the mesh this is
+};
+
+struct TangentFramePSInput
+{
+    float4 Position                     : SV_POSITION;
+    float4 Color                        : COLOR;
+};
+
+#endif // TANGENT_FRAME_PASS
+
+
+#ifdef AXIS_GIZMO_PASS
+
+// PrimitiveConstantBuffer at b0 and AxisGizmoConstants at b1 come from SharedTypes.h.
+
+// No vertex buffer, the whole gizmo is built out of the vertex id: 0 to 26, nine for each of
+// the three arrows, the first six the corners of the shaft's quad and the last three the head.
+struct AxisGizmoVSInput
+{
+    uint   VertexId                     : SV_VertexID;
+};
+
+struct AxisGizmoPSInput
+{
+    float4 Position                     : SV_POSITION;
+    float4 Color                        : COLOR;
+};
+
+#endif // AXIS_GIZMO_PASS
+
+
+#ifdef SELECTION_PASS
+
+// PrimitiveConstantBuffer at b0 and SelectionConstants at b1 come from SharedTypes.h.
+
+// The tint is the selected mesh drawn again, so it reads the mesh's own vertex buffer. Only the
+// position is needed, the layout may name fewer elements than the buffer holds.
+struct SelectionFillVSInput
+{
+    float4 Position                     : POSITION;
+};
+
+// The box has no vertex buffer, its twelve edges are built out of the vertex id: 0 to 71,
+// six corners of a quad for each edge.
+struct SelectionBoxVSInput
+{
+    uint   VertexId                     : SV_VertexID;
+};
+
+struct SelectionPSInput
+{
+    float4 Position                     : SV_POSITION;
+    float4 Color                        : COLOR;
+};
+
+#endif // SELECTION_PASS
+
+
+#ifdef TRANSFORM_GIZMO_PASS
+
+// TransformGizmoConstants at b1 comes from SharedTypes.h, nothing at b0: the handles belong to
+// no object.
+
+// No vertex buffer. In move mode the vertex id is 0 to 26, nine for each arrow. In rotate mode it
+// is 0 to 1151 for the three rings, 384 each, and 1152 to 1169 for the three axis lines.
+struct TransformGizmoVSInput
+{
+    uint   VertexId                     : SV_VertexID;
+};
+
+struct TransformGizmoPSInput
+{
+    float4 Position                     : SV_POSITION;
+    float4 Color                        : COLOR;
+};
+
+#endif // TRANSFORM_GIZMO_PASS

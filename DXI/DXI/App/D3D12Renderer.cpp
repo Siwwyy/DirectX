@@ -11,6 +11,7 @@
 
 #include <string>
 #include "PixEvents.h"
+#include "Paths.h"
 
 // Namespaces
 using namespace Helpers;
@@ -272,6 +273,10 @@ void D3D12Renderer::InitializePasses()
 	SceneShadowPass.Init(Device.Get(), FrameContext.GetCommandList());
 	SceneBasePass.Init(Device.Get(), FrameContext.GetCommandList());
 	SceneLightPass.Init(Device.Get(), FrameContext.GetCommandList());
+	SceneTangentFramePass.Init(Device.Get(), FrameContext.GetCommandList());
+	SceneAxisGizmoPass.Init(Device.Get(), FrameContext.GetCommandList());
+	SceneSelectionPass.Init(Device.Get(), FrameContext.GetCommandList());
+	SceneTransformGizmoPass.Init(Device.Get(), FrameContext.GetCommandList());
 
 	// Only one CBV/SRV/UAV heap can be bound at a time, so everything LightPass samples
 	// goes into a single heap: the G-buffer targets, the shadow map, then both sky cubes
@@ -390,6 +395,18 @@ void D3D12Renderer::Render()
 
 	RenderBasePass();
 	RenderLightPass();
+
+	// Right here the frame is shaded and nothing is drawn over it yet, no overlays and no UI,
+	// which is the picture the buffers describe
+	CaptureFrameDump();
+
+	RenderTangentFramePass();
+	RenderAxisGizmoPass();
+
+	// The selection goes over the other overlays, and its handles over the selection: the handles
+	// are what the mouse is working with, so nothing may hide them
+	RenderSelectionPass();
+	RenderTransformGizmoPass();
 	RenderDebugUI();
 
 	//Always EndFrame last
@@ -602,6 +619,251 @@ void D3D12Renderer::RenderLightPass()
 	SceneLightPass.RenderFullScreen(CommandList);
 }
 
+void D3D12Renderer::RenderTangentFramePass()
+{
+	const auto& Settings = SceneDebugUI.GetTangentFrameSettings();
+
+	// Off, or no vector picked
+	if (!Settings.bEnabled || Settings.GetVectorMask() == 0)
+	{
+		return;
+	}
+
+	// Objects that asked for their frame. Counted up front so that nothing flagged skips the
+	// pass entirely, not even the barrier and the target switch, and so the marker can name it.
+	SIZE_T FlaggedCount = 0;
+	for (const auto& Object : Primitives)
+	{
+		FlaggedCount += Object->bShowTangentFrame ? 1 : 0;
+	}
+
+	if (FlaggedCount == 0)
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::TANGENT_FRAME, L"Tangent Frame | %zu of %zu objects", FlaggedCount, Primitives.size());
+	{
+		// The light pass left the depth readable as a texture. The overlay tests against it,
+		// which wants it as a depth target again, and it never writes to it.
+		DepthBuffer.TransitionToDepthWrite(CommandList);
+
+		const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
+		const auto DsvHandle = DepthBuffer.GetDsvHandle();
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
+
+		CommandList->SetGraphicsRootSignature(SceneTangentFramePass.GetRootSignature());
+		CommandList->SetPipelineState(SceneTangentFramePass.GetPipelineStateFor(Settings.bDepthTest));
+		// BeginFrame already set triangles, which is what the quads need, but a pass should
+		// not lean on what an earlier one happened to leave behind
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// The camera's matrix is the same for every primitive, only the object differs. The
+		// vector end points are offsets in world space, so they need the camera's own matrix
+		// and not the per object WorldToClip. Transposed for HLSL like every other matrix.
+		TangentFrameConstants ViewConstants = {};
+		XMStoreFloat4x4(&ViewConstants.WorldToCameraClip, XMMatrixTranspose(Camera.GetViewMatrix() * Camera.GetProjMatrix()));
+		ViewConstants.VectorLength	= Settings.VectorLength;
+		ViewConstants.VertexFraction = Settings.GetVertexFraction();
+		ViewConstants.LineThickness	= Settings.LineThickness;
+		ViewConstants.ViewportSize	= { ViewPort.Width, ViewPort.Height };
+		ViewConstants.VectorMask	= Settings.GetVectorMask();
+		CommandList->SetGraphicsRoot32BitConstants(SceneTangentFramePass.ViewIdx, TangentFrameConstantCount, &ViewConstants, 0);
+
+		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+		{
+			if (!Primitives[PrimitiveIdx]->bShowTangentFrame)
+			{
+				continue;
+			}
+
+			CommandList->SetGraphicsRootConstantBufferView(SceneTangentFramePass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
+			SceneTangentFramePass.RenderPrimitive(CommandList, *Primitives[PrimitiveIdx]);
+		}
+
+		// Back to what the UI expects: the back buffer, no depth. Its pipeline has no depth
+		// format, and the debug layer rejects a draw whose target disagrees with the state.
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
+	DXI_PIX_END(CommandList);
+}
+
+void D3D12Renderer::RenderAxisGizmoPass()
+{
+	const auto& Settings = SceneDebugUI.GetAxisGizmoSettings();
+
+	if (!Settings.bEnabled)
+	{
+		return;
+	}
+
+	// Objects that asked for their axes. Counted up front so that nothing flagged skips the
+	// pass entirely, not even the barrier and the target switch, and so the marker can name it.
+	SIZE_T FlaggedCount = 0;
+	for (const auto& Object : Primitives)
+	{
+		FlaggedCount += Object->bShowOriginAxes ? 1 : 0;
+	}
+
+	if (FlaggedCount == 0)
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::AXIS_GIZMO, L"Origin Axes | %zu of %zu objects", FlaggedCount, Primitives.size());
+	{
+		// Depth as a depth target again, the light pass left it readable as a texture. Tested
+		// against when the panel asks for it, never written to.
+		DepthBuffer.TransitionToDepthWrite(CommandList);
+
+		const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
+		const auto DsvHandle = DepthBuffer.GetDsvHandle();
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
+
+		CommandList->SetGraphicsRootSignature(SceneAxisGizmoPass.GetRootSignature());
+		CommandList->SetPipelineState(SceneAxisGizmoPass.GetPipelineStateFor(Settings.bDepthTest));
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// The camera's matrix is the same for every object, only the origin differs. An arrow
+		// tip is an offset in world space from the origin, so it needs the camera's own matrix
+		// and not the per object WorldToClip. Transposed for HLSL like every other matrix.
+		AxisGizmoConstants ViewConstants = {};
+		XMStoreFloat4x4(&ViewConstants.WorldToCameraClip, XMMatrixTranspose(Camera.GetViewMatrix() * Camera.GetProjMatrix()));
+		ViewConstants.AxisLength	= Settings.AxisLength;
+		ViewConstants.LineThickness	= Settings.LineThickness;
+		ViewConstants.HeadSize		= Settings.HeadSize;
+		ViewConstants.ViewportSize	= { ViewPort.Width, ViewPort.Height };
+		CommandList->SetGraphicsRoot32BitConstants(SceneAxisGizmoPass.ViewIdx, AxisGizmoConstantCount, &ViewConstants, 0);
+
+		for (SIZE_T PrimitiveIdx = 0; PrimitiveIdx < Primitives.size(); ++PrimitiveIdx)
+		{
+			if (!Primitives[PrimitiveIdx]->bShowOriginAxes)
+			{
+				continue;
+			}
+
+			CommandList->SetGraphicsRootConstantBufferView(SceneAxisGizmoPass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(PrimitiveIdx));
+			SceneAxisGizmoPass.RenderPrimitive(CommandList, *Primitives[PrimitiveIdx]);
+		}
+
+		// Back to what the UI expects: the back buffer, no depth. Its pipeline has no depth
+		// format, and the debug layer rejects a draw whose target disagrees with the state.
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
+	}
+	DXI_PIX_END(CommandList);
+}
+
+void D3D12Renderer::RenderSelectionPass()
+{
+	const auto& Settings = SceneDebugUI.GetSelectionSettings();
+	const Primitive * const Selected = GetSelectedPrimitive();
+
+	if (!Settings.bEnabled || Selected == nullptr || (!Settings.bShowTint && !Settings.bShowBox))
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+	const SIZE_T SelectedIdx = static_cast<SIZE_T>(SceneDebugUI.GetSelectedPrimitiveIdx());
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::SELECTION, L"Selection | %s", Selected->Name.c_str());
+	{
+		// Depth as a depth target again, the light pass left it readable as a texture. The tint
+		// tests against it, nothing here writes to it.
+		DepthBuffer.TransitionToDepthWrite(CommandList);
+
+		const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
+		const auto DsvHandle = DepthBuffer.GetDsvHandle();
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, &DsvHandle);
+
+		CommandList->SetGraphicsRootSignature(SceneSelectionPass.GetRootSignature());
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// One set of constants and one object buffer serve both pipelines, they share the root signature
+		SelectionConstants ViewConstants = {};
+		ViewConstants.BoxMin					= Selected->VertexFactory.LocalBoundsMin;
+		ViewConstants.BoxMax					= Selected->VertexFactory.LocalBoundsMax;
+		ViewConstants.SelectionLineThickness	= Settings.BoxThickness;
+		ViewConstants.SelectionColor			= { Settings.Color.x, Settings.Color.y, Settings.Color.z, Settings.TintStrength };
+		ViewConstants.SelectionViewport			= { ViewPort.Width, ViewPort.Height };
+		CommandList->SetGraphicsRoot32BitConstants(SceneSelectionPass.ViewIdx, SelectionConstantCount, &ViewConstants, 0);
+		CommandList->SetGraphicsRootConstantBufferView(SceneSelectionPass.PrimitiveCBVIdx, GetPrimitiveCbvAddress(SelectedIdx));
+
+		// Tint first so the box, which ignores depth, is drawn over it
+		if (Settings.bShowTint)
+		{
+			CommandList->SetPipelineState(SceneSelectionPass.GetPipelineState());
+			SceneSelectionPass.RenderPrimitive(CommandList, *Selected);
+		}
+
+		// A mesh without vertices has no bounds, which the cache leaves inverted. Nothing to box then.
+		const auto& BoundsMin = Selected->VertexFactory.LocalBoundsMin;
+		const auto& BoundsMax = Selected->VertexFactory.LocalBoundsMax;
+		if (Settings.bShowBox && BoundsMin.x <= BoundsMax.x && BoundsMin.y <= BoundsMax.y && BoundsMin.z <= BoundsMax.z)
+		{
+			CommandList->SetPipelineState(SceneSelectionPass.GetBoxPipelineState());
+			SceneSelectionPass.RenderBox(CommandList);
+		}
+
+		// Back to what the next pass expects: the back buffer, no depth
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
+	}
+	DXI_PIX_END(CommandList);
+}
+
+void D3D12Renderer::RenderTransformGizmoPass()
+{
+	const auto& Settings = SceneDebugUI.GetTransformGizmoSettings();
+	const Primitive * const Selected = GetSelectedPrimitive();
+
+	if (!Settings.bEnabled || Selected == nullptr)
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::TRANSFORM_GIZMO, L"Transform Gizmo | %s", Selected->Name.c_str());
+	{
+		// The same frame the mouse is tested against, so what is drawn is what can be grabbed
+		const GizmoFrame Frame = TransformGizmo::BuildFrame(BuildGizmoCamera(), *Selected, Settings);
+
+		// No depth, the handles are drawn over everything and leave the depth buffer alone
+		const auto RtvHandle = SwapChain.GetRtvHandle(CurrentFrameIdx);
+		CommandList->OMSetRenderTargets(1, &RtvHandle, FALSE, nullptr);
+
+		CommandList->SetGraphicsRootSignature(SceneTransformGizmoPass.GetRootSignature());
+		CommandList->SetPipelineState(SceneTransformGizmoPass.GetPipelineState());
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		const auto& CameraPosition = Camera.GetPosition();
+
+		TransformGizmoConstants ViewConstants = {};
+		XMStoreFloat4x4(&ViewConstants.WorldToCameraClip, XMMatrixTranspose(Camera.GetViewMatrix() * Camera.GetProjMatrix()));
+		ViewConstants.GizmoOrigin			= Frame.Origin;
+		ViewConstants.GizmoLength			= Frame.Length;
+		ViewConstants.GizmoAxisX			= Frame.Axes[0];
+		ViewConstants.GizmoAxisY			= Frame.Axes[1];
+		ViewConstants.GizmoAxisZ			= Frame.Axes[2];
+		ViewConstants.GizmoMode				= static_cast<UINT>(Settings.Mode);
+		ViewConstants.GizmoHoveredAxis		= SceneTransformGizmo.GetHoveredAxis();
+		ViewConstants.GizmoActiveAxis		= SceneTransformGizmo.GetActiveAxis();
+		ViewConstants.GizmoCameraPosition	= { CameraPosition.x, CameraPosition.y, CameraPosition.z };
+		ViewConstants.GizmoLineThickness	= Settings.LineThickness;
+		ViewConstants.GizmoViewport			= { ViewPort.Width, ViewPort.Height };
+		ViewConstants.GizmoHeadSize			= Settings.HeadSize;
+		CommandList->SetGraphicsRoot32BitConstants(SceneTransformGizmoPass.ViewIdx, TransformGizmoConstantCount, &ViewConstants, 0);
+
+		SceneTransformGizmoPass.RenderGizmo(CommandList, Settings.Mode);
+	}
+	DXI_PIX_END(CommandList);
+}
+
 void D3D12Renderer::RenderDebugUI()
 {
 	auto * const CommandList = FrameContext.GetCommandList();
@@ -629,6 +891,49 @@ void D3D12Renderer::EndFrame()
 	// No wait here on purpose. Execute() signalled this frame's fence, and BeginFrame()
 	// blocks on it only once this frame index comes back around, which leaves the CPU
 // free to record the next frames in the meantime.
+	// The one exception is a frame that holds the copies for a dump, see FinishFrameDump
+	FinishFrameDump();
+}
+
+void D3D12Renderer::CaptureFrameDump()
+{
+	if (!SceneDebugUI.ConsumeDumpRequest())
+	{
+		return;
+	}
+
+	auto * const CommandList = FrameContext.GetCommandList();
+
+	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::FRAME_DUMP, L"Frame Dump");
+	{
+		// Depth is turned back into a distance with the entries of the projection that make z
+		XMFLOAT4X4 Projection;
+		XMStoreFloat4x4(&Projection, Camera.GetProjMatrix());
+
+		// The back buffer is still the render target LightPass drew into
+		SceneFrameDump.Capture(Device, CommandList, SwapChain, CurrentFrameIdx, D3D12_RESOURCE_STATE_RENDER_TARGET,
+								SceneGBuffer, DepthBuffer, Projection._33, Projection._43);
+		bFrameDumpRecorded = true;
+	}
+	DXI_PIX_END(CommandList);
+}
+
+void D3D12Renderer::FinishFrameDump()
+{
+	if (!bFrameDumpRecorded)
+	{
+		return;
+	}
+	bFrameDumpRecorded = false;
+
+	// The copies sit on the list that was just submitted. Reading before the GPU has run them
+	// would hand back empty memory, so this is the one frame where the CPU stands and waits.
+	FrameContext.WaitForFrame(Device, CurrentFrameIdx);
+
+	const auto Result = SceneFrameDump.Write((DXIPATHS::GetExecutableDir / L"Dumps").Str());
+
+	SceneDebugUI.SetDumpStatus(Result.Message, Result.bSuccess);
+	OutputDebugStringW((L"[FrameDump] " + Result.Message + L"\n").c_str());
 }
 
 void D3D12Renderer::UploadCameraConstants()
@@ -830,6 +1135,27 @@ void D3D12Renderer::Destroy()
 
 void D3D12Renderer::OnKeyDown(UINT8 Key)
 {
+	// Tool hotkeys. Neither is a camera key, W A S D and the arrows are those.
+	switch (Key)
+	{
+	case '1':
+		SceneDebugUI.GetTransformGizmoSettings().Mode = TransformMode::Move;
+		return;
+
+	case '2':
+		SceneDebugUI.GetTransformGizmoSettings().Mode = TransformMode::Rotate;
+		return;
+
+	case VK_ESCAPE:
+		// Lets go of a held handle as well, the object stays where it was dragged to
+		SceneTransformGizmo.EndDrag();
+		SceneTransformGizmo.ClearHover();
+		SceneDebugUI.SetSelectedPrimitiveIdx(-1);
+		return;
+
+	default:;
+	}
+
 	Camera.OnKeyDown(Key);
 }
 
@@ -841,4 +1167,111 @@ void D3D12Renderer::OnKeyUp(UINT8 Key)
 void D3D12Renderer::OnMouseMove(int DeltaX, int DeltaY)
 {
 	Camera.OnMouseMove(DeltaX, DeltaY);
+}
+
+Primitive* D3D12Renderer::GetSelectedPrimitive() const
+{
+	const int SelectedIdx = SceneDebugUI.GetSelectedPrimitiveIdx();
+
+	// The panel clamps its own index, but a primitive can go between that and here
+	if (SelectedIdx < 0 || SelectedIdx >= static_cast<int>(Primitives.size()))
+	{
+		return nullptr;
+	}
+
+	return Primitives[static_cast<size_t>(SelectedIdx)].get();
+}
+
+GizmoCamera D3D12Renderer::BuildGizmoCamera() const
+{
+	const auto& CameraPosition = Camera.GetPosition();
+
+	return MakeGizmoCamera(Camera.GetViewMatrix(),
+							Camera.GetProjMatrix(),
+							XMFLOAT3(CameraPosition.x, CameraPosition.y, CameraPosition.z),
+							XMFLOAT2(ViewPort.Width, ViewPort.Height));
+}
+
+XMFLOAT2 D3D12Renderer::ClientToViewport(const int X, const int Y) const
+{
+	// The window can be a different size than what is rendered, the viewport is always the render
+	// size, so the cursor is scaled to it
+	RECT Client = {};
+	GetClientRect(Win32Proc::GetHwnd(), &Client);
+
+	const float ClientWidth		= static_cast<float>(Client.right - Client.left);
+	const float ClientHeight	= static_cast<float>(Client.bottom - Client.top);
+
+	if (ClientWidth < 1.f || ClientHeight < 1.f)
+	{
+		return XMFLOAT2(static_cast<float>(X), static_cast<float>(Y));
+	}
+
+	return XMFLOAT2(static_cast<float>(X) * ViewPort.Width / ClientWidth,
+					static_cast<float>(Y) * ViewPort.Height / ClientHeight);
+}
+
+void D3D12Renderer::OnLeftButtonDown(int X, int Y)
+{
+	CursorPixels = ClientToViewport(X, Y);
+
+	// The handles of what is already selected win over whatever is behind them, they are drawn on top.
+	// A press that is not on one falls through to picking.
+	const auto& Settings = SceneDebugUI.GetTransformGizmoSettings();
+	if (Primitive * const Selected = GetSelectedPrimitive())
+	{
+		if (Settings.bEnabled && SceneTransformGizmo.BeginDrag(BuildGizmoCamera(), *Selected, Settings, CursorPixels))
+		{
+			return;
+		}
+	}
+
+	// Nothing under the cursor deselects, which -1 is
+	const PickRay Ray = BuildPickRay(CursorPixels,
+									XMFLOAT2(ViewPort.Width, ViewPort.Height),
+									Camera.GetViewMatrix(),
+									Camera.GetProjMatrix());
+	SceneDebugUI.SetSelectedPrimitiveIdx(PickPrimitive(Ray, Primitives));
+	SceneTransformGizmo.ClearHover();
+}
+
+void D3D12Renderer::OnLeftButtonUp(int X, int Y)
+{
+	SceneTransformGizmo.EndDrag();
+
+	// The handle under the cursor lights up again right away, without waiting for the next move
+	OnCursorMove(X, Y);
+}
+
+void D3D12Renderer::OnCursorMove(int X, int Y)
+{
+	CursorPixels = ClientToViewport(X, Y);
+
+	const auto& Settings = SceneDebugUI.GetTransformGizmoSettings();
+	Primitive * const Selected = GetSelectedPrimitive();
+
+	// A held handle follows the cursor wherever it goes, over a panel too
+	if (SceneTransformGizmo.IsDragging())
+	{
+		if (Selected != nullptr)
+		{
+			// Ctrl rounds the move or the turn to a step
+			const bool bSnap = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+			SceneTransformGizmo.Drag(BuildGizmoCamera(), *Selected, Settings, CursorPixels, bSnap);
+		}
+		else
+		{
+			SceneTransformGizmo.EndDrag();
+		}
+		return;
+	}
+
+	// Pointing at a panel is not pointing at the view behind it
+	if (Selected == nullptr || !Settings.bEnabled || DebugUI::WantsMouse())
+	{
+		SceneTransformGizmo.ClearHover();
+		return;
+	}
+
+	SceneTransformGizmo.UpdateHover(BuildGizmoCamera(), *Selected, Settings, CursorPixels);
 }

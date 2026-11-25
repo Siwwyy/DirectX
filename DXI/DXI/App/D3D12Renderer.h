@@ -34,6 +34,15 @@
 #include "ShadowPass.h"
 #include "BasePass.h"
 #include "LightPass.h"
+#include "TangentFramePass.h"
+#include "AxisGizmoPass.h"
+#include "SelectionPass.h"
+#include "TransformGizmoPass.h"
+#include "FrameDump.h"
+
+// Selection | Picking with the mouse, and the handles that move or turn what was picked
+#include "Picking.h"
+#include "TransformGizmo.h"
 
 // UI
 #include "DebugUI.h"
@@ -85,6 +94,12 @@ public:
 	void OnKeyDown(UINT8 Key);
 	void OnKeyUp(UINT8 Key);
 	void OnMouseMove(int DeltaX, int DeltaY);
+
+	// Selection | Positions are client pixels, as the window reports them. A press grabs a handle
+	// of the selected object if the cursor is on one, and picks the object under it otherwise.
+	void OnLeftButtonDown(int X, int Y);
+	void OnLeftButtonUp(int X, int Y);
+	void OnCursorMove(int X, int Y);
 
 	// Presentation | With vsync on the frame rate can never exceed the refresh rate of
 	// the display, which is 32 Hz over a remote desktop session
@@ -206,7 +221,30 @@ private:
 	void RenderShadowPass();
 	void RenderBasePass();
 	void RenderLightPass();
+	void RenderTangentFramePass();
+	void RenderAxisGizmoPass();
+	void RenderSelectionPass();
+	void RenderTransformGizmoPass();
 	void RenderDebugUI();
+
+	/**
+	 * The selected primitive, or null when nothing is. Reads the panel's index so the list and
+	 * a click in the view always agree, and checks it against the scene.
+	 */
+	_NODISCARD Primitive* GetSelectedPrimitive() const;
+
+	/**
+	 * The camera as the gizmo's maths wants it, and a client position turned into a viewport one
+	 */
+	_NODISCARD GizmoCamera BuildGizmoCamera() const;
+	_NODISCARD XMFLOAT2 ClientToViewport(const int X, const int Y) const;
+
+	/**
+	 * EXR dump of every buffer. Capture records the copies into the frame being drawn when the
+	 * panel asked for one, Finish runs after the frame was submitted, waits for the GPU and writes the files.
+	 */
+	void CaptureFrameDump();
+	void FinishFrameDump();
 
 	/**
 	 * World to clip for one light, and whether it needs the cube pipeline.
@@ -273,6 +311,17 @@ private:
 	ShadowPass				SceneShadowPass;
 	BasePass				SceneBasePass;
 	LightPass				SceneLightPass;
+	TangentFramePass		SceneTangentFramePass;	// Overlay on top of the shaded frame, only when the panel asks for it
+	AxisGizmoPass			SceneAxisGizmoPass;		// Same, three arrows at the origin of each flagged object
+	SelectionPass			SceneSelectionPass;		// Same, the selected object tinted and boxed
+	TransformGizmoPass		SceneTransformGizmoPass;// Same, the arrows or rings that move or turn it
+
+	// The mouse's side of selection. The state is the gizmo's, the passes above only draw it.
+	TransformGizmo			SceneTransformGizmo;
+	XMFLOAT2				CursorPixels	= { -1.f, -1.f };	// Last cursor position in the viewport, off screen until the mouse moves
+
+	FrameDump				SceneFrameDump;			// Writes every buffer of a frame to EXR when the panel asks
+	bool					bFrameDumpRecorded = false;	// Whether this frame's list holds the copies, so EndFrame knows to wait
 
 	ComPtr<DXDescriptorHeap>	LightInputsHeap;	// One heap for everything LightPass samples, only one can be bound at a time
 

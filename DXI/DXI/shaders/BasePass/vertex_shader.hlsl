@@ -12,7 +12,7 @@ PSInput main(VSInput Input)
 
     //if Input.Position is not surrounded by float4, then WorldViewProjectionMat4x4 is truncated to float3x4...
     Output.Position             = mul(Input.Position, WorldToClip);
-    Output.UV            = Input.UV;
+    Output.UV                   = Input.UV;
 
     // Same vertex through this frame's and the previous frame's matrices. The difference
     // between where the two land on screen is what the velocity target stores.
@@ -30,6 +30,6 @@ PSInput main(VSInput Input)
     // Same for the bitangent, it is the other axis lying in the surface
     Output.Bitangent            = float4(mul(float4(Input.Bitangent.xyz, 0.f), LocalToWorld).xyz, 0.f);
 
-    Output.WorldPosition = mul(Input.Position, LocalToWorld);
+    Output.WorldPosition        = mul(Input.Position, LocalToWorld);
     return Output;
 }
