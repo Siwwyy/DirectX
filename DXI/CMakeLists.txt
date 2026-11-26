@@ -101,10 +101,36 @@ if(DXI_WINMAINS)
     endif()
 endif()
 
-# Create executable from all DXI sources (include headers for IDE).
+# The engine is a library and the executable is a thin shell around it.
+#
+# DXICore is everything that renders: the device, the passes, the scene, the picking and the
+# gizmo. It does not create a window or run a message loop, whoever hosts it hands over a window
+# handle, see D3D12Renderer::SetWindowHandle. That is what lets something other than DXIApp host
+# it, an editor with its own windows or a Python extension, with no change to the engine.
+#
+# DXIApp is what is left: WinMain and Win32Proc, which create the window and pump its messages.
+set(DXI_SHELL_SOURCES
+    "${DXI_SRC_DIR}/App/Win32Proc.cpp"
+    ${DXI_WINMAINS}
+)
+
+set(DXI_CORE_SOURCES ${DXI_SOURCES})
+list(REMOVE_ITEM DXI_CORE_SOURCES ${DXI_SHELL_SOURCES})
+
+if(NOT DXI_CORE_SOURCES)
+    message(FATAL_ERROR "No engine sources left for DXICore after taking out the shell")
+endif()
+
+# Create the library from all DXI sources (include headers for IDE).
 # DXI_DEPRECATED is in the list only so the files stay browsable in the solution; they
 # carry HEADER_FILE_ONLY so the generator will not try to compile them.
-add_executable(DXIApp WIN32 ${DXI_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS} ${DXI_DEPRECATED})
+add_library(DXICore STATIC ${DXI_CORE_SOURCES} ${DXI_HEADERS} ${DXI_SHADERS} ${DXI_DEPRECATED})
+
+add_executable(DXIApp WIN32 ${DXI_SHELL_SOURCES})
+target_link_libraries(DXIApp PRIVATE DXICore)
+
+# Opening the solution should start the application, not ALL_BUILD or the library
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT DXIApp)
 
 # Include the DXI root plus every subfolder that actually holds a header.
 # Derived from DXI_HEADERS rather than hand listed, so adding a new folder such as
@@ -133,7 +159,10 @@ message(STATUS "cgltf extracted to: ${cgltf_SOURCE_DIR}")
 
 # Header only, so there is nothing to compile or link. One translation unit defines
 # CGLTF_IMPLEMENTATION, see Geometry/GltfLoader.cpp.
-target_include_directories(DXIApp PRIVATE "${cgltf_SOURCE_DIR}")
+#
+# Include directories, definitions and libraries below are PUBLIC on DXICore: the shell and any
+# other host include the engine's headers, which pull these in, and have to see them the same way.
+target_include_directories(DXICore PUBLIC "${cgltf_SOURCE_DIR}")
 
 # Dear ImGui | Debug panel. Fetched as a zip like DXC below, so no git is needed.
 # Pinned on purpose, the DX12 backend changed its Init signature across releases.
@@ -155,32 +184,32 @@ set(IMGUI_SOURCES
     "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
 )
 
-target_sources(DXIApp PRIVATE ${IMGUI_SOURCES})
+target_sources(DXICore PRIVATE ${IMGUI_SOURCES})
 
 # Out of the way in its own filter. These live under the build tree, so they are not part
 # of the DXI_SRC_DIR tree above and would otherwise land in the default flat filter.
 source_group("ThirdParty\\ImGui" FILES ${IMGUI_SOURCES})
 
-target_include_directories(DXIApp
-    PRIVATE
+target_include_directories(DXICore
+    PUBLIC
         "${imgui_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}/backends"
 )
 
 # Add include directories to the target
-target_include_directories(DXIApp
-    PRIVATE
+target_include_directories(DXICore
+    PUBLIC
         ${DXI_PUBLIC_INCLUDES}
 )
 
 # Compile settings
-target_compile_definitions(DXIApp PRIVATE UNICODE _UNICODE NOMINMAX) # work with wstring etc.
-target_compile_features(DXIApp PRIVATE cxx_std_14)
+target_compile_definitions(DXICore PUBLIC UNICODE _UNICODE NOMINMAX) # work with wstring etc.
+target_compile_features(DXICore PUBLIC cxx_std_14)
 
 # Link system DirectX libraries on Windows
 if(WIN32)
-    target_link_libraries(DXIApp
-        PRIVATE
+    target_link_libraries(DXICore
+        PUBLIC
             d3d12
             dxgi
             d3dcompiler
@@ -290,11 +319,12 @@ if(WIN32)
 
         # Apply found include/lib if available
         if(PIX_INCLUDE_DIR AND PIX_RUNTIME_LIB)
-            target_include_directories(DXIApp PRIVATE ${PIX_INCLUDE_DIR})
-            target_link_libraries(DXIApp PRIVATE ${PIX_RUNTIME_LIB})
-            target_compile_definitions(DXIApp PRIVATE USE_PIX=1)
+            target_include_directories(DXICore PUBLIC ${PIX_INCLUDE_DIR})
+            target_link_libraries(DXICore PUBLIC ${PIX_RUNTIME_LIB})
+            target_compile_definitions(DXICore PUBLIC USE_PIX=1)
 
-            # Copy the runtime DLL(s) to the target output folder after build
+            # Copy the runtime DLL(s) to the executable's folder after build. The runtime DLLs
+            # belong next to whatever gets run, so this stays on DXIApp and not on the library.
             add_custom_command(TARGET DXIApp POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     ${PIX_RUNTIME_DLL}
@@ -335,8 +365,8 @@ if(DXI_COMPILER_RELEASE_URL)
     message(STATUS "DXC DLLs: ${DXC_DLLS}")
 
     # Link statically againts DXC import lib and include DXC headers
-    target_include_directories(DXIApp PRIVATE "${_DXC_DIR}/inc")
-    target_link_libraries(DXIApp PRIVATE ${DXC_LIBS})
+    target_include_directories(DXICore PUBLIC "${_DXC_DIR}/inc")
+    target_link_libraries(DXICore PUBLIC ${DXC_LIBS})
 
 else()
 
@@ -362,7 +392,13 @@ else()
 endif()
 
 
-# Per-configuration output directories
+# Per-configuration output directories. The library's archive goes under lib/, away from
+# the executable and the DLLs next to it.
+set_target_properties(DXICore PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib/Debug"
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib/Release"
+)
+
 set_target_properties(DXIApp PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin/Debug"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin/Release"
@@ -372,8 +408,53 @@ set_target_properties(DXIApp PROPERTIES
 # optionally link dxguid if available (resolves some IID_* / GUID link errors)
 find_library(DXGUID_LIB NAMES dxguid dxguid.lib PATHS ENV LIB PATHS NO_DEFAULT_PATH)
 if(DXGUID_LIB)
-    target_link_libraries(DXIApp PRIVATE ${DXGUID_LIB})
+    target_link_libraries(DXICore PUBLIC ${DXGUID_LIB})
 else()
     # linking plain "dxguid" also works with MSVC in many cases:
-    target_link_libraries(DXIApp PRIVATE dxguid)
+    target_link_libraries(DXICore PUBLIC dxguid)
+endif()
+# Python module | `import dxi`. The engine in a Python process, drawing into a window the caller
+# owns, which is how an editor built with PySide6 hosts it. See python/bindings/dxi_module.cpp.
+#
+# The binding source is outside DXI/ on purpose: that tree is globbed into DXICore, and the
+# engine must not know Python exists. Off, nothing below runs and nothing needs Python installed.
+# Which Python it builds against is whatever find_package finds, pass -DPython_EXECUTABLE=... to
+# pick one: the module only loads in the interpreter version it was built for.
+option(DXI_BUILD_PYTHON "Build the dxi Python extension module" ON)
+
+if(DXI_BUILD_PYTHON)
+    find_package(Python 3.9 QUIET COMPONENTS Interpreter Development.Module)
+
+    if(Python_FOUND)
+        # Header only. Pinned, the binding is written against this release's enum and optional casters.
+        set(PYBIND11_VERSION_TAG    "v2.13.6")
+        set(PYBIND11_RELEASE_URL    "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION_TAG}.zip")
+        set(PYBIND11_FINDPYTHON     ON) # use the Python found above, not its own search
+
+        message(STATUS "FetchContent: requesting pybind11 from ${PYBIND11_RELEASE_URL}")
+        FetchContent_Declare(pybind11 URL ${PYBIND11_RELEASE_URL})
+        FetchContent_MakeAvailable(pybind11)
+
+        file(GLOB_RECURSE DXI_PYTHON_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/python/bindings/*.cpp")
+
+        pybind11_add_module(DXIPython MODULE ${DXI_PYTHON_SOURCES})
+        target_link_libraries(DXIPython PRIVATE DXICore)
+
+        # The file has to be called dxi.pyd for `import dxi`. The target is not, a target named
+        # dxi would sit beside DXIApp and DXICore as a third project nobody can tell apart.
+        set_target_properties(DXIPython PROPERTIES OUTPUT_NAME dxi)
+
+        # Next to the executable, where the DLLs it needs are: Windows looks for a module's
+        # dependencies in its own folder. Building DXIApp is what copies them there, so it comes first.
+        add_dependencies(DXIPython DXIApp)
+        set_target_properties(DXIPython PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG      "${CMAKE_BINARY_DIR}/bin/Debug"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE    "${CMAKE_BINARY_DIR}/bin/Release"
+            LIBRARY_OUTPUT_DIRECTORY_DEBUG      "${CMAKE_BINARY_DIR}/bin/Debug"
+            LIBRARY_OUTPUT_DIRECTORY_RELEASE    "${CMAKE_BINARY_DIR}/bin/Release"
+        )
+        message(STATUS "Python module dxi: ${Python_EXECUTABLE} (${Python_VERSION})")
+    else()
+        message(STATUS "Python with development files not found, the dxi module is not built. Pass -DDXI_BUILD_PYTHON=OFF to silence this.")
+    endif()
 endif()

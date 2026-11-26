@@ -4,8 +4,7 @@
 
 // Own Includes
 // Scene building lives in D3D12RendererSceneInit.cpp, which is where Paths.h and
-// GltfLoader.h went with it
-#include "Win32Proc.h"
+// GltfLoader.h went with it. Nothing of Win32Proc in here: the window is the host's.
 #include "CommandLine.h"
 #include "Model.h"
 
@@ -31,6 +30,8 @@ D3D12Renderer::D3D12Renderer(UINT WindowWidth, UINT WindowHeight, std::wstring W
 
 void D3D12Renderer::Initialize()
 {
+	DXASSERT(WindowHandle, "SetWindowHandle has to be called before Initialize, the swap chain presents into that window");
+
 	// Core | Device first, everything else is built on top of it.
 	// Every one of these is a debugging knob, so it comes off the command line.
 	DXIDeviceOptions DeviceOptions;
@@ -47,7 +48,7 @@ void D3D12Renderer::Initialize()
 
 	// Off by default, since a pinned frame rate says nothing about how long a frame takes
 	bVSyncEnabled = DXICMD::HasFlag(L"vsync");
-	SwapChain.Init(Device, Win32Proc::GetHwnd(), WindowWidth, WindowHeight, BACK_BUFFER_COUNT);
+	SwapChain.Init(Device, WindowHandle, WindowWidth, WindowHeight, BACK_BUFFER_COUNT);
 	DepthBuffer.Init(Device, WindowWidth, WindowHeight);
 	FrameContext.Init(Device, BACK_BUFFER_COUNT);
 
@@ -58,8 +59,12 @@ void D3D12Renderer::Initialize()
 	InitializeConstantBuffers();
 	InitializePasses();
 
-	// Debug panel. It uploads a font atlas of its own, so it goes in before the flush.
-	SceneDebugUI.Init(Device, Win32Proc::GetHwnd(), DXISwapChain::GetFormat(), BACK_BUFFER_COUNT);
+	// Debug panel. It uploads a font atlas of its own, so it goes in before the flush. A host
+	// with panels of its own leaves it out altogether, see SetDebugUIEnabled.
+	if (bDebugUIEnabled)
+	{
+		SceneDebugUI.Init(Device, WindowHandle, DXISwapChain::GetFormat(), BACK_BUFFER_COUNT);
+	}
 
 	// Shadows are off unless asked for. The panel owns the switch so it can be flipped
 	// while running; this only decides what it starts as.
@@ -80,6 +85,56 @@ void D3D12Renderer::Initialize()
 	}
 
 	DefaultMaterial->ReleaseUploadHeaps();
+
+	bInitialized = true;
+}
+
+void D3D12Renderer::Resize(const UINT NewWidth, const UINT NewHeight)
+{
+	// Windows sends a WM_SIZE while the window is still being created, and a host can do the same.
+	// There is nothing to resize yet, and what gets built is the size the constructor was given.
+	if (!bInitialized || bDestroyed)
+	{
+		return;
+	}
+
+	// A minimized window is 0 by 0, and neither the swap chain nor any texture can be that. Keep
+	// everything as it is and stop rendering, the restore brings the old size right back.
+	if (NewWidth == 0 || NewHeight == 0)
+	{
+		bMinimized = true;
+		return;
+	}
+
+	bMinimized = false;
+
+	if (NewWidth == WindowWidth && NewHeight == WindowHeight)
+	{
+		return;
+	}
+
+	// Frames are no longer waited on after Present, so up to BACK_BUFFER_COUNT of them can still
+	// be reading the buffers about to be replaced. The command list is closed between frames.
+	FrameContext.WaitForGpuIdle(Device);
+
+	// Everything that is as big as the screen. The shadow atlas is not, and is left alone.
+	SwapChain.Resize(Device, NewWidth, NewHeight);
+	DepthBuffer.Init(Device, NewWidth, NewHeight);
+	SceneGBuffer.Init(Device.Get(), NewWidth, NewHeight);
+
+	// The old resources are gone, the light pass would sample freed memory through its old views
+	WriteLightInputViews();
+
+	WindowWidth		= NewWidth;
+	WindowHeight	= NewHeight;
+	AspectRatio		= static_cast<float>(NewWidth) / static_cast<float>(NewHeight);
+	ViewPort		= CD3DX12_VIEWPORT(0.f, 0.f, static_cast<float>(NewWidth), static_cast<float>(NewHeight), 0.0f, 1.0f);
+	ScissorRect		= CD3DX12_RECT(0, 0, static_cast<LONG>(NewWidth), static_cast<LONG>(NewHeight));
+
+	Camera.SetScreenSize(NewWidth, NewHeight);
+
+	// The chain may have handed a different back buffer out first after the resize
+	CurrentFrameIdx = SwapChain.GetCurrentBackBufferIdx();
 }
 
 void D3D12Renderer::ProcessPendingSpawns()
@@ -287,6 +342,11 @@ void D3D12Renderer::InitializePasses()
 	ThrowIfFailed(Device.Get()->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&LightInputsHeap)));
 	NAME_D3D12_OBJECT(LightInputsHeap, L"Light Pass Inputs Heap");
 
+	WriteLightInputViews();
+}
+
+void D3D12Renderer::WriteLightInputViews()
+{
 	const auto IncrementSize = Device.Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE SrvHandle(LightInputsHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -297,7 +357,8 @@ void D3D12Renderer::InitializePasses()
 	//
 	// Anything that recreates the depth buffer has to rewrite this view as well, exactly as
 	// it does for the G-buffer's. The view outlives the resource it points at otherwise, and
-	// the symptom is a frame sampling freed memory rather than a crash.
+	// the symptom is a frame sampling freed memory rather than a crash. Resize is that, and
+	// calls this for it.
 	SrvHandle.Offset(GBufferTargetCount, IncrementSize);
 	DepthBuffer.CreateShaderResourceView(Device, SrvHandle);
 
@@ -332,7 +393,7 @@ XMMATRIX D3D12Renderer::GetLightShadowViewProj(const LightBase& Light, const UIN
 
 void D3D12Renderer::Update(float DeltaTime)
 {
-	if (bDestroyed)
+	if (bDestroyed || !bInitialized)
 	{
 		return;
 	}
@@ -341,8 +402,8 @@ void D3D12Renderer::Update(float DeltaTime)
 	StepTimer.Tick(NULL);
 	const auto ElapsedSeconds = static_cast<float>(StepTimer.GetElapsedSeconds());
 
-	// Update window text with FPS value
-	if (CurrentFrameIdx % 509)
+	// Update window text with FPS value. Not a host's business: its window has a title of its own.
+	if (bStatsInWindowTitle && WindowHandle && (CurrentFrameIdx % 509))
 	{
 		wchar_t Fps[64];
 		swprintf_s(Fps, L"%ufps", StepTimer.GetFramesPerSecond());
@@ -350,7 +411,7 @@ void D3D12Renderer::Update(float DeltaTime)
 		// Saying which it is makes a frame rate pinned to the refresh rate obvious
 		const std::wstring VSyncText	= bVSyncEnabled ? L" | VSync On" : L" | VSync Off";
 		const std::wstring WindowText	= WindowName + L" | Deferred" + VSyncText + L" | FPS: " + Fps;
-		SetWindowText(Win32Proc::GetHwnd(), WindowText.c_str());
+		SetWindowText(WindowHandle, WindowText.c_str());
 	}
 
 	// Camera matrices
@@ -363,7 +424,8 @@ void D3D12Renderer::Update(float DeltaTime)
 
 void D3D12Renderer::Render()
 {
-	if (bDestroyed)
+	// Nothing to draw into while the window is minimized, and nothing yet before Initialize
+	if (bDestroyed || !bInitialized || bMinimized)
 	{
 		return;
 	}
@@ -435,7 +497,10 @@ void D3D12Renderer::BeginFrame()
 	DepthBuffer.Clear(CommandList);
 
 	// Opens the UI frame, the widgets are filled in once the passes are done
-	SceneDebugUI.BeginFrame();
+	if (UsesDebugUI())
+	{
+		SceneDebugUI.BeginFrame();
+	}
 }
 
 void D3D12Renderer::RenderShadowPass()
@@ -866,6 +931,11 @@ void D3D12Renderer::RenderTransformGizmoPass()
 
 void D3D12Renderer::RenderDebugUI()
 {
+	if (!UsesDebugUI())
+	{
+		return;
+	}
+
 	auto * const CommandList = FrameContext.GetCommandList();
 
 	DXI_PIX_BEGIN(CommandList, DXIPIXCOLORS::UI, L"Debug UI");
@@ -1197,7 +1267,7 @@ XMFLOAT2 D3D12Renderer::ClientToViewport(const int X, const int Y) const
 	// The window can be a different size than what is rendered, the viewport is always the render
 	// size, so the cursor is scaled to it
 	RECT Client = {};
-	GetClientRect(Win32Proc::GetHwnd(), &Client);
+	GetClientRect(WindowHandle, &Client);
 
 	const float ClientWidth		= static_cast<float>(Client.right - Client.left);
 	const float ClientHeight	= static_cast<float>(Client.bottom - Client.top);

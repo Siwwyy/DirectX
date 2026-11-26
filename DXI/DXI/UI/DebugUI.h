@@ -110,6 +110,12 @@ public:
 		return Selection;
 	}
 
+	// Not const either, for a host that edits it with widgets of its own instead of this panel
+	_NODISCARD FORCEINLINE SelectionSettings& GetSelectionSettings() noexcept
+	{
+		return Selection;
+	}
+
 	// The move and rotate handles. Not const: the renderer's hotkeys switch the mode too.
 	_NODISCARD FORCEINLINE TransformGizmoSettings& GetTransformGizmoSettings() noexcept
 	{
@@ -130,6 +136,18 @@ public:
 
 	// What the origin axes overlay should draw, picked in the panel
 	_NODISCARD FORCEINLINE const AxisGizmoSettings& GetAxisGizmoSettings() const noexcept
+	{
+		return AxisGizmo;
+	}
+
+	// Not const, for a host that edits both with widgets of its own. The master switch of each
+	// lives here and nowhere else, so without a way to reach it such a host can never turn them on.
+	_NODISCARD FORCEINLINE TangentFrameSettings& GetTangentFrameSettings() noexcept
+	{
+		return TangentFrame;
+	}
+
+	_NODISCARD FORCEINLINE AxisGizmoSettings& GetAxisGizmoSettings() noexcept
 	{
 		return AxisGizmo;
 	}

@@ -30,6 +30,15 @@ public:
 	}
 
 	/**
+	 * Changes the size of every back buffer and makes their views again.
+	 *
+	 * The GPU must be idle: nothing in flight may still be drawing into or presenting the old
+	 * buffers, see DXIFrameContext::WaitForGpuIdle. The back buffers come out in the present state
+	 * like new ones, and which of them is current may change, so ask for the index afterwards.
+	 */
+	void Resize(const DXIDevice& Device, const UINT NewWidth, const UINT NewHeight);
+
+	/**
 	 * Index of the back buffer the next frame goes into
 	 */
 	_NODISCARD UINT GetCurrentBackBufferIdx() const;
@@ -72,14 +81,30 @@ public:
 	{
 		return BackBufferCount;
 	}
+	_NODISCARD FORCEINLINE UINT GetWidth() const noexcept
+	{
+		return Width;
+	}
+	_NODISCARD FORCEINLINE UINT GetHeight() const noexcept
+	{
+		return Height;
+	}
 
 private:
+
+	/**
+	 * Takes the back buffers out of the chain, names them and gives each its view
+	 */
+	void CreateBackBufferViews(const DXIDevice& Device);
 
 	ComPtr<IDXGISwapChain3>				SwapChain;					// the swap chain itself
 	std::vector<ComPtr<DXResource>>		BackBuffers;				// one surface per back buffer
 	ComPtr<DXDescriptorHeap>			RtvHeap;					// one render target view per back buffer
 	UINT								RtvIncrementSize	= 0;	// size of a single render target descriptor on this device
 	UINT								BackBufferCount		= 0;	// how many back buffers the chain was created with
+	UINT								Width				= 0;	// current size of the back buffers, in pixels
+	UINT								Height				= 0;
+	UINT								Flags				= 0;	// DXGI_SWAP_CHAIN_FLAG_* it was created with, ResizeBuffers has to repeat them
 	bool								bTearingSupported	= false;// whether an unsynchronized present is allowed at all
 };
 

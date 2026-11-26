@@ -84,11 +84,64 @@ public:
 	_NODISCARD float				GetAspectRatio() const	{ return AspectRatio; }
 	_NODISCARD const std::wstring&	GetWindowName() const	{ return WindowName; }
 
+	/**
+	 * Hosting | The renderer draws into a window it does not own: Win32Proc's for the executable,
+	 * a Qt widget's for the editor. Whoever creates the window hands its handle over, once, before
+	 * Initialize. The renderer never creates, shows or subclasses a window, and a host that wants
+	 * the debug panel's input has to forward messages to DebugUI itself.
+	 */
+	void SetWindowHandle(const HWND InWindowHandle) noexcept
+	{
+		WindowHandle = InWindowHandle;
+	}
+
+	/**
+	 * Hosting | The ImGui panel is an overlay, and a host with panels of its own does not want it.
+	 * It has to be decided before Initialize, which only sets ImGui up when it is on. Off, the
+	 * selection and gizmo settings still exist with their defaults, they just have no widgets.
+	 */
+	void SetDebugUIEnabled(const bool bEnabled) noexcept
+	{
+		bDebugUIEnabled = bEnabled;
+	}
+
+	/**
+	 * Hosting | Frame rate and vsync state are written into the window's title by default, which
+	 * is right for the executable. A host with its own title bar turns it off.
+	 */
+	void SetStatsInWindowTitle(const bool bEnabled) noexcept
+	{
+		bStatsInWindowTitle = bEnabled;
+	}
+
 	// Functions
 	void Initialize();
 	void Render();
 	void Update(float DeltaTime);
 	void Destroy();
+
+	/**
+	 * One whole frame: Update, then Render. What a host calls from its own timer or paint event.
+	 */
+	void Tick()
+	{
+		Update(0.f);
+		Render();
+	}
+
+	/**
+	 * Follows the window to a new client size in pixels: the swap chain, depth, G-buffer, viewport
+	 * and the camera's aspect ratio. Waits for the GPU, so it is a hitch, not something to call
+	 * every frame. A size of zero, which a minimized window reports, pauses rendering until a
+	 * real size comes back. Before Initialize it does nothing, the size given to the constructor
+	 * is what gets built.
+	 */
+	void Resize(const UINT NewWidth, const UINT NewHeight);
+
+	_NODISCARD bool IsInitialized() const noexcept
+	{
+		return bInitialized && !bDestroyed;
+	}
 
 	// Movement of camera
 	void OnKeyDown(UINT8 Key);
@@ -112,6 +165,66 @@ public:
 		return bVSyncEnabled;
 	}
 
+	/**
+	 * Scene access | What a host with panels of its own needs to list and edit the scene. An index is
+	 * a primitive's place in the scene, the one the selection and the debug panel use too, and it
+	 * only stays valid until something is spawned or removed.
+	 */
+	_NODISCARD SIZE_T GetPrimitiveCount() const noexcept
+	{
+		return Primitives.size();
+	}
+
+	// Null when the index is out of range
+	_NODISCARD Primitive* GetPrimitiveAt(const SIZE_T PrimitiveIdx) const noexcept
+	{
+		return PrimitiveIdx < Primitives.size() ? Primitives[PrimitiveIdx].get() : nullptr;
+	}
+
+	// -1 when nothing is selected
+	_NODISCARD int GetSelectedPrimitiveIdx() const noexcept
+	{
+		return SceneDebugUI.GetSelectedPrimitiveIdx();
+	}
+
+	/**
+	 * Selects a primitive, or nothing for an index that is -1 or out of range. A held gizmo handle is
+	 * let go of, it belonged to the object that was selected before.
+	 */
+	void SelectPrimitive(const int PrimitiveIdx) noexcept
+	{
+		const bool bValid = PrimitiveIdx >= 0 && static_cast<SIZE_T>(PrimitiveIdx) < Primitives.size();
+
+		SceneTransformGizmo.EndDrag();
+		SceneTransformGizmo.ClearHover();
+		SceneDebugUI.SetSelectedPrimitiveIdx(bValid ? PrimitiveIdx : -1);
+	}
+
+	/**
+	 * The settings the overlays read, live: a change takes effect on the next frame. They exist and
+	 * keep their defaults when the ImGui panel is off, a host's own widgets edit them here.
+	 */
+	_NODISCARD TransformGizmoSettings& GetTransformGizmoSettings() noexcept
+	{
+		return SceneDebugUI.GetTransformGizmoSettings();
+	}
+
+	_NODISCARD SelectionSettings& GetSelectionSettings() noexcept
+	{
+		return SceneDebugUI.GetSelectionSettings();
+	}
+
+	// Both overlays are off until their master switch is, whatever the objects' own flags say
+	_NODISCARD TangentFrameSettings& GetTangentFrameSettings() noexcept
+	{
+		return SceneDebugUI.GetTangentFrameSettings();
+	}
+
+	_NODISCARD AxisGizmoSettings& GetAxisGizmoSettings() noexcept
+	{
+		return SceneDebugUI.GetAxisGizmoSettings();
+	}
+
 private:
 
 	/**
@@ -121,6 +234,21 @@ private:
 	void InitializeMaterials();
 	void InitializeScene();
 	void InitializePasses();
+
+	/**
+	 * Writes the views LightPass samples into LightInputsHeap: the G-buffer targets, the depth
+	 * and the shadow atlas. Anything that recreates one of those resources has to call this again,
+	 * a view outlives the resource it points at otherwise.
+	 */
+	void WriteLightInputViews();
+
+	/**
+	 * The ImGui panel is drawn only when the host wants it and it was set up
+	 */
+	_NODISCARD bool UsesDebugUI() const noexcept
+	{
+		return bDebugUIEnabled && SceneDebugUI.IsInitialized();
+	}
 
 	/**
 	 * The setups InitializeScene picks between, plus the lights they share
@@ -299,6 +427,13 @@ private:
 
 	bool					bVSyncEnabled	= false;	// Off by default, a pinned frame rate says nothing about frame cost
 	bool					bDestroyed		= false;	// Set by Destroy(), after which Update() and Render() do nothing
+
+	// Hosting | The window is somebody else's, see SetWindowHandle
+	HWND					WindowHandle	= nullptr;
+	bool					bInitialized	= false;	// Set at the end of Initialize, a resize or a frame before it has nothing to work on
+	bool					bMinimized		= false;	// The window has no area, so nothing is rendered until it has again
+	bool					bDebugUIEnabled	= true;		// Whether the ImGui overlay exists at all
+	bool					bStatsInWindowTitle = true;	// Whether Update writes the frame rate into the title
 
 	// Deferred rendering | ShadowPass writes depth from the light, BasePass writes the
 	// surface, LightPass shades it and looks the occlusion up in the shadow map

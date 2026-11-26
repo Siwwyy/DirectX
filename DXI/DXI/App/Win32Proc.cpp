@@ -49,6 +49,10 @@ int Win32Proc::Run(HINSTANCE hInstance, int nCmdShow, CurrentApp * DX12App)
 		hInstance,
 		DX12App);
 
+	// The renderer draws into a window it does not own, so it is told which one before it builds
+	// anything. The same call is what a host with a window of its own makes.
+	DX12App->SetWindowHandle(hwnd);
+
 	//TODO Add initialization of DX12 environment
 	DX12App->Initialize();
 
@@ -198,11 +202,21 @@ LRESULT Win32Proc::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	}
 	return 0;
 
+	// The client area changed size, also with a width and height of zero when minimized.
+	// Everything the renderer sized to the screen follows, see D3D12Renderer::Resize.
+	case WM_SIZE:
+	{
+		if (DX12App)
+		{
+			DX12App->Resize(static_cast<UINT>(LOWORD(lParam)), static_cast<UINT>(HIWORD(lParam)));
+		}
+	}
+	return 0;
+
 	case WM_PAINT:
 	{
 		//auto DeltaTime = timer.GetFrameDelta();
-		DX12App->Update(static_cast<float>(0.0)); //or DeltaTime
-		DX12App->Render();
+		DX12App->Tick(); // Update, then Render
 	}
 	return 0;
 

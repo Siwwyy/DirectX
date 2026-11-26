@@ -17,12 +17,22 @@
 //
 // Parse() takes nothing: it reads the process command line itself through GetCommandLineW,
 // so nothing has to be threaded down from WinMain.
+//
+// A host that is not the executable, a Python process loading the engine as a module, has a
+// command line that says nothing about the engine. It hands the switches over as a string
+// instead, written the same way: L"-warp -nobreak". Index 0 is the program name in a real
+// command line, so the string starts with one too, which can be anything.
 namespace DXICMD
 {
 	/**
 	 * Call once, before anything reads a switch
 	 */
 	void Parse();
+
+	/**
+	 * Same, from a string instead of the process command line. The first call of either wins.
+	 */
+	void Parse(const wchar_t* CommandLine);
 
 	/**
 	 * True when the switch is present at all, with or without a value

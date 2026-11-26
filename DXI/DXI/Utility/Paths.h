@@ -72,7 +72,8 @@ namespace DXIPATHS
 	};
 
 
-	// Folder of the running executable.
+	// Folder of the running executable, or of the module the engine is built into when it is
+	// hosted by something else, a Python extension for one.
 	extern const Directory GetExecutableDir;
 
 	// DXI content root: the folder that contains shaders and loose textures.

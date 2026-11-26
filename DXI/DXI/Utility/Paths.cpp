@@ -65,12 +65,25 @@ namespace
 		return Full;
 	}
 
+	// Folder of the module this code was linked into: the executable when the engine is the
+	// program, the .pyd or .dll when something else hosts it. GetModuleFileNameW(nullptr) would
+	// name the host process either way, which for a Python host is python.exe's folder, a long
+	// way from the shaders. Found from the address of a function in here rather than by name,
+	// so it holds whatever the module gets called.
 	std::wstring ExecutableDirectory()
 	{
+		HMODULE Module = nullptr;
+		if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+								reinterpret_cast<LPCWSTR>(&ExecutableDirectory),
+								&Module))
+		{
+			Module = nullptr;	// The process executable, what this always used to be
+		}
+
 		std::wstring Buffer(MAX_PATH, L'\0');
 		for (;;)
 		{
-			const DWORD Length = GetModuleFileNameW(nullptr, &Buffer[0], static_cast<DWORD>(Buffer.size()));
+			const DWORD Length = GetModuleFileNameW(Module, &Buffer[0], static_cast<DWORD>(Buffer.size()));
 			if (Length == 0)
 			{
 				return {};

@@ -14,6 +14,9 @@ G-buffer), `LightPass` (shades it with a full screen triangle), then the ImGui p
 - Constant buffers defined once and shared by C++ and HLSL, `DXI/shaders/SharedTypes.h`
 - PIX markers per pass and per object
 - Debug panel spawns primitives and lights from assets found on disk
+- Click to select, with tint and box highlight. Move and rotate gizmos (`1`/`2`, Ctrl snaps)
+- Resizable window. The renderer draws into any `HWND`, so other hosts can embed it
+- `import dxi` Python module and a PySide6 editor, see [Python](#python)
 
 Covers the `DXI` project only. Sibling folders in the repository are older experiments.
 
@@ -65,6 +68,29 @@ Output goes to the debug output, not a console, so attach a debugger or use Debu
 | `-width N`, `-height N` | Window size in pixels. |
 | `-help`, `-?` | This list. |
 
+## Python
+
+The engine runs in-process as the `dxi` module (pybind11) and draws into a window you own.
+
+```sh
+cmake --build build --config Debug --target DXIPython
+python -m venv python\.venv
+python\.venv\Scripts\pip install -r python\requirements.txt
+python\.venv\Scripts\python python\editor\main.py [--config Release] [--engine-args "-scene sponza"]
+```
+
+- Output: `build/bin/<config>/dxi.<abi>.pyd`, next to the DLLs. Loads only in the Python
+  CMake found. Pick one with `-DPython_EXECUTABLE=...`. Skip with `-DDXI_BUILD_PYTHON=OFF`.
+- Use: `r = dxi.Renderer(hwnd, w, h)`, then `r.tick()`, `r.resize(w, h)`, `r.shutdown()`.
+  Also input, objects, transforms, selection, gizmo settings. See
+  `python/bindings/dxi_module.cpp`.
+- Engine switches (`-nobreak`, ...) go in the `args` string, read once per process.
+- `python/editor/`: PySide6 editor, dark Unreal-style layout. Viewport with tool and Show
+  bar, Outliner over Details, a Viewport Settings tab. Theme in `theme.py`.
+- Tangent frame and origin axes draw only when the overlay is on (`r.tangent_frame.enabled`,
+  `r.axes.enabled`, or the Show menu) **and** the object is flagged (`set_overlay_flags`).
+- Same thread only. The ImGui overlay is off by default, it needs forwarded window messages.
+
 ## Assets
 
 Textures are committed, meshes are not: the Visual Studio `.gitignore` `*.obj` rule swallows
@@ -97,7 +123,8 @@ DXI/
   setup.bat             configure
   build.bat             build
   download_assets.bat   fetch meshes
-  DXI/
+  python/                `dxi` module source (bindings/) and PySide6 editor (editor/)
+  DXI/                   built as the DXICore library. DXIApp is WinMain and Win32Proc
     WinMain.cpp, pch.h
     App/                D3D12Renderer, Win32Proc
     Core/               device, swap chain, depth buffer, frame context,
@@ -107,7 +134,8 @@ DXI/
     Material/           material, descriptor heap, texture upload, asset catalog
     Math/               transforms, constant buffer size aliases
     Objects/            camera, primitive, cube, plane, sphere, model
-    Passes/             shadow, base, light
+    Passes/             shadow, base, light, plus overlays (tangent frame, axes,
+                        selection, transform gizmo)
     RenderTargets/      G-buffer, shadow atlas, cube map
     UI/                 ImGui debug panel
     Utility/            helpers, paths, command line, PIX events, shader registers
@@ -133,6 +161,8 @@ Fetched at configure time into `build/_deps`. Nothing to install, no git needed.
 | [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler) | v1.9.2602.24 | Compiles the HLSL at startup |
 | [Dear ImGui](https://github.com/ocornut/imgui) | v1.90.9 | Debug panel |
 | [cgltf](https://github.com/jkuhlmann/cgltf) | v1.15 | glTF 2.0 parsing |
+| [pybind11](https://github.com/pybind/pybind11) | v2.13.6 | `dxi` Python module (needs Python 3.9+) |
+| [PySide6](https://pypi.org/project/PySide6-Essentials/) | 6.7+ | Editor, via pip, not fetched by CMake |
 
 Needs Windows with the Windows SDK, CMake 3.26 or newer (the scripts will find the copy
 Visual Studio ships), and a C++17 compiler. PIX is optional, see below.
@@ -146,7 +176,8 @@ cmake -G "Visual Studio 17 2022" -A x64 -S . -B build
 cmake --build build --config Debug          # or Release
 ```
 
-Output is `build/bin/<config>/DXIApp.exe`. Ninja works with
+Targets: `DXICore` (library), `DXIApp` (exe), `DXIPython` (module). Output is
+`build/bin/<config>/DXIApp.exe`. Ninja works with
 `-G Ninja -DCMAKE_BUILD_TYPE=Release`. `setup.bat` forwards extra arguments, so
 `setup.bat -DUSE_PIX=OFF` works.
 
@@ -187,6 +218,9 @@ the executable; CMake copies them and warns if it cannot find them.
 
 **DXGI error about session 0.** Swap chains cannot be created from a non-interactive
 session. Run from a normal desktop session.
+
+**`import dxi` fails.** Wrong Python version or not built. Rebuild `DXIPython` and run
+with the Python it reports at configure time (`Python module dxi: ...`).
 
 **CMake warns PIX is unavailable.** Harmless. Use vcpkg to fix it, match the architecture,
 or pass `-DUSE_PIX=OFF`.

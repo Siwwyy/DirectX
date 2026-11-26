@@ -11,6 +11,20 @@ static constexpr float INITIAL_YAW				= 90.0f;		// degrees
 static constexpr float INITIAL_PITCH			= -20.0f;		// degrees
 static constexpr XMFLOAT4 INITIAL_POSITION		= {0.0f, 5.0f, -9.0f, 1.0f};
 
+// The projection for a screen of the given size. One place, because the constructor builds it
+// and a resize has to rebuild exactly the same one with the new aspect ratio.
+static XMMATRIX MakeProjection(const UINT ScreenWidth, const UINT ScreenHeight)
+{
+	const auto HalfFOV			= 45.0f;
+	constexpr const auto Near	= 0.01f;
+	constexpr const auto Far	= 1000.0f;
+
+	return XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f),
+									static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight),
+									Near,
+									Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
+}
+
 Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	: Yaw(INITIAL_YAW)
 	, Pitch(INITIAL_PITCH)
@@ -34,15 +48,8 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 	*/
 
 	// build projection and view matrix
-	const auto HalfFOV			= 45.0f;
-	constexpr const auto Near	= 0.01f;
-	constexpr const auto Far	= 1000.0f;
-	XMMATRIX ProjMat			= XMMatrixPerspectiveFovLH(HalfFOV * (3.14f / 180.0f), 
-															static_cast<float>(ScreenWidth) / static_cast<float>(ScreenHeight), 
-															Near, 
-															Far); // NOT USED FOR NOW! -> Near and Far are replaced with each other, because of ReverseZ
 	// TODO | DO REVERSE Z PROJECTION MATRIX
-	XMStoreFloat4x4(&CameraMatrices.ProjMat, ProjMat);
+	XMStoreFloat4x4(&CameraMatrices.ProjMat, MakeProjection(ScreenWidth, ScreenHeight));
 
 	//// set starting camera state
 	CameraMatrices.Position		= INITIAL_POSITION;
@@ -66,6 +73,16 @@ Camera::Camera(UINT ScreenWidth, UINT ScreenHeight)
 
 	// Starts the previous frame equal to this one, so a camera that has only just been
 	// built reports no motion rather than measuring against the identity
+	AdvanceFrame();
+}
+
+void Camera::SetScreenSize(const UINT ScreenWidth, const UINT ScreenHeight)
+{
+	XMStoreFloat4x4(&CameraMatrices.ProjMat, MakeProjection(ScreenWidth, ScreenHeight));
+
+	// The previous view projection was built with the old aspect ratio. Left alone, the frame after
+	// a resize would measure every pixel as having moved by the change in the projection, which
+	// the velocity target reports as motion the scene never made.
 	AdvanceFrame();
 }
 

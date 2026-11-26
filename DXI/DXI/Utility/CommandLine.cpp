@@ -66,6 +66,11 @@ namespace
 
 void DXICMD::Parse()
 {
+	Parse(GetCommandLineW());
+}
+
+void DXICMD::Parse(const wchar_t* CommandLine)
+{
 	if (bParsed)
 	{
 		return;
@@ -74,7 +79,7 @@ void DXICMD::Parse()
 	bParsed = true;
 
 	int ArgCount		= 0;
-	LPWSTR* Arguments	= CommandLineToArgvW(GetCommandLineW(), &ArgCount);
+	LPWSTR* Arguments	= CommandLineToArgvW(CommandLine ? CommandLine : L"", &ArgCount);
 	if (!Arguments)
 	{
 		return;

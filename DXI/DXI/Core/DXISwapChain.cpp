@@ -66,6 +66,15 @@ void DXISwapChain::Init(const DXIDevice& Device, const HWND WindowHandle, const 
 
 	RtvIncrementSize = Device.Get()->GetDescriptorHandleIncrementSize(DescriptorHeapType);
 
+	this->Width		= Width;
+	this->Height	= Height;
+	this->Flags		= SwapChainDesc.Flags;
+
+	CreateBackBufferViews(Device);
+}
+
+void DXISwapChain::CreateBackBufferViews(const DXIDevice& Device)
+{
 	// One render target view per back buffer
 	BackBuffers.resize(BackBufferCount);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -81,6 +90,25 @@ void DXISwapChain::Init(const DXIDevice& Device, const HWND WindowHandle, const 
 		Device.Get()->CreateRenderTargetView(BackBuffers[BackBufferIdx].Get(), nullptr, RtvHandle);
 		RtvHandle.Offset(1, RtvIncrementSize);
 	}
+}
+
+void DXISwapChain::Resize(const DXIDevice& Device, const UINT NewWidth, const UINT NewHeight)
+{
+	DXASSERT(SwapChain, "Swap chain must be initialized before it is resized");
+	DXASSERT(NewWidth > 0 && NewHeight > 0, "Swap chain needs a non empty size, a minimized window has none and must not get here");
+
+	// ResizeBuffers fails while anything still holds a back buffer. The views in the heap do not
+	// count, they are descriptors, but these references do.
+	BackBuffers.clear();
+
+	// Same count, format and flags the chain was created with, only the size changes. The tearing
+	// flag in particular has to be passed again or the call is rejected.
+	ThrowIfFailed(SwapChain->ResizeBuffers(BackBufferCount, NewWidth, NewHeight, GetFormat(), Flags));
+
+	Width	= NewWidth;
+	Height	= NewHeight;
+
+	CreateBackBufferViews(Device);
 }
 
 UINT DXISwapChain::GetCurrentBackBufferIdx() const

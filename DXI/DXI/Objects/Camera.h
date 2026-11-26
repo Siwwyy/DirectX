@@ -32,6 +32,12 @@ public:
 	 */
 	void AdvanceFrame() noexcept;
 
+	/**
+	 * Rebuilds the projection for a new screen size, keeping the field of view and the planes.
+	 * Only the aspect ratio follows the window.
+	 */
+	void SetScreenSize(const UINT ScreenWidth, const UINT ScreenHeight);
+
 	// Movement
 	void OnKeyDown(WPARAM key);
 	void OnKeyUp(WPARAM key);
