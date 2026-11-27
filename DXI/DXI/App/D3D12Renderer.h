@@ -201,6 +201,17 @@ public:
 	}
 
 	/**
+	 * Removes primitives from the scene, at once: it waits for the GPU, since the frames still in flight
+	 * read the buffers of what goes. Call it between frames, never from inside one. Every primitive behind
+	 * a removed one moves up, so the indices of the host's own lists are stale afterwards, shift them by the
+	 * number of removed indices below each. The selection is shifted here, or cleared when it was removed.
+	 * Indices that are out of range or repeated are ignored.
+	 *
+	 * @return How many primitives were removed
+	 */
+	SIZE_T DeletePrimitives(std::vector<int> PrimitiveIndices);
+
+	/**
 	 * The settings the overlays read, live: a change takes effect on the next frame. They exist and
 	 * keep their defaults when the ImGui panel is off, a host's own widgets edit them here.
 	 */
@@ -223,6 +234,49 @@ public:
 	_NODISCARD AxisGizmoSettings& GetAxisGizmoSettings() noexcept
 	{
 		return SceneDebugUI.GetAxisGizmoSettings();
+	}
+
+	/**
+	 * What can be added to the scene | The meshes and materials found on disk, and the requests that
+	 * add one. The ImGui panel files the same requests. A request is carried out at the start of the
+	 * next frame, the new object is in front of the camera and last in the scene, and a request past
+	 * MAX_PRIMITIVES or MAX_LIGHTS is dropped.
+	 */
+	_NODISCARD const AssetCatalog& GetCatalog() const noexcept
+	{
+		return Catalog;
+	}
+
+	_NODISCARD SIZE_T GetLightCount() const noexcept
+	{
+		return Lights.size();
+	}
+
+	/**
+	 * @return The light at a position of the scene's light list, or null past the end
+	 */
+	_NODISCARD const LightBase* GetLight(const SIZE_T Idx) const noexcept
+	{
+		return Idx < Lights.size() ? Lights[Idx].get() : nullptr;
+	}
+
+	void RequestSpawnPrimitive(const PrimitiveSpawnRequest& Request)
+	{
+		SceneDebugUI.GetPendingPrimitiveSpawns().push_back(Request);
+	}
+
+	void RequestSpawnLight(const LightSpawnRequest& Request)
+	{
+		SceneDebugUI.GetPendingLightSpawns().push_back(Request);
+	}
+
+	/**
+	 * Has an object wear a catalog material, from the next frame on. The material is loaded then if it
+	 * was not yet. An unknown object or catalog index changes nothing.
+	 */
+	void RequestAssignMaterial(const MaterialAssignRequest& Request)
+	{
+		PendingMaterialAssignments.push_back(Request);
 	}
 
 private:
@@ -323,6 +377,13 @@ private:
 	 * the command list is open for the vertex and texture uploads a spawn performs.
 	 */
 	void ProcessPendingSpawns();
+
+	/**
+	 * Where a drop at a pixel of the view lands: the first surface of the scene along the ray under it,
+	 * or else the ground at height 0. False when the ray meets neither, or only something far off, as
+	 * when the cursor is over the sky, and the spawn then goes in front of the camera as usual.
+	 */
+	_NODISCARD bool FindDropPoint(const int CursorX, const int CursorY, XMFLOAT3& OutPoint);
 
 	/**
 	 * Takes ownership of a light, keeping the sun at index 0.
@@ -481,6 +542,12 @@ private:
 
 	// What is available to spawn, discovered on disk at startup
 	AssetCatalog							Catalog;
+
+	// Material changes asked for since the last frame, see RequestAssignMaterial
+	std::vector<MaterialAssignRequest>		PendingMaterialAssignments;
+
+	// Number in the name of the next spawned primitive, see ProcessPendingSpawns
+	SIZE_T									SpawnOrdinal = 0;
 
 	// Constant buffers | One region per frame in flight, all of them permanently mapped
 	ComPtr<DXResource>		PrimitiveCBV;					// one PrimitiveConstantBuffer per primitive, per frame

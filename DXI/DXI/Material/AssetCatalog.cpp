@@ -68,7 +68,8 @@ void AssetCatalog::Scan()
 			if (HasAnyFile(FolderPath, (FolderName + L"_diff_1k.png").c_str()))
 			{
 				MaterialAsset Asset;
-				Asset.Name = FolderName;
+				Asset.Name		= FolderName;
+				Asset.Folder	= FolderPath;
 				Materials.push_back(std::move(Asset));
 			}
 		}

@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <type_traits>
+#include <utility>
 
 // usings
 using TypeOfIndice = DWORD;
@@ -820,6 +822,11 @@ public:
 	std::vector<DirectX::XMFLOAT3>	CpuPositions;
 	std::vector<TypeOfIndice>		CpuIndices;
 
+	// Beside the positions, for whoever shows the mesh on the CPU, an editor's preview of it. One
+	// entry per position, or none at all when the vertex layout has no such attribute.
+	std::vector<DirectX::XMFLOAT2>	CpuUVs;
+	std::vector<DirectX::XMFLOAT3>	CpuNormals;
+
 	// Box around the positions, in the mesh's own space. A cheap miss before the triangles are tried,
 	// and the box the selection draws.
 	DirectX::XMFLOAT3				LocalBoundsMin	= { 0.f, 0.f, 0.f };
@@ -827,12 +834,44 @@ public:
 
 private:
 
+	// Whether a vertex layout has a UV or a Normal member, which not every layout does
+	template<typename Vertex, typename = void>
+	struct HasUV : std::false_type {};
+	template<typename Vertex>
+	struct HasUV<Vertex, std::void_t<decltype(std::declval<Vertex>().UV)>> : std::true_type {};
+
+	template<typename Vertex, typename = void>
+	struct HasNormal : std::false_type {};
+	template<typename Vertex>
+	struct HasNormal<Vertex, std::void_t<decltype(std::declval<Vertex>().Normal)>> : std::true_type {};
+
 	// Copies out the positions and indices and measures the box around them
 	template<typename VertexStruct>
 	void CacheCpuGeometry(const std::vector<VertexStruct>& VertexData, const std::vector<TypeOfIndice>& IndexData)
 	{
 		CpuPositions.clear();
 		CpuPositions.reserve(VertexData.size());
+
+		CpuUVs.clear();
+		CpuNormals.clear();
+
+		if constexpr (HasUV<VertexStruct>::value)
+		{
+			CpuUVs.reserve(VertexData.size());
+			for (const auto& Vertex : VertexData)
+			{
+				CpuUVs.emplace_back(Vertex.UV.x, Vertex.UV.y);
+			}
+		}
+
+		if constexpr (HasNormal<VertexStruct>::value)
+		{
+			CpuNormals.reserve(VertexData.size());
+			for (const auto& Vertex : VertexData)
+			{
+				CpuNormals.emplace_back(Vertex.Normal.x, Vertex.Normal.y, Vertex.Normal.z);
+			}
+		}
 
 		DirectX::XMFLOAT3 Min(FLT_MAX, FLT_MAX, FLT_MAX);
 		DirectX::XMFLOAT3 Max(-FLT_MAX, -FLT_MAX, -FLT_MAX);

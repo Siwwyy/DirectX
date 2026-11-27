@@ -86,6 +86,28 @@ XMMATRIX RotationFromEulerDegrees(const XMFLOAT3& Degrees)
     return RotationMatX * RotationMatY * RotationMatZ;
 }
 
+XMMATRIX NormalMatrixFromWorld(FXMMATRIX World)
+{
+    // Only the 3x3 matters for a direction. Dropping the translation first also keeps the inverse
+    // free of it, so no stray values land in the w column once it is transposed.
+    XMMATRIX Linear = World;
+    Linear.r[0] = XMVectorSetW(Linear.r[0], 0.f);
+    Linear.r[1] = XMVectorSetW(Linear.r[1], 0.f);
+    Linear.r[2] = XMVectorSetW(Linear.r[2], 0.f);
+    Linear.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+
+    XMVECTOR Determinant;
+    const XMMATRIX Inverse = XMMatrixInverse(&Determinant, Linear);
+
+    // A singular matrix has no inverse. XMMatrixInverse hands back NaN with a determinant of 0
+    if (XMVector3NearEqual(Determinant, XMVectorZero(), XMVectorReplicate(1e-12f)))
+    {
+        return Linear;
+    }
+
+    return XMMatrixTranspose(Inverse);
+}
+
 XMFLOAT3 EulerDegreesFromRotation(FXMMATRIX Rotation)
 {
     // The product Rx(a) * Ry(b) * Rz(c) written out, row vector convention, c and s for cosine and sine:

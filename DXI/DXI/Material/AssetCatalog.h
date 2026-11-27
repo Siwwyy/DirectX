@@ -21,6 +21,7 @@ struct ModelAsset
 struct MaterialAsset
 {
 	std::wstring	Name;
+	std::wstring	Folder;				// Absolute path of the Poly Haven folder, empty for a lone colour map
 	std::wstring	DiffuseOnlyPath;
 	int				LoadedIdx = -1;		// Index into the renderer's Materials once loaded, -1 until then
 };
@@ -53,6 +54,12 @@ struct PrimitiveSpawnRequest
 	int			ModelIdx	= -1;	// Into AssetCatalog::GetModels, when Mesh is Model
 	int			MaterialIdx	= -1;	// Into AssetCatalog::GetMaterials, -1 keeps the default material
 	UINT		Density		= 24;	// Latitude bands, when Mesh is Sphere
+
+	// Set when the request is a drop on the view: where the cursor is, in the view's pixels. The object
+	// is put where the ray under it meets the scene. Unset it goes in front of the camera.
+	bool		bAtCursor	= false;
+	int			CursorX		= 0;
+	int			CursorY		= 0;
 };
 
 // A light the panel has asked for. No GPU upload involved, but it still waits for the
@@ -60,6 +67,24 @@ struct PrimitiveSpawnRequest
 struct LightSpawnRequest
 {
 	LightType Type = LightType::Point;
+
+	// As for a primitive: a drop puts the light above the point under the cursor, otherwise it is at the camera
+	bool	bAtCursor	= false;
+	int		CursorX		= 0;
+	int		CursorY		= 0;
+};
+
+// A material the editor has asked an object to wear. Like a spawn it waits for the frame, since a
+// material that is not loaded yet is loaded then, which records texture uploads.
+struct MaterialAssignRequest
+{
+	int		PrimitiveIdx	= -1;	// The object, when bAtCursor is not set
+	int		CatalogIdx		= -1;	// Into AssetCatalog::GetMaterials, -1 puts the default material back
+
+	// Set for a drop on the view: the object under that pixel of the view gets it, and is selected
+	bool	bAtCursor		= false;
+	int		CursorX			= 0;
+	int		CursorY			= 0;
 };
 
 // What the scene can be built out of, discovered by walking the content folders rather

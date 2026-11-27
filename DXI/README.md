@@ -81,14 +81,40 @@ python\.venv\Scripts\python python\editor\main.py [--config Release] [--engine-a
 
 - Output: `build/bin/<config>/dxi.<abi>.pyd`, next to the DLLs. Loads only in the Python
   CMake found. Pick one with `-DPython_EXECUTABLE=...`. Skip with `-DDXI_BUILD_PYTHON=OFF`.
+- Visual Studio: right click `DXIEditor` > Set as Startup Project, then F5. It builds the module
+  and runs the editor with `python/.venv` (else the Python CMake found), so engine C++
+  breakpoints work. Re-run `cmake` after creating the venv. Switches: `-DDXI_EDITOR_ARGS=...`,
+  Python: `-DDXI_EDITOR_PYTHON=...`.
 - Use: `r = dxi.Renderer(hwnd, w, h)`, then `r.tick()`, `r.resize(w, h)`, `r.shutdown()`.
   Also input, objects, transforms, selection, gizmo settings. See
   `python/bindings/dxi_module.cpp`.
 - Engine switches (`-nobreak`, ...) go in the `args` string, read once per process.
 - `python/editor/`: PySide6 editor, dark Unreal-style layout. Viewport with tool and Show
-  bar, Outliner over Details, a Viewport Settings tab. Theme in `theme.py`.
-- Tangent frame and origin axes draw only when the overlay is on (`r.tangent_frame.enabled`,
-  `r.axes.enabled`, or the Show menu) **and** the object is flagged (`set_overlay_flags`).
+  bar, Outliner over Details, Content Browser below. Theme in `theme.py`.
+- Content Browser: square thumbnails of shapes, models (`.obj` catalog), materials and lights.
+  Filter by category (tree, or Filters menu for a mix) and name. Double click or Enter adds
+  them in front of the camera, dragging onto the viewport drops them on the surface under the
+  cursor. A material is put on the selected object, or on the one it is dropped on.
+  In the module: `r.spawn_object(dxi.SpawnMesh.Cube, at=(x, y))`,
+  `r.spawn_light(dxi.LightType.Point)`, `r.catalog_models()`. `at` is a pixel of the view.
+- Object tabs: double click an object (view or Outliner), or Open in Tab in Details. The tab
+  has a CPU-rendered preview (numpy): drag orbits, Shift/middle pans, wheel zooms, F frames;
+  Rotate Model turns the model in the preview. The tab's rotation and scale belong to the
+  preview and do not touch the scene (From Scene / To Scene copy them). Also material picker
+  and the texture of each slot (double click to enlarge). Module: `r.get_mesh(i)`,
+  `r.object_material(i)`, `r.catalog_materials()`, `r.assign_material(i, m)`,
+  `r.assign_material_at(m, (x, y))`.
+- Outliner: objects and lights (type, intensity, position; tooltip has the rest). `+ Folder`
+  or the context menu makes a folder, drag items onto it or use Move To, the arrow winds it
+  up or down, F2 renames, Delete removes it. Folders are editor-side and last for the session.
+  Delete on a selected object (Outliner, or the viewport) removes it from the scene, no undo,
+  lights stay. Module: `r.light_info(i)`, `r.delete_objects([i, ...])` (waits for the GPU,
+  later objects move up).
+- Show menu: on/off switches for selection highlight, gizmo, tangent frame, origin axes.
+- Show > Options...: window with one tab per Show entry (density, length, thickness, ...).
+- In the module, an overlay draws only when it is on (`r.tangent_frame.enabled`,
+  `r.axes.enabled`) **and** the object is flagged (`set_overlay_flags`). The editor flags
+  every object for you.
 - Same thread only. The ImGui overlay is off by default, it needs forwarded window messages.
 
 ## Assets
@@ -176,8 +202,14 @@ cmake -G "Visual Studio 17 2022" -A x64 -S . -B build
 cmake --build build --config Debug          # or Release
 ```
 
-Targets: `DXICore` (library), `DXIApp` (exe), `DXIPython` (module). Output is
-`build/bin/<config>/DXIApp.exe`. Ninja works with
+| Target | What it is |
+|---|---|
+| `DXICore` | The engine as a static library (`build/lib/<config>`). No entry point. |
+| `DXIApp` | The standalone exe: `WinMain` opens the window and runs the engine. No Python. |
+| `DXIPython` | The engine as the `dxi` Python module, built with pybind11 from `python/bindings`. |
+| `DXIEditor` | Builds nothing. Runs `python/editor/main.py` with `python/.venv`, after `DXIPython`. |
+
+Output is `build/bin/<config>/DXIApp.exe`. Ninja works with
 `-G Ninja -DCMAKE_BUILD_TYPE=Release`. `setup.bat` forwards extra arguments, so
 `setup.bat -DUSE_PIX=OFF` works.
 

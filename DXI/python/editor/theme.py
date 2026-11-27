@@ -56,6 +56,7 @@ QTabBar::tab {{
 }}
 QTabBar::tab:selected {{ background: {PANEL}; color: {TEXT}; border-top: 2px solid {ACCENT}; }}
 QTabBar::tab:hover:!selected {{ background: {HOVER}; }}
+QTabWidget::pane {{ border: 0; border-top: 1px solid #000; background: {PANEL}; }}
 
 QScrollArea {{ border: 0; background: {PANEL}; }}
 QScrollArea > QWidget > QWidget {{ background: {PANEL}; }}
@@ -66,6 +67,21 @@ QListWidget {{
 QListWidget::item {{ padding: 3px 6px; border: 0; }}
 QListWidget::item:hover {{ background: {HOVER}; }}
 QListWidget::item:selected {{ background: {SELECTION}; color: #fff; }}
+
+QListWidget#ContentTiles {{ background: #171717; }}
+QTreeWidget {{ background: {FIELD}; border: 1px solid #000; outline: 0; }}
+QTreeWidget::item {{ padding: 3px 4px; }}
+QTreeWidget::item:hover {{ background: {HOVER}; }}
+QTreeWidget::item:selected {{ background: {SELECTION}; color: #fff; }}
+QTreeWidget#OutlinerTree {{ alternate-background-color: #141414; }}
+QHeaderView::section {{
+    background: {SECTION}; color: {TEXT_DIM}; border: 0; border-right: 1px solid {BORDER}; padding: 3px 8px;
+}}
+QFrame#BrowserHeader {{ background: {CHROME}; border-bottom: 1px solid #000; }}
+QToolButton#FilterButton {{ padding: 3px 9px; background: transparent; border: 1px solid {BORDER}; border-radius: 3px; }}
+QToolButton#FilterButton:hover {{ background: {HOVER}; }}
+QToolButton#FilterButton[active="true"] {{ background: {SELECTION}; border: 1px solid {ACCENT}; color: #fff; }}
+QToolButton#FilterButton::menu-indicator {{ image: none; }}
 
 QToolButton#SectionHeader {{
     background: {SECTION}; border: 0; border-bottom: 1px solid #111; border-top: 1px solid #111;

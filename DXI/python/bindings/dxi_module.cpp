@@ -208,6 +208,177 @@ namespace
 			Get().SelectPrimitive(Idx);
 		}
 
+		// Content | What can be added. Models are the meshes found on disk as (name, absolute path).
+		_NODISCARD std::vector<std::pair<std::wstring, std::wstring>> CatalogModels() const
+		{
+			std::vector<std::pair<std::wstring, std::wstring>> Result;
+
+			for (const ModelAsset& Asset : Get().GetCatalog().GetModels())
+			{
+				Result.emplace_back(Asset.Name, Asset.MeshPath);
+			}
+
+			return Result;
+		}
+
+		// Queued, the object exists from the next frame on. A request the scene has no room for is dropped
+		// by the engine, so the caller compares object_count afterwards to know.
+		void SpawnObject(const SpawnMesh Mesh, const int ModelIdx, const UINT Density, const std::optional<std::pair<int, int>> At)
+		{
+			D3D12Renderer& Engine = Get();
+
+			if (Mesh == SpawnMesh::Model)
+			{
+				const int ModelCount = static_cast<int>(Engine.GetCatalog().GetModels().size());
+
+				if (ModelIdx < 0 || ModelIdx >= ModelCount)
+				{
+					throw py::index_error("model index out of range");
+				}
+			}
+
+			PrimitiveSpawnRequest Request;
+			Request.Mesh		= Mesh;
+			Request.ModelIdx	= Mesh == SpawnMesh::Model ? ModelIdx : -1;
+			Request.Density		= Density < 3 ? 3 : Density;	// fewer bands than that is not a sphere
+
+			if (At)
+			{
+				Request.bAtCursor	= true;
+				Request.CursorX		= At->first;
+				Request.CursorY		= At->second;
+			}
+
+			Engine.RequestSpawnPrimitive(Request);
+		}
+
+		void SpawnLight(const LightType Type, const std::optional<std::pair<int, int>> At)
+		{
+			if (Type >= LightType::Count)
+			{
+				throw py::value_error("not a light type");
+			}
+
+			LightSpawnRequest Request;
+			Request.Type = Type;
+
+			if (At)
+			{
+				Request.bAtCursor	= true;
+				Request.CursorX		= At->first;
+				Request.CursorY		= At->second;
+			}
+
+			Get().RequestSpawnLight(Request);
+		}
+
+		_NODISCARD SIZE_T LightCount() const
+		{
+			return Get().GetLightCount();
+		}
+
+		// Removes objects at once, which waits for the GPU. Every object behind a removed one moves up by the
+		// number removed below it. Returns how many were removed.
+		SIZE_T DeleteObjects(std::vector<int> Indices)
+		{
+			return Get().DeletePrimitives(std::move(Indices));
+		}
+
+		// A light as the outliner lists it: (name, type, position, direction, colour, intensity). The position of
+		// a directional light is (0, 0, 0), it has none, and the direction of a point light means nothing.
+		_NODISCARD py::tuple LightInfo(const int Idx) const
+		{
+			const LightBase* const Found = Idx >= 0 ? Get().GetLight(static_cast<SIZE_T>(Idx)) : nullptr;
+			if (Found == nullptr)
+			{
+				throw py::index_error("light index out of range");
+			}
+
+			const Light Packed = Found->GetLightConstants();
+			const XMFLOAT3& Color = Found->GetColor();
+
+			return py::make_tuple(
+				Found->GetName(),
+				Found->GetLightType(),
+				py::make_tuple(Packed.Position.x, Packed.Position.y, Packed.Position.z),
+				py::make_tuple(Packed.Direction.x, Packed.Direction.y, Packed.Direction.z),
+				py::make_tuple(Color.x, Color.y, Color.z),
+				Found->GetIntensity());
+		}
+
+		// Mesh | What an editor needs to draw an object on its own. Raw little endian arrays that numpy
+		// reads with frombuffer: (positions float32 x3, uvs float32 x2, normals float32 x3, indices uint32).
+		// uvs or normals are empty for a layout without them. Everything is in the object's own space.
+		_NODISCARD py::tuple GetMesh(const int Idx) const
+		{
+			const VertexFactory& Mesh = At(Idx).VertexFactory;
+
+			const auto Bytes = [](const auto& Values)
+			{
+				using Element = typename std::decay_t<decltype(Values)>::value_type;
+				return py::bytes(reinterpret_cast<const char*>(Values.data()), Values.size() * sizeof(Element));
+			};
+
+			static_assert(sizeof(TypeOfIndice) == 4, "The indices are handed over as uint32");
+			return py::make_tuple(Bytes(Mesh.CpuPositions), Bytes(Mesh.CpuUVs), Bytes(Mesh.CpuNormals), Bytes(Mesh.CpuIndices));
+		}
+
+		// The material an object is drawn with: (name, has one of its own, two sided, which of the six
+		// slots hold a texture, in the order of MaterialTextureSlot). An object without a material of
+		// its own reports the default one.
+		_NODISCARD py::tuple ObjectMaterial(const int Idx) const
+		{
+			const Primitive& Target = At(Idx);
+			const Material* const Worn = Target.GetMaterial();
+
+			std::vector<bool> Slots;
+			for (UINT Slot = 0; Slot < MaterialTextureSlotCount; ++Slot)
+			{
+				Slots.push_back(Worn != nullptr && Worn->HasTexture(static_cast<MaterialTextureSlot>(Slot)));
+			}
+
+			return py::make_tuple(Worn ? Worn->GetName() : std::wstring(), Target.HasOwnMaterial(), Worn && Worn->IsTwoSided(), Slots);
+		}
+
+		// The materials found on disk: (name, folder of its maps, lone colour map, index of the loaded
+		// material or -1). A folder is empty for a lone colour map, the colour map's path empty otherwise.
+		_NODISCARD std::vector<std::tuple<std::wstring, std::wstring, std::wstring, int>> CatalogMaterials() const
+		{
+			std::vector<std::tuple<std::wstring, std::wstring, std::wstring, int>> Result;
+
+			for (const MaterialAsset& Asset : Get().GetCatalog().GetMaterials())
+			{
+				Result.emplace_back(Asset.Name, Asset.Folder, Asset.DiffuseOnlyPath, Asset.LoadedIdx);
+			}
+
+			return Result;
+		}
+
+		// Queued like a spawn. A catalog_index of -1 puts the default material back.
+		void AssignMaterial(const int Idx, const int CatalogIdx)
+		{
+			CheckCatalogMaterial(CatalogIdx);
+			static_cast<void>(At(Idx));	// throws for an object that is not there
+
+			MaterialAssignRequest Request;
+			Request.PrimitiveIdx	= Idx;
+			Request.CatalogIdx		= CatalogIdx;
+			Get().RequestAssignMaterial(Request);
+		}
+
+		// The object under a pixel of the view wears it, and is selected. Nothing happens over empty space.
+		void AssignMaterialAt(const int CatalogIdx, const std::pair<int, int> Pixel)
+		{
+			CheckCatalogMaterial(CatalogIdx);
+
+			MaterialAssignRequest Request;
+			Request.CatalogIdx	= CatalogIdx;
+			Request.bAtCursor	= true;
+			Request.CursorX		= Pixel.first;
+			Request.CursorY		= Pixel.second;
+			Get().RequestAssignMaterial(Request);
+		}
+
 		// Settings | Live, the engine reads them again every frame
 		_NODISCARD TransformGizmoSettings& GetGizmoSettings()
 		{
@@ -236,6 +407,14 @@ namespace
 		void SetVSync(const bool bEnabled)	{ Get().SetVSyncEnabled(bEnabled); }
 
 	private:
+
+		void CheckCatalogMaterial(const int CatalogIdx) const
+		{
+			if (CatalogIdx < -1 || CatalogIdx >= static_cast<int>(Get().GetCatalog().GetMaterials().size()))
+			{
+				throw py::index_error("material index out of range");
+			}
+		}
 
 		// The engine, or an exception for a renderer that never finished building
 		_NODISCARD D3D12Renderer& Get() const
@@ -268,6 +447,23 @@ PYBIND11_MODULE(dxi, m)
 {
 	m.doc() = "DXI, a DirectX 12 deferred renderer, running in this process and drawing into a window you own.";
 	m.attr("__version__") = "0.1";
+
+	// How many objects and lights the scene has room for, a spawn past that is dropped
+	m.attr("MAX_OBJECTS")	= static_cast<unsigned>(MAX_PRIMITIVES);
+	m.attr("MAX_LIGHTS")	= static_cast<unsigned>(MAX_LIGHTS);	// a macro of SharedTypes.h
+
+	// What spawn_object and spawn_light take
+	py::enum_<SpawnMesh>(m, "SpawnMesh")
+		.value("Cube",		SpawnMesh::Cube)
+		.value("Plane",		SpawnMesh::Plane)
+		.value("Sphere",	SpawnMesh::Sphere)
+		.value("Model",		SpawnMesh::Model);
+
+	py::enum_<LightType>(m, "LightType")
+		.value("Directional",	LightType::Directional)
+		.value("Point",			LightType::Point)
+		.value("Area",			LightType::Area)
+		.value("Spot",			LightType::Spot);
 
 	// What the gizmo's handles do and which axes they follow
 	py::enum_<TransformMode>(m, "TransformMode")
@@ -386,6 +582,38 @@ PYBIND11_MODULE(dxi, m)
 			py::arg("tangent_frame") = std::nullopt, py::arg("origin_axes") = std::nullopt)
 		.def_property("selected",	&PyRenderer::GetSelected, &PyRenderer::SetSelected,
 			"Index of the selected object, -1 for none. A click in the view changes it too.")
+
+		// Content
+		.def("catalog_models",		&PyRenderer::CatalogModels,
+			"The meshes found on disk as (name, path of the .obj), in the order spawn_object counts them")
+		.def("spawn_object",		&PyRenderer::SpawnObject,
+			py::arg("mesh"), py::arg("model_index") = -1, py::arg("density") = 24u, py::arg("at") = std::nullopt,
+			"Adds a shape, or the catalog model model_index, from the next frame on. It goes in front of the "
+			"camera, or with at=(x, y), a pixel of the view, where the cursor would point there, standing on "
+			"the surface under it. density is the number of bands of a sphere.")
+		.def("spawn_light",			&PyRenderer::SpawnLight,	py::arg("type"), py::arg("at") = std::nullopt,
+			"Adds a light from the next frame on, at the camera or with at=(x, y) above the point under that pixel")
+		.def_property_readonly("light_count", &PyRenderer::LightCount)
+		.def("delete_objects",		&PyRenderer::DeleteObjects,	py::arg("indices"),
+			"Removes objects now, waiting for the GPU. Objects behind a removed one move up, so an index i becomes "
+			"i - (how many removed indices are below it). The selection follows. Returns how many were removed.")
+
+		.def("light_info",			&PyRenderer::LightInfo,		py::arg("index"),
+			"(name, LightType, position, direction, colour, intensity) of a light, for listing it")
+
+		// Meshes and materials
+		.def("get_mesh", 			&PyRenderer::GetMesh,		py::arg("index"),
+			"(positions, uvs, normals, indices) of an object as raw bytes: float32 x3, float32 x2, float32 x3, "
+			"uint32. In the object's own space. uvs or normals are empty when the mesh has none.")
+		.def("object_material",		&PyRenderer::ObjectMaterial,py::arg("index"),
+			"(name, has its own, two sided, [slot has a texture] x6) of the material the object is drawn with. "
+			"Slots: diffuse, normal, specular, metalness, roughness, ambient occlusion.")
+		.def("catalog_materials",	&PyRenderer::CatalogMaterials,
+			"The materials found on disk as (name, folder of the maps, lone colour map, loaded index or -1)")
+		.def("assign_material",		&PyRenderer::AssignMaterial,py::arg("index"), py::arg("catalog_index"),
+			"Has the object wear the catalog material from the next frame on, -1 for the default one")
+		.def("assign_material_at",	&PyRenderer::AssignMaterialAt, py::arg("catalog_index"), py::arg("at"),
+			"The object under the pixel (x, y) of the view wears the material and is selected, from the next frame on")
 
 		// Settings
 		.def_property_readonly("gizmo",		&PyRenderer::GetGizmoSettings,		py::return_value_policy::reference_internal)

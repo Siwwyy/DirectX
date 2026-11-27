@@ -137,17 +137,151 @@ void D3D12Renderer::Resize(const UINT NewWidth, const UINT NewHeight)
 	CurrentFrameIdx = SwapChain.GetCurrentBackBufferIdx();
 }
 
+bool D3D12Renderer::FindDropPoint(const int CursorX, const int CursorY, XMFLOAT3& OutPoint)
+{
+	// Past this the point is on the horizon, where a pixel is hundreds of units wide and a drop
+	// would land somewhere nobody pointed at
+	constexpr float MaxDropDistance = 150.f;
+
+	const PickRay Ray = BuildPickRay(XMFLOAT2(static_cast<float>(CursorX), static_cast<float>(CursorY)),
+									XMFLOAT2(ViewPort.Width, ViewPort.Height),
+									Camera.GetViewMatrix(),
+									Camera.GetProjMatrix());
+
+	// What the cursor is over, the same test a click uses
+	float Nearest = FLT_MAX;
+	for (const auto& Candidate : Primitives)
+	{
+		float Distance = 0.f;
+		if (RayIntersectsPrimitive(Ray, *Candidate, Distance) && Distance < Nearest)
+		{
+			Nearest = Distance;
+		}
+	}
+
+	// Else the ground, for a scene with nothing under that pixel. Looking up or along it has no hit.
+	if (Nearest == FLT_MAX && Ray.Direction.y < -1e-4f)
+	{
+		const float GroundDistance = -Ray.Origin.y / Ray.Direction.y;
+		if (GroundDistance > 0.f)
+		{
+			Nearest = GroundDistance;
+		}
+	}
+
+	if (Nearest > MaxDropDistance)
+	{
+		return false;
+	}
+
+	OutPoint = XMFLOAT3(Ray.Origin.x + (Ray.Direction.x * Nearest),
+						Ray.Origin.y + (Ray.Direction.y * Nearest),
+						Ray.Origin.z + (Ray.Direction.z * Nearest));
+	return true;
+}
+
+SIZE_T D3D12Renderer::DeletePrimitives(std::vector<int> PrimitiveIndices)
+{
+	// Valid and once each, highest first: erasing one shifts only the ones behind it, so what is left to erase
+	// keeps its place
+	PrimitiveIndices.erase(std::remove_if(PrimitiveIndices.begin(), PrimitiveIndices.end(),
+		[this](const int Idx) { return Idx < 0 || static_cast<SIZE_T>(Idx) >= Primitives.size(); }), PrimitiveIndices.end());
+	std::sort(PrimitiveIndices.begin(), PrimitiveIndices.end(), std::greater<int>());
+	PrimitiveIndices.erase(std::unique(PrimitiveIndices.begin(), PrimitiveIndices.end()), PrimitiveIndices.end());
+
+	if (PrimitiveIndices.empty() || !bInitialized || bDestroyed)
+	{
+		return 0;
+	}
+
+	// Up to BACK_BUFFER_COUNT frames can still be reading the vertex and index buffers about to be released.
+	// The command list is closed between frames, which is when this is called.
+	FrameContext.WaitForGpuIdle(Device);
+
+	// How many removed indices lie below an index, which is how far it moves up
+	const auto Shifted = [&PrimitiveIndices](const int Idx)
+	{
+		return Idx - static_cast<int>(std::count_if(PrimitiveIndices.begin(), PrimitiveIndices.end(),
+											[Idx](const int Removed) { return Removed < Idx; }));
+	};
+	const auto IsRemoved = [&PrimitiveIndices](const int Idx)
+	{
+		return std::binary_search(PrimitiveIndices.begin(), PrimitiveIndices.end(), Idx, std::greater<int>());
+	};
+
+	// A held handle belongs to the object it was dragged on
+	SceneTransformGizmo.EndDrag();
+	SceneTransformGizmo.ClearHover();
+
+	const int Selected = SceneDebugUI.GetSelectedPrimitiveIdx();
+	SceneDebugUI.SetSelectedPrimitiveIdx((Selected < 0 || IsRemoved(Selected)) ? -1 : Shifted(Selected));
+
+	// A material change queued for an object that is gone is dropped, one for a later object follows its move.
+	// One aimed at the cursor names no index.
+	for (auto& Request : PendingMaterialAssignments)
+	{
+		if (!Request.bAtCursor)
+		{
+			Request.PrimitiveIdx = (Request.PrimitiveIdx < 0 || IsRemoved(Request.PrimitiveIdx)) ? -1 : Shifted(Request.PrimitiveIdx);
+		}
+	}
+
+	for (const int Idx : PrimitiveIndices)
+	{
+		Primitives.erase(Primitives.begin() + Idx);
+	}
+
+	return PrimitiveIndices.size();
+}
+
 void D3D12Renderer::ProcessPendingSpawns()
 {
 	auto& PrimitiveRequests	= SceneDebugUI.GetPendingPrimitiveSpawns();
 	auto& LightRequests		= SceneDebugUI.GetPendingLightSpawns();
 
-	if (PrimitiveRequests.empty() && LightRequests.empty())
+	if (PrimitiveRequests.empty() && LightRequests.empty() && PendingMaterialAssignments.empty())
 	{
 		return;
 	}
 
 	auto * const CommandList = FrameContext.GetCommandList();
+
+	// Materials first, an object spawned in the same frame is then drawn with what it was asked to wear
+	// and a drop is aimed at the scene as the user saw it
+	for (const auto& Request : PendingMaterialAssignments)
+	{
+		int TargetIdx = Request.PrimitiveIdx;
+
+		if (Request.bAtCursor)
+		{
+			const PickRay Ray = BuildPickRay(XMFLOAT2(static_cast<float>(Request.CursorX), static_cast<float>(Request.CursorY)),
+											XMFLOAT2(ViewPort.Width, ViewPort.Height),
+											Camera.GetViewMatrix(),
+											Camera.GetProjMatrix());
+			TargetIdx = PickPrimitive(Ray, Primitives);
+		}
+
+		if (TargetIdx < 0 || static_cast<SIZE_T>(TargetIdx) >= Primitives.size())
+		{
+			continue;
+		}
+
+		// Loads the maps the first time. Null for -1, which is the default material, and also when the
+		// shared heap is full, which must not strip the object of the material it has.
+		Material * const Chosen = EnsureMaterialLoaded(Request.CatalogIdx);
+		if (Chosen == nullptr && Request.CatalogIdx >= 0)
+		{
+			continue;
+		}
+
+		Primitives[static_cast<SIZE_T>(TargetIdx)]->SetMaterial(Chosen);
+
+		if (Request.bAtCursor)
+		{
+			SelectPrimitive(TargetIdx);
+		}
+	}
+	PendingMaterialAssignments.clear();
 
 	for (const auto& Request : PrimitiveRequests)
 	{
@@ -157,8 +291,10 @@ void D3D12Renderer::ProcessPendingSpawns()
 			break;
 		}
 
-		// A name that says what it is and stays unique, since the outliner lists by name
-		const auto Ordinal = std::to_wstring(Primitives.size());
+		// A name that says what it is and stays unique, since the outliner lists by name. It counts what was
+		// spawned and not what is left, or a name freed by a deletion in the middle would be handed out twice.
+		SpawnOrdinal = (std::max)(SpawnOrdinal, Primitives.size());
+		const auto Ordinal = std::to_wstring(SpawnOrdinal++);
 
 		std::unique_ptr<Primitive> Spawned;
 		switch (Request.Mesh)
@@ -195,13 +331,25 @@ void D3D12Renderer::ProcessPendingSpawns()
 		// Null leaves it on the default material, which is what MaterialIdx -1 means
 		Spawned->SetMaterial(EnsureMaterialLoaded(Request.MaterialIdx));
 
-		// Dropped in front of the camera rather than at the origin, where it would be
-		// inside the ground plane and easy to miss
-		const auto& ViewPosition	= Camera.GetPosition();
-		const auto& Forward			= Camera.GetDirection();
-		Spawned->SetTransform({ ViewPosition.x + (Forward.x * 5.f),
-								ViewPosition.y + (Forward.y * 5.f),
-								ViewPosition.z + (Forward.z * 5.f) });
+		// A drop goes where the cursor was, standing on whatever is there. Anything else, or a drop on
+		// the sky, goes in front of the camera rather than at the origin, where it would be inside the
+		// ground plane and easy to miss
+		XMFLOAT3 DropPoint;
+		if (Request.bAtCursor && FindDropPoint(Request.CursorX, Request.CursorY, DropPoint))
+		{
+			// Lifted by the distance from the object's origin down to its lowest point, so it rests
+			// on the surface instead of sinking half into it. The scale is still 1 at this point.
+			const float Lift = -Spawned->VertexFactory.LocalBoundsMin.y;
+			Spawned->SetTransform({ DropPoint.x, DropPoint.y + Lift, DropPoint.z });
+		}
+		else
+		{
+			const auto& ViewPosition	= Camera.GetPosition();
+			const auto& Forward			= Camera.GetDirection();
+			Spawned->SetTransform({ ViewPosition.x + (Forward.x * 5.f),
+									ViewPosition.y + (Forward.y * 5.f),
+									ViewPosition.z + (Forward.z * 5.f) });
+		}
 
 		// Previous frame starts equal to this one, so something that has just appeared
 		// reports no motion. This runs after the transform on purpose: seeding before it
@@ -223,6 +371,18 @@ void D3D12Renderer::ProcessPendingSpawns()
 		const auto& ViewPosition	= Camera.GetPosition();
 		const auto& ViewForward		= Camera.GetDirection();
 
+		// At the camera, or for a drop above the point under the cursor, high enough to clear what stands there
+		constexpr float DropHeight = 2.f;
+		XMFLOAT3 LightPosition		= { ViewPosition.x, ViewPosition.y, ViewPosition.z };
+		bool bDropped				= false;
+
+		XMFLOAT3 DropPoint;
+		if (Request.bAtCursor && FindDropPoint(Request.CursorX, Request.CursorY, DropPoint))
+		{
+			LightPosition	= { DropPoint.x, DropPoint.y + DropHeight, DropPoint.z };
+			bDropped		= true;
+		}
+
 		switch (Request.Type)
 		{
 		case LightType::Directional:
@@ -237,7 +397,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 		case LightType::Area:
 		{
 			auto Spawned = std::make_unique<AreaLight>(L"Area " + Ordinal);
-			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
+			Spawned->SetPosition(LightPosition);
 			Spawned->SetDirection({ 0.0f, -1.0f, 0.0f });
 			Spawned->SetIntensity(12.0f);
 			AddLight(std::move(Spawned));
@@ -247,10 +407,11 @@ void D3D12Renderer::ProcessPendingSpawns()
 		case LightType::Spot:
 		{
 			auto Spawned = std::make_unique<SpotLight>(L"Spot " + Ordinal);
-			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
+			Spawned->SetPosition(LightPosition);
 
-			// Pointed where the camera is looking, so a spawned spot lights what is on screen
-			Spawned->SetDirection({ ViewForward.x, ViewForward.y, ViewForward.z });
+			// Pointed where the camera is looking, so a spawned spot lights what is on screen. A drop
+			// shines straight down at the spot that was pointed at.
+			Spawned->SetDirection(bDropped ? XMFLOAT3(0.0f, -1.0f, 0.0f) : XMFLOAT3(ViewForward.x, ViewForward.y, ViewForward.z));
 			Spawned->SetIntensity(12.0f);
 			AddLight(std::move(Spawned));
 			break;
@@ -259,7 +420,7 @@ void D3D12Renderer::ProcessPendingSpawns()
 		default:
 		{
 			auto Spawned = std::make_unique<PointLight>(L"Point " + Ordinal);
-			Spawned->SetPosition({ ViewPosition.x, ViewPosition.y, ViewPosition.z });
+			Spawned->SetPosition(LightPosition);
 			Spawned->SetIntensity(6.0f);
 			Spawned->SetSourceRadius(0.2f);
 			AddLight(std::move(Spawned));
@@ -1130,12 +1291,9 @@ void D3D12Renderer::UploadPrimitiveConstants()
 		XMStoreFloat4x4(&PrimitiveCbv.LocalToWorld, XMMatrixTranspose(LocalToWorld));
 		XMStoreFloat4x4(&PrimitiveCbv.WorldToClip, XMMatrixTranspose(WorldToClip));
 
-		// Inverse of the full world matrix, and not transposed on the way in. Every other
-		// matrix is transposed so HLSL's column major layout sees it as stored. Skipping
-		// that transpose here leaves the shader with the inverse transpose, which keeps a
-		// normal perpendicular when the scale is uneven. The shader passes the normal with
-		// w of 0, so the translation in this matrix drops out.
-		XMStoreFloat4x4(&PrimitiveCbv.NormalToWorld, XMMatrixInverse(nullptr, LocalToWorld));
+		// Inverse transpose of the world matrix, which keeps a normal perpendicular when the
+		// scale is uneven. Transposed for the GPU like the rest.
+		XMStoreFloat4x4(&PrimitiveCbv.NormalToWorld, XMMatrixTranspose(NormalMatrixFromWorld(LocalToWorld)));
 
 
 		// PrevWorldToClip for VelocityPass, transposed for HLSL/GPU

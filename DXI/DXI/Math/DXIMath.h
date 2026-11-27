@@ -187,6 +187,19 @@ _NODISCARD DirectX::XMMATRIX RotationFromEulerDegrees(const DirectX::XMFLOAT3& D
  */
 _NODISCARD DirectX::XMFLOAT3 EulerDegreesFromRotation(DirectX::FXMMATRIX Rotation);
 
+/**
+ * The matrix that carries a normal from local to world space: the inverse transpose of the
+ * upper 3x3 of World, with nothing in the translation row or the w column. Row vector
+ * convention, so a normal is multiplied from the left: WorldNormal = Normal * Result.
+ *
+ * LocalToWorld shears a normal under a non uniform scale, this one keeps it perpendicular to
+ * the surface. The result is not unit length under scale, normalize it after.
+ *
+ * Like every other matrix it still has to be transposed for the GPU. A World with no inverse
+ * (a scale of zero on an axis) falls back to its own 3x3, which is as good as any there.
+ */
+_NODISCARD DirectX::XMMATRIX NormalMatrixFromWorld(DirectX::FXMMATRIX World);
+
 static_assert((sizeof(ObjectMatrices) % 256) == 0, "ObjectMatrices size must be aligned to 256-bytes boudary");
 constexpr auto ObjectMatricesSize		= sizeof(ObjectMatrices);
 constexpr auto ObjectMatricesAlignment	= alignof(ObjectMatrices);

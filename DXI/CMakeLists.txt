@@ -454,6 +454,35 @@ if(DXI_BUILD_PYTHON)
             LIBRARY_OUTPUT_DIRECTORY_RELEASE    "${CMAKE_BINARY_DIR}/bin/Release"
         )
         message(STATUS "Python module dxi: ${Python_EXECUTABLE} (${Python_VERSION})")
+
+        # The editor | python/editor, run from Visual Studio. DXIEditor builds nothing of its own, it is the
+        # project to start: building it builds the module, and starting it runs main.py in a Python the debugger
+        # launches, so the engine's own C++ can be stepped through as well, it is loaded into that process.
+        # Its sources are listed only so they show in the Solution Explorer.
+        #
+        # PySide6 is installed into python/.venv (see README), so that Python runs the editor when it exists,
+        # and the one the module was built with when it does not. Both have to be the same Python version.
+        # DXI_EDITOR_PYTHON overrides it, DXI_EDITOR_ARGS adds switches such as --engine-args.
+        file(GLOB DXI_EDITOR_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/python/editor/*.py")
+        add_custom_target(DXIEditor SOURCES ${DXI_EDITOR_SOURCES})
+        add_dependencies(DXIEditor DXIPython)
+
+        set(DXI_EDITOR_VENV_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/python/.venv/Scripts/python.exe")
+        if(EXISTS "${DXI_EDITOR_VENV_PYTHON}")
+            set(DXI_EDITOR_PYTHON_DEFAULT "${DXI_EDITOR_VENV_PYTHON}")
+        else()
+            set(DXI_EDITOR_PYTHON_DEFAULT "${Python_EXECUTABLE}")
+            message(STATUS "DXIEditor: python/.venv not found, PySide6 has to be installed into ${Python_EXECUTABLE} (python -m pip install -r python/requirements.txt)")
+        endif()
+        set(DXI_EDITOR_PYTHON "${DXI_EDITOR_PYTHON_DEFAULT}" CACHE FILEPATH "Python that runs the editor from Visual Studio")
+        set(DXI_EDITOR_ARGS "" CACHE STRING "Extra command line switches of the editor, when run from Visual Studio")
+
+        set_target_properties(DXIEditor PROPERTIES
+            VS_DEBUGGER_COMMAND             "${DXI_EDITOR_PYTHON}"
+            VS_DEBUGGER_COMMAND_ARGUMENTS   "\"${CMAKE_CURRENT_SOURCE_DIR}/python/editor/main.py\" --config $<IF:$<CONFIG:Release>,Release,Debug> ${DXI_EDITOR_ARGS}"
+            VS_DEBUGGER_WORKING_DIRECTORY   "${CMAKE_CURRENT_SOURCE_DIR}"
+            VS_DEBUGGER_ENVIRONMENT         "PYTHONUNBUFFERED=1"
+        )
     else()
         message(STATUS "Python with development files not found, the dxi module is not built. Pass -DDXI_BUILD_PYTHON=OFF to silence this.")
     endif()

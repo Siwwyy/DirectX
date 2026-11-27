@@ -18,6 +18,10 @@ _user32 = ctypes.WinDLL("user32")
 _user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
 
 FRAME_INTERVAL_MS = 16  # about 60 frames a second, the engine has vsync off and would spin otherwise
+HIDDEN_INTERVAL_MS = 100  # behind another tab nobody sees the frames, but requests still wait for one to be carried out
+
+# What the content browser drags: the row numbers of its tiles, as "3,5"
+CONTENT_MIME = "application/x-dxi-content"
 
 
 def client_size(hwnd):
@@ -36,6 +40,9 @@ class ViewportWidget(QWidget):
     failed = Signal(str)
     selectionChanged = Signal(int)  # index of the selected object, -1 for none, whoever changed it
     fpsChanged = Signal(int)
+    contentDropped = Signal(list, int, int)  # rows of the dropped tiles, and where, in physical pixels of the view
+    objectActivated = Signal(int)  # a double click on an object, its index
+    deleteRequested = Signal()     # the Delete key, for the selected object
 
     def __init__(self, dxi, engine_args="", parent=None):
         super().__init__(parent)
@@ -50,6 +57,7 @@ class ViewportWidget(QWidget):
         self.setAttribute(Qt.WA_OpaquePaintEvent)
         self.setFocusPolicy(Qt.StrongFocus)  # keys drive the camera, so a click has to give focus
         self.setMouseTracking(True)          # the gizmo lights the handle under the cursor with no button down
+        self.setAcceptDrops(True)            # tiles of the content browser are dropped onto the scene
         self.setMinimumSize(320, 200)
 
         self._timer = QTimer(self)
@@ -86,10 +94,17 @@ class ViewportWidget(QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
+        self._timer.setInterval(FRAME_INTERVAL_MS)
         if not self._started:
             self._started = True
             # After the event that shows the widget, so the native window has its final size
             QTimer.singleShot(0, self._create_renderer)
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        # A tab of an object is in front. The engine keeps running at a slower pace, since what the panels ask of it
+        # (a new object, a material) happens at the start of a frame.
+        self._timer.setInterval(HIDDEN_INTERVAL_MS)
 
     def _create_renderer(self):
         hwnd = int(self.winId())
@@ -114,7 +129,7 @@ class ViewportWidget(QWidget):
         # Follows the window here rather than in resizeEvent: a drag sends a resize per pixel and
         # the engine waits for the GPU on each, this way it is once per frame at most
         width, height = client_size(int(self.winId()))
-        if (width, height) != (renderer.width, renderer.height):
+        if width > 0 and height > 0 and (width, height) != (renderer.width, renderer.height):
             renderer.resize(width, height)
 
         renderer.tick()
@@ -149,6 +164,12 @@ class ViewportWidget(QWidget):
             self._looking = True
             self._last_look = (x, y)
 
+    def mouseDoubleClickEvent(self, event):
+        # The first click of the pair has already selected what is under the cursor. The second is not sent to the
+        # engine as another press, it asks for the object's own tab.
+        if self.has_engine and event.button() == Qt.LeftButton and self.renderer.selected >= 0:
+            self.objectActivated.emit(self.renderer.selected)
+
     def mouseMoveEvent(self, event):
         if not self.has_engine:
             return
@@ -171,7 +192,34 @@ class ViewportWidget(QWidget):
         elif event.button() == Qt.RightButton:
             self._looking = False
 
+    # Drops | Qt delivers them to the widget under the cursor, the native window or not
+
+    def _accepts(self, event):
+        return self.has_engine and event.mimeData().hasFormat(CONTENT_MIME)
+
+    def dragEnterEvent(self, event):
+        if self._accepts(event):
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if self._accepts(event):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if not self._accepts(event):
+            return
+
+        rows = [int(part) for part in bytes(event.mimeData().data(CONTENT_MIME)).decode().split(",") if part]
+        x, y = self._pixels(event)
+        event.acceptProposedAction()
+        self.setFocus()
+        self.contentDropped.emit(rows, x, y)
+
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            self.deleteRequested.emit()
+            return
+
         # The native key is the Windows virtual key code the engine's camera is written against
         key = event.nativeVirtualKey()
         if event.isAutoRepeat() or not key or not self.has_engine:
